@@ -181,8 +181,13 @@ final class IndicatorsTab implements Tab {
             case JUMP_RESET -> {
                 y = stepRow(ui, x, y, w, t("Показывать", "Show for", "Anzeigen für"), null, c.jrShowSec + t(" с", " s"),
                         () -> c.jrShowSec--, () -> c.jrShowSec++);
-                y = sound(ui, x, y, w, t("Звук: вовремя", "Sound: in time", "Sound: rechtzeitig"), c.jrSoundOk, s -> c.jrSoundOk = s);
-                y = sound(ui, x, y, w, t("Звук: рано или поздно", "Sound: early or late", "Sound: zu früh oder zu spät"), c.jrSoundBad, s -> c.jrSoundBad = s);
+                y = sound(ui, x, y, w, t("Звук: вовремя", "Sound: in time", "Sound: rechtzeitig"), c.jrSoundOk, () -> c.jrVolume, s -> c.jrSoundOk = s);
+                y = sound(ui, x, y, w, t("Звук: рано или поздно", "Sound: early or late", "Sound: zu früh oder zu spät"), c.jrSoundBad, () -> c.jrVolume, s -> c.jrSoundBad = s);
+                if (c.jrSoundOk.on() || c.jrSoundBad.on()) {
+                    y = stepRow(ui, x, y, w, t("Громкость звуков JR", "Jump reset sound volume", "Lautstärke der Jump-Reset-Sounds"),
+                            t("0% выключает звук", "0% mutes them", "0 % schaltet sie stumm"), c.jrVolume + "%",
+                            () -> c.jrVolume = Math.max(0, c.jrVolume - 10), () -> c.jrVolume = Math.min(100, c.jrVolume + 10));
+                }
                 var p = CombatDataClient.settings().jumpParams();
                 ui.text(Draw.ellipsize(ui.font, t("Окно " + p.lowerMs() + "–" + p.upperMs() + " мс после удара: Настройки → Дополнительно",
                         "Window " + p.lowerMs() + "–" + p.upperMs() + " ms after the hit: Settings → Advanced", "Fenster " + p.lowerMs() + "–" + p.upperMs() + " ms nach dem Treffer: Einstellungen → Erweitert"), w - 20 - INDENT * 2),
@@ -194,7 +199,12 @@ final class IndicatorsTab implements Tab {
                         c.tbDistance, v -> c.tbDistance = v);
                 y = stepRow(ui, x, y, w, t("Показывать", "Show for", "Anzeigen für"), null, c.tbShowSec + t(" с", " s"),
                         () -> c.tbShowSec--, () -> c.tbShowSec++);
-                y = sound(ui, x, y, w, t("Звук", "Sound"), c.tbSound, s -> c.tbSound = s);
+                y = sound(ui, x, y, w, t("Звук", "Sound"), c.tbSound, () -> c.tbVolume, s -> c.tbSound = s);
+                if (c.tbSound.on()) {
+                    y = stepRow(ui, x, y, w, t("Громкость звука", "Sound volume", "Lautstärke"),
+                            t("0% выключает звук", "0% mutes it", "0 % schaltet ihn stumm"), c.tbVolume + "%",
+                            () -> c.tbVolume = Math.max(0, c.tbVolume - 10), () -> c.tbVolume = Math.min(100, c.tbVolume + 10));
+                }
             }
             case SESSION -> {
                 String pl = t("Что показывать", "What to show", "Was anzeigen");
@@ -230,8 +240,6 @@ final class IndicatorsTab implements Tab {
         y = flagAt(ui, x, y, w, 0, t("Тень у текста", "Text shadow", "Textschatten"), null, c.shadow, v -> c.shadow = v);
         y = stepAt(ui, x, y, w, 0, t("Непрозрачность фона", "Background opacity", "Hintergrund-Deckkraft"), null, c.bgOpacity + "%",
                 () -> c.bgOpacity -= 10, () -> c.bgOpacity += 10);
-        y = stepAt(ui, x, y, w, 0, t("Громкость звуков", "Sound volume", "Lautstärke"), null, c.soundVolume + "%",
-                () -> c.soundVolume -= 10, () -> c.soundVolume += 10);
         row(ui, x, y, w, 26, 0, t("Показать или скрыть индикаторы", "Show or hide indicators", "Indikatoren ein-/ausblenden"), null, Theme.TEXT);
         SettingsTab.keyChip(ui, x + w - 10, y + 5, CombatDataClient.INDICATORS);
         y += 26;
@@ -301,35 +309,36 @@ final class IndicatorsTab implements Tab {
     }
 
     /** On/off, then instrument, note and a test button on a second line. */
-    private int sound(Ui ui, int x, int y, int w, String label, IndicatorConfig.Sound s, Consumer<IndicatorConfig.Sound> set) {
+    private int sound(Ui ui, int x, int y, int w, String label, IndicatorConfig.Sound s, java.util.function.IntSupplier vol,
+                      Consumer<IndicatorConfig.Sound> set) {
         y = flag(ui, x, y, w, label, null, s.on(), v -> set.accept(s.withOn(v)));
         if (!s.on()) return y;
         int right = x + w - 10, h = 26;
         String test = t("Проба", "Test", "Testen");
         int tw = ui.buttonWidth(test), nw = 56, iw = Math.min(110, Math.max(70, w - 20 - INDENT * 2 - tw - nw - 8 - 60));
         int bx = right - tw;
-        ui.button(bx, y + 5, tw, 16, test, Ui.Kind.GHOST, cfg().soundVolume > 0,
-                () -> Indicators.playNow(Minecraft.getInstance(), s, cfg().soundVolume, true));
+        ui.button(bx, y + 5, tw, 16, test, Ui.Kind.GHOST, vol.getAsInt() > 0,
+                () -> Indicators.playNow(Minecraft.getInstance(), s, vol.getAsInt(), true));
         bx -= 4 + nw;
         ui.stepper(bx, y + 5, nw, Notes.name(s.note()), () -> {
             set.accept(s.withNote(s.note() - 1));
-            Indicators.playNow(Minecraft.getInstance(), s.withNote(s.note() - 1), cfg().soundVolume, true);
+            Indicators.playNow(Minecraft.getInstance(), s.withNote(s.note() - 1), vol.getAsInt(), true);
             changed();
         }, () -> {
             set.accept(s.withNote(s.note() + 1));
-            Indicators.playNow(Minecraft.getInstance(), s.withNote(s.note() + 1), cfg().soundVolume, true);
+            Indicators.playNow(Minecraft.getInstance(), s.withNote(s.note() + 1), vol.getAsInt(), true);
             changed();
         });
         bx -= 4 + iw;
         ui.stepper(bx, y + 5, iw, Draw.ellipsize(ui.font, Indicators.instrumentName(s.instrument()), iw - 30), () -> {
             IndicatorConfig.Sound n = s.withInstrument(Notes.step(s.instrument(), -1));
             set.accept(n);
-            Indicators.playNow(Minecraft.getInstance(), n, cfg().soundVolume, true);
+            Indicators.playNow(Minecraft.getInstance(), n, vol.getAsInt(), true);
             changed();
         }, () -> {
             IndicatorConfig.Sound n = s.withInstrument(Notes.step(s.instrument(), 1));
             set.accept(n);
-            Indicators.playNow(Minecraft.getInstance(), n, cfg().soundVolume, true);
+            Indicators.playNow(Minecraft.getInstance(), n, vol.getAsInt(), true);
             changed();
         });
         ui.text(t("Нота", "Note"), x + 10 + INDENT * 2, Ui.textY(y, h), Theme.MUTED);

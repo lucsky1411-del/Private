@@ -62,6 +62,10 @@ public final class QuickSettingsScreen extends Screen {
             CombatDataClient.applyLanguage(minecraft);
             rebuildWidgets();
         }));
+        rows.add(new Row(() -> t("Стиль меню", "Menu style", "Menü-Stil") + ": " + dev.combatdata.core.Themes.styleName(s().uiStyle),
+                () -> t("Классический, Minecraft или современный (как NoRisk)", "Classic, Minecraft or modern (NoRisk-like)",
+                        "Klassisch, Minecraft oder modern (wie NoRisk)"),
+                () -> s().uiStyle = (s().uiStyle + 1) % 3));
         rows.add(new Row(() -> t("Вид статистики", "Stats view", "Statistik-Ansicht") + ": "
                 + (s().expertMode ? t("эксперт", "expert", "Experte") : t("простой", "simple", "einfach")),
                 () -> t("Простой: только главное и советы. Эксперт: все цифры и графики.",
@@ -71,6 +75,11 @@ public final class QuickSettingsScreen extends Screen {
         rows.add(new Row(() -> t("Индикаторы на экране", "On-screen indicators", "Anzeigen im Spiel") + ": " + onOff(s().indicators.enabled),
                 () -> t("HP, дальность, комбо и др. во время игры", "HP, reach, combo and more while playing", "HP, Reichweite, Combo und mehr beim Spielen"),
                 () -> s().indicators.enabled = !s().indicators.enabled));
+        rows.add(new Row(() -> t("Громкость звуков JR", "Jump reset sound volume", "Lautstärke Jump-Reset-Sounds") + ": " + s().indicators.jrVolume + "%",
+                () -> t("Звуки индикатора jump reset. Клик: +25%, после 100% снова 0%",
+                        "Sounds of the jump reset indicator. Click: +25%, after 100% back to 0%",
+                        "Sounds der Jump-Reset-Anzeige. Klick: +25 %, nach 100 % wieder 0 %"),
+                () -> s().indicators.jrVolume = s().indicators.jrVolume >= 100 ? 0 : Math.min(100, (s().indicators.jrVolume / 25 + 1) * 25)));
         rows.add(new Row(() -> t("Надпись REC", "REC label", "REC-Anzeige") + ": " + onOff(s().hudVisible),
                 () -> t("Показывает, что идёт запись", "Shows that recording is running", "Zeigt, dass die Aufnahme läuft"),
                 () -> s().hudVisible = !s().hudVisible));
@@ -89,19 +98,24 @@ public final class QuickSettingsScreen extends Screen {
     protected void init() {
         buildRows();
         buttons.clear();
-        int bw = Math.min(310, width - 20), x = (width - bw) / 2;
-        int top = Math.max(36, height / 2 - (rows.size() * 24 + 40) / 2);
+        // Two columns when one would not fit the screen height (large GUI scale).
+        boolean two = rows.size() * 24 + 90 > height && width >= 330;
+        int cols = two ? 2 : 1, perCol = (rows.size() + cols - 1) / cols;
+        int bw = two ? Math.min(420, width - 20) : Math.min(310, width - 20), x = (width - bw) / 2;
+        int cw = cols == 2 ? (bw - 8) / 2 : bw;
+        int top = Math.max(36, height / 2 - (perCol * 24 + 40) / 2);
         for (int i = 0; i < rows.size(); i++) {
             Row r = rows.get(i);
+            int col = i / perCol, rowI = i % perCol;
             Button b = Button.builder(Component.literal(r.label().get()), btn -> {
                 r.click().run();
                 btn.setMessage(Component.literal(r.label().get()));
-            }).bounds(x, top + i * 24, bw, 20).build();
+            }).bounds(x + col * (cw + 8), top + rowI * 24, cw, 20).build();
             b.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal(r.hint().get())));
             buttons.add(b);
             addRenderableWidget(b);
         }
-        int by = top + rows.size() * 24 + 12, half = (bw - 8) / 2;
+        int by = top + perCol * 24 + 12, half = (bw - 8) / 2;
         addRenderableWidget(Button.builder(Component.literal(t("Полное меню…", "Full menu…", "Ganzes Menü…")), b -> {
             CombatDataClient.saveSettings();
             minecraft.setScreen(new MenuScreen(this, MenuScreen.TabId.SETTINGS));

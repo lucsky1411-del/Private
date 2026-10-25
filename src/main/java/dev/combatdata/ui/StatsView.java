@@ -741,8 +741,8 @@ final class StatsView {
         rows.add(new String[]{t("Удар", "Hit", "Treffer"), incomingKindText(h)});
         rows.add(new String[]{t("Он на вашем экране", "Them on your screen", "Er auf deinem Bildschirm"), Fmt.num(h.reach(), 2) + t(" бл.", " bl.", " Bl.")});
         rows.add(new String[]{t("Ваша дальность", "Your range", "Deine Reichweite"), Fmt.num(h.rangeOr(AttackEvent.DEFAULT_RANGE), 2) + t(" бл.", " bl.", " Bl.")});
-        rows.add(new String[]{t("Его скорость к вам", "Their speed to you", "Sein Tempo auf dich zu"), Fmt.signed(h.attackerTowardBps(), 1) + t(" бл/с", " bl/s", " Bl./s")});
-        rows.add(new String[]{t("Ваша скорость от него", "Your speed away", "Dein Tempo weg"), Fmt.signed(h.selfAwayBps(), 1) + t(" бл/с", " bl/s", " Bl./s")});
+        rows.add(new String[]{t("Его скорость к вам", "Their speed to you", "Sein Tempo zu dir hin"), Fmt.signed(h.attackerTowardBps(), 1) + t(" бл/с", " bl/s", " Bl./s")});
+        rows.add(new String[]{t("Ваша скорость от него", "Your speed away", "Dein Tempo von ihm weg"), Fmt.signed(h.selfAwayBps(), 1) + t(" бл/с", " bl/s", " Bl./s")});
         rows.add(new String[]{t("Пинг его / ваш", "Ping theirs / yours", "Ping seiner / deiner"), (h.attackerPingMs() >= 0 ? h.attackerPingMs() + t(" мс", " ms") : "—")
                 + " / " + (h.pingMs() > 0 ? h.pingMs() + t(" мс", " ms") : "—")});
         rows.add(new String[]{t("Отлёт за 0,5 с", "Knockback in 0.5 s", "Rückstoß in 0,5 s"), kbText(h.kbAway())});
@@ -1362,7 +1362,7 @@ final class StatsView {
         }
         int zx = x + (int) ((0 - lo) * (bw * n) / span);
         ui.g.fill(zx, by, zx + 1, by + h, Theme.BORDER);
-        String title = t("Средний отлёт по дельте прыжка (корзины по ", "Mean knockback by jump delta (bins of ", "Ø Rückstoß nach Sprungzeitpunkt (Schritte von ") + Calibration.BIN_MS + t(" мс), пунктир: без прыжка", " ms), dashed: no jump", " ms), gestrichelt: kein Sprung");
+        String title = t("Средний отлёт по дельте прыжка (корзины по ", "Mean knockback by jump delta (bins of ", "Ø Rückstoß je nach Sprungzeitpunkt (Schritte von ") + Calibration.BIN_MS + t(" мс), пунктир: без прыжка", " ms), dashed: no jump", " ms), gestrichelt: kein Sprung");
         if (hover >= 0) {
             Calibration.Bin b = c.bins().get(hover);
             title = b.fromMs() + "…" + b.toMs() + t(" мс: ", " ms: ") + (b.n() == 0 ? t("нет попыток", "no attempts", "keine Versuche") : kbText(b.meanKb()) + " (" + b.n() + ")");
@@ -1514,12 +1514,12 @@ final class StatsView {
         cols(ui, x, y, w, at, new String[]{"", t("На цели", "On target", "Auf dem Ziel"), t("Взмахов", "Swings", "Schläge")}, fill(3, Theme.DIM));
         y += ROW;
         if (ar.hasMotion()) {
-            y = splitRow(ui, x, y, w, at, t("Противник стоит / идёт прямо", "Opponent still / straight", "Gegner steht / läuft gerade"), ar.still());
-            y = splitRow(ui, x, y, w, at, t("Противник стрейфит", "Opponent strafing", "Gegner strafet"), ar.strafing());
+            y = splitRow(ui, x, y, w, at, t("Противник стоит / идёт прямо", "Opponent still / straight", "Gegner steht oder läuft gerade"), ar.still());
+            y = splitRow(ui, x, y, w, at, t("Противник стрейфит", "Opponent strafing", "Gegner läuft seitlich (Strafe)"), ar.strafing());
             y = splitRow(ui, x, y, w, at, t("Противник на земле", "Opponent on the ground", "Gegner am Boden"), ar.targetLevel());
             y = splitRow(ui, x, y, w, at, t("Противник в прыжке", "Opponent jumping", "Gegner springt"), ar.targetJumping());
             y = splitRow(ui, x, y, w, at, t("Мышь спокойно", "Mouse steady", "Maus ruhig"), ar.calm());
-            y = splitRow(ui, x, y, w, at, t("Мышь резко (от " + (int) AimAnalysis.FLICK_DPS + "°/с)", "Mouse flicking (" + (int) AimAnalysis.FLICK_DPS + "°/s+)", "Maus schnell gedreht (" + (int) AimAnalysis.FLICK_DPS + "°/s+)"), ar.flicking());
+            y = splitRow(ui, x, y, w, at, t("Мышь резко (от " + (int) AimAnalysis.FLICK_DPS + "°/с)", "Mouse flicking (" + (int) AimAnalysis.FLICK_DPS + "°/s+)", "Maus schnell bewegt (" + (int) AimAnalysis.FLICK_DPS + "°/s+)"), ar.flicking());
         }
         y = splitRow(ui, x, y, w, at, t("Вы на земле", "You on the ground", "Du am Boden"), ar.ground());
         y = splitRow(ui, x, y, w, at, t("Вы в прыжке", "You in the air", "Du in der Luft"), ar.air());

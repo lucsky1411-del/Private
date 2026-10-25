@@ -27,12 +27,17 @@ final class Fmt {
 
     static String num(double v, int digits) {
         if (!Double.isFinite(v)) return "—";
-        return String.format(Locale.ROOT, "%." + digits + "f", v);
+        return local(String.format(Locale.ROOT, "%." + digits + "f", v));
     }
 
     static String signed(double v, int digits) {
         if (!Double.isFinite(v)) return "—";
-        return String.format(Locale.ROOT, "%+." + digits + "f", v);
+        return local(String.format(Locale.ROOT, "%+." + digits + "f", v));
+    }
+
+    /** German writes decimals with a comma. */
+    static String local(String s) {
+        return dev.combatdata.core.Lang.german() ? s.replace('.', ',') : s;
     }
 
     static String pct(double v) {

@@ -245,7 +245,7 @@ final class SettingsTab implements Tab {
                 t("Через " + draft.fsDelaySec + " с после боя, от " + draft.statMinFightHits + " ударов",
                         draft.fsDelaySec + " s after a fight, from " + draft.statMinFightHits + " hits", draft.fsDelaySec + " s nach einem Kampf, ab " + draft.statMinFightHits + " Treffer"),
                 draft.autoSave, l.autoSave, DEF.autoSave, v -> draft.autoSave = v);
-        y = flag(ui, x, y, w, t("Звук при сохранении", "Sound on save", "Sound beim Speichern"), t("Высокий звук: сохранено, низкий: не удалось", "High: saved, low: failed", "Hoch: gerettet, tief: misslungen"), draft.soundOnSave,
+        y = flag(ui, x, y, w, t("Звук при сохранении", "Sound on save", "Sound beim Speichern"), t("Высокий звук: сохранено, низкий: не удалось", "High: saved, low: failed", "Hoher Ton: gespeichert, tiefer Ton: fehlgeschlagen"), draft.soundOnSave,
                 l.soundOnSave, DEF.soundOnSave, v -> draft.soundOnSave = v);
         row(ui, x, y, w, 26, t("Громкость звука", "Sound volume", "Lautstärke"), t("Громкость звука сохранения", "Volume of the save sound", "Lautstärke des Speichertons"), draft.soundVolume != l.soundVolume);
         int tw = ui.buttonWidth(t("Проба", "Test", "Testen"));
@@ -307,7 +307,7 @@ final class SettingsTab implements Tab {
         y = flag(ui, x, y, w, t("Не учитывать NPC и ботов", "Ignore NPCs and bots", "NPCs und Bots ignorieren"), t("Игроки с UUID версии 2", "Players with a version 2 UUID", "Spieler mit einer UUID der Version 2"),
                 draft.statNoNpc, l.statNoNpc, DEF.statNoNpc, v -> draft.statNoNpc = v);
         y = heading(ui, x, y, w, t("Пинг и бои", "Ping and fights", "Ping und Kämpfe"));
-        y = flag(ui, x, y, w, t("Не учитывать высокий пинг", "Ignore high ping", "Hohen Ping ignorieren"), t("Удары, когда ваш пинг выше порога", "Hits while your ping is above the limit", "Treffer, während dein Ping über dem Limit liegt"),
+        y = flag(ui, x, y, w, t("Не учитывать высокий пинг", "Ignore high ping", "Hohen Ping ignorieren"), t("Удары, когда ваш пинг выше порога", "Hits while your ping is above the limit", "Treffer, während dein Ping über dem Limit lag"),
                 draft.statHighPing, l.statHighPing, DEF.statHighPing, v -> draft.statHighPing = v);
         int right = x + w - 10, sw = 72;
         row(ui, x, y, w, 26, t("Порог пинга", "Ping limit", "Ping-Limit"), t("Удары при пинге выше не идут в статистику", "Hits above this ping are left out of the stats", "Treffer über diesem Ping zählen nicht für die Statistik"), draft.statPingLimitMs != l.statPingLimitMs);
@@ -585,8 +585,12 @@ final class SettingsTab implements Tab {
         return (draft != null ? draft : live()).themeSpec();
     }
 
+    int previewStyle() {
+        return (draft != null ? draft : live()).uiStyle;
+    }
+
     private static String[] roleNames() {
-        return new String[]{t("Фон окна", "Window background", "Fensterhintergrund"), t("Панели и карточки", "Panels and cards", "Felder und Karten"),
+        return new String[]{t("Фон окна", "Window background", "Fensterhintergrund"), t("Панели и карточки", "Panels and cards", "Flächen und Karten"),
                 t("Поля и графики", "Fields and charts", "Felder und Diagramme"), t("Рамки и линии", "Borders and lines", "Rahmen und Linien"), t("Кнопки", "Buttons", "Schaltflächen"),
                 t("Текст", "Text"), t("Подписи", "Captions", "Beschriftungen"), t("Акцент", "Accent", "Akzent"), t("Хорошо: попадание, успех", "Good: hit, success", "Gut: Treffer, Erfolg"),
                 t("Плохо: промах, ошибка", "Bad: miss, mistake", "Schlecht: Fehlschlag, Fehler"), t("Внимание: 3 block hit", "Warning: 3 block hit", "Warnung: 3 Block Hit"),
@@ -595,6 +599,18 @@ final class SettingsTab implements Tab {
 
     private int appearance(Ui ui, int x, int y, int w) {
         sliders.clear();
+        y = heading(ui, x, y, w, t("Стиль меню", "Menu style", "Menü-Stil"));
+        String[] styles = {dev.combatdata.core.Themes.styleName(0), dev.combatdata.core.Themes.styleName(1),
+                dev.combatdata.core.Themes.styleName(2)};
+        if (ui.segmentedWidth(styles) > w - 120) styles = new String[]{t("Классика", "Classic", "Klassisch"), "Minecraft", "Modern"};
+        y = choice(ui, x, y, w, t("Стиль", "Style", "Stil"), styles, draft.uiStyle, live().uiStyle, DEF.uiStyle, v -> draft.uiStyle = v);
+        ui.text(Draw.ellipsize(ui.font, draft.uiStyle == dev.combatdata.core.Themes.STYLE_CLASSIC
+                        ? t("Цвета берутся из темы ниже.", "Colors come from the theme below.", "Die Farben kommen aus dem Theme unten.")
+                        : t("Свои цвета и формы. Тема ниже работает только в стиле «Классический».",
+                        "Own colors and shapes. The theme below only applies in the Classic style.",
+                        "Eigene Farben und Formen. Das Theme unten gilt nur im Stil „Klassisch“."), w - 20),
+                x + 10, y + 4, Theme.DIM);
+        y += 16;
         String head = t("Тема", "Theme");
         y = heading(ui, x, y, w, head);
         ui.info(x + 10 + ui.font.width(head) + 6, y - 13, Help.themes());

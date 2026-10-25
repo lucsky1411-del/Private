@@ -111,6 +111,8 @@ public final class IndicatorConfig {
     public boolean enabled = true;
     public boolean labels = true, colors = true, shadow = true;
     public int bgOpacity = 45, soundVolume = 70;
+    /** Own volumes for the jump reset and 3 block hit sounds, 0..100. */
+    public int jrVolume = 70, tbVolume = 70;
     public final Map<Kind, Element> elements = new EnumMap<>(Kind.class);
     public int hpDecimals = 2, hpColor = HP_RED;
     public boolean hpAbsorption = true, hpHearts = false, hpIcon = false;
@@ -162,6 +164,8 @@ public final class IndicatorConfig {
     public IndicatorConfig clamp() {
         bgOpacity = Math.max(0, Math.min(100, bgOpacity));
         soundVolume = Math.max(0, Math.min(100, soundVolume));
+        jrVolume = Math.max(0, Math.min(100, jrVolume));
+        tbVolume = Math.max(0, Math.min(100, tbVolume));
         for (Kind k : Kind.values()) elements.get(k).clamp(defaultElement(k));
         hpDecimals = Math.max(0, Math.min(3, hpDecimals));
         hpColor = hpColor >= HP_RED && hpColor <= HP_BY_HEALTH ? hpColor : HP_RED;
@@ -185,6 +189,8 @@ public final class IndicatorConfig {
         m.put("shadow", shadow);
         m.put("bgOpacity", bgOpacity);
         m.put("soundVolume", soundVolume);
+        m.put("jrVolume", jrVolume);
+        m.put("tbVolume", tbVolume);
         Map<String, Object> el = new LinkedHashMap<>();
         for (Kind k : Kind.values()) el.put(k.key, elements.get(k).toMap());
         m.put("elements", el);
@@ -221,6 +227,8 @@ public final class IndicatorConfig {
         if (m.get("shadow") instanceof Boolean b) c.shadow = b;
         if (m.get("bgOpacity") instanceof Number n) c.bgOpacity = n.intValue();
         if (m.get("soundVolume") instanceof Number n) c.soundVolume = n.intValue();
+        c.jrVolume = m.get("jrVolume") instanceof Number n ? n.intValue() : c.soundVolume;
+        c.tbVolume = m.get("tbVolume") instanceof Number n ? n.intValue() : c.soundVolume;
         if (m.get("elements") instanceof Map<?, ?> el) {
             for (Kind k : Kind.values()) if (el.get(k.key) instanceof Map<?, ?> e) c.elements.get(k).read(e);
         }

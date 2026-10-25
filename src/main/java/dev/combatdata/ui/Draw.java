@@ -10,7 +10,7 @@ public final class Draw {
 
     public static void round(GuiGraphics g, int x, int y, int w, int h, int r, int color) {
         if (w <= 0 || h <= 0) return;
-        r = Math.min(r, Math.min(w, h) / 2);
+        r = Math.min(Theme.radius(r), Math.min(w, h) / 2);
         if (r <= 0) {
             g.fill(x, y, x + w, y + h, color);
             return;
@@ -22,6 +22,20 @@ public final class Draw {
             g.fill(x + inset, y + i, x + w - inset, y + i + 1, color);
             g.fill(x + inset, y + h - 1 - i, x + w - inset, y + h - i, color);
         }
+    }
+
+    /**
+     * A vanilla-style button: black outline, face with a light top-left and dark bottom-right edge. Hover lightens the
+     * face and turns the outline white, like the game's own buttons.
+     */
+    public static void bevel(GuiGraphics g, int x, int y, int w, int h, int face, boolean hover, boolean enabled) {
+        if (w <= 2 || h <= 2) return;
+        int f = !enabled ? Theme.mixColor(face, 0xFF000000, 0.45) : hover ? Theme.mixColor(face, 0xFFFFFFFF, 0.18) : face;
+        g.fill(x, y, x + w, y + h, hover && enabled ? 0xFFFFFFFF : 0xFF000000);
+        g.fill(x + 1, y + 1, x + w - 1, y + h - 1, f);
+        g.fill(x + 1, y + 1, x + w - 1, y + 2, Theme.mixColor(f, 0xFFFFFFFF, 0.35));
+        g.fill(x + 1, y + 1, x + 2, y + h - 1, Theme.mixColor(f, 0xFFFFFFFF, 0.25));
+        g.fill(x + 1, y + h - 2, x + w - 1, y + h - 1, Theme.mixColor(f, 0xFF000000, 0.4));
     }
 
     public static void roundBordered(GuiGraphics g, int x, int y, int w, int h, int r, int border, int fill) {

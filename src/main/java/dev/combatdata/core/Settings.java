@@ -50,6 +50,8 @@ public final class Settings {
     public boolean fightSummary = true;
     /** Simple view hides detail numbers and charts; expert shows everything. */
     public boolean expertMode = false;
+    /** Menu style: Themes.STYLE_CLASSIC, STYLE_MINECRAFT or STYLE_MODERN. */
+    public int uiStyle = Themes.STYLE_MINECRAFT;
     /** The first-start setup has been shown. */
     public boolean setupDone = false;
     public boolean fsTitle = true, fsHits = true, fsJr = true, fsCombo = true, fsTrades = true, fsReach = false,
@@ -155,6 +157,7 @@ public final class Settings {
         autoDeleteDays = Math.max(0, Math.min(3650, autoDeleteDays));
         soundVolume = Math.max(0, Math.min(100, soundVolume));
         language = language >= Lang.AUTO && language <= Lang.DE ? language : Lang.AUTO;
+        uiStyle = uiStyle >= Themes.STYLE_CLASSIC && uiStyle <= Themes.STYLE_MODERN ? uiStyle : Themes.STYLE_MINECRAFT;
         statPingLimitMs = Math.max(MIN_PING_LIMIT, Math.min(MAX_PING_LIMIT, statPingLimitMs));
         statMinFightHits = Math.max(1, Math.min(MAX_FIGHT_HITS, statMinFightHits));
         tradeGapMs = Math.max(500, Math.min(5000, tradeGapMs));
@@ -238,6 +241,7 @@ public final class Settings {
         recordTaken = c.recordTaken;
         fightSummary = c.fightSummary;
         expertMode = c.expertMode;
+        uiStyle = c.uiStyle;
         setupDone = c.setupDone;
         fsTitle = c.fsTitle;
         fsHits = c.fsHits;
@@ -321,6 +325,7 @@ public final class Settings {
         m.put("recordTaken", recordTaken);
         m.put("fightSummary", fightSummary);
         m.put("expertMode", expertMode);
+        m.put("uiStyle", uiStyle);
         m.put("setupDone", setupDone);
         m.put("fsTitle", fsTitle);
         m.put("fsHits", fsHits);
@@ -391,6 +396,7 @@ public final class Settings {
         if (m.get("recordTaken") instanceof Boolean b) s.recordTaken = b;
         if (m.get("fightSummary") instanceof Boolean b) s.fightSummary = b;
         if (m.get("expertMode") instanceof Boolean b) s.expertMode = b;
+        if (m.get("uiStyle") instanceof Number n) s.uiStyle = n.intValue();
         if (m.get("setupDone") instanceof Boolean b) s.setupDone = b;
         if (m.get("fsTitle") instanceof Boolean b) s.fsTitle = b;
         if (m.get("fsHits") instanceof Boolean b) s.fsHits = b;

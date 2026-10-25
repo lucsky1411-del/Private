@@ -219,7 +219,7 @@ public final class MenuScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
-        Theme.apply(settingsTab.previewSpec());
+        Theme.applyStyle(settingsTab.previewStyle(), settingsTab.previewSpec());
         super.render(g, mouseX, mouseY, delta);
         targets.clear();
         frameMouseX = mouseX;

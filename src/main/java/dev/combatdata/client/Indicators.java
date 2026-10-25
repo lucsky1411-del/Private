@@ -41,7 +41,7 @@ public final class Indicators {
         if (s.statFilter().attack(a) != null) return;
         boolean tb = ThreeBlockHit.is(a, s.interpMs);
         double opp = ThreeBlockHit.opponentDistance(a, s.interpMs);
-        if (LIVE.hit(clock(), a.target(), a.reach(), tb, opp)) play(IndicatorConfig.Kind.THREE_BLOCK, cfg().tbSound);
+        if (LIVE.hit(clock(), a.target(), a.reach(), tb, opp)) play(IndicatorConfig.Kind.THREE_BLOCK, cfg().tbSound, cfg().tbVolume);
     }
 
     static void onMiss(AttackEvent a) {
@@ -69,13 +69,13 @@ public final class Indicators {
     private static void verdict(LiveCombat.JrVerdict v) {
         if (v == null) return;
         IndicatorConfig c = cfg();
-        play(IndicatorConfig.Kind.JUMP_RESET, v.result() == LiveCombat.Jr.SUCCESS ? c.jrSoundOk : c.jrSoundBad);
+        play(IndicatorConfig.Kind.JUMP_RESET, v.result() == LiveCombat.Jr.SUCCESS ? c.jrSoundOk : c.jrSoundBad, c.jrVolume);
     }
 
     /** A sound belongs to its indicator: it plays only while that indicator is on. */
-    private static void play(IndicatorConfig.Kind k, IndicatorConfig.Sound s) {
+    private static void play(IndicatorConfig.Kind k, IndicatorConfig.Sound s, int volume) {
         IndicatorConfig c = cfg();
-        if (c.enabled && c.on(k)) playNow(Minecraft.getInstance(), s, c.soundVolume, false);
+        if (c.enabled && c.on(k)) playNow(Minecraft.getInstance(), s, volume, false);
     }
 
     /** test plays even when the sound is switched off, for the Test button. */

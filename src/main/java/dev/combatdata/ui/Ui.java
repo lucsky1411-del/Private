@@ -126,15 +126,15 @@ public final class Ui {
     }
 
     public void text(String s, int x, int y, int color) {
-        g.drawString(font, s, x, y, color, false);
+        g.drawString(font, s, x, y, color, Theme.shadow);
     }
 
     public void textRight(String s, int right, int y, int color) {
-        g.drawString(font, s, right - font.width(s), y, color, false);
+        g.drawString(font, s, right - font.width(s), y, color, Theme.shadow);
     }
 
     public void textCenter(String s, int cx, int y, int color) {
-        g.drawString(font, s, cx - font.width(s) / 2, y, color, false);
+        g.drawString(font, s, cx - font.width(s) / 2, y, color, Theme.shadow);
     }
 
     public static int textY(int y, int h) {
@@ -166,7 +166,10 @@ public final class Ui {
                 fg = enabled ? Theme.TEXT : Theme.DIM;
             }
         }
-        if (bg != 0) Draw.round(g, x, y, w, h, Theme.R_CTRL, bg);
+        if (Theme.minecraft() && kind != Kind.GHOST) {
+            Draw.bevel(g, x, y, w, h, kind == Kind.PRIMARY ? Theme.ACCENT : Theme.RAISED, hov, enabled);
+            fg = !enabled ? 0xFFA0A0A0 : kind == Kind.DANGER ? Theme.RED : 0xFFFFFFFF;
+        } else if (bg != 0) Draw.round(g, x, y, w, h, Theme.R_CTRL, bg);
         textCenter(Draw.ellipsize(font, label, w - 6), x + w / 2, textY(y, h), fg);
         if (enabled) click(x, y, w, h, onClick);
     }
@@ -174,8 +177,15 @@ public final class Ui {
     public void toggle(int x, int y, boolean on, Consumer<Boolean> set) {
         int w = 20, h = 11;
         boolean hov = hover(x, y, w, h);
-        Draw.round(g, x, y, w, h, 5, on ? (hov ? Theme.ACCENT_HOVER : Theme.ACCENT) : (hov ? Theme.CTRL_HOVER : Theme.SWITCH_OFF));
-        Draw.circle(g, on ? x + w - 9 : x + 2, y + 2, 7, Theme.KNOB);
+        if (Theme.minecraft()) {
+            // Square track with a beveled block as the knob, like the game's sliders.
+            g.fill(x, y, x + w, y + h, 0xFF000000);
+            g.fill(x + 1, y + 1, x + w - 1, y + h - 1, on ? Theme.ACCENT : 0xFF3A3A3A);
+            Draw.bevel(g, on ? x + w - 9 : x, y - 1, 9, h + 2, 0xFF8B8B8B, hov, true);
+        } else {
+            Draw.round(g, x, y, w, h, 5, on ? (hov ? Theme.ACCENT_HOVER : Theme.ACCENT) : (hov ? Theme.CTRL_HOVER : Theme.SWITCH_OFF));
+            Draw.circle(g, on ? x + w - 9 : x + 2, y + 2, 7, Theme.KNOB);
+        }
         click(x - 2, y - 2, w + 4, h + 4, () -> set.accept(!on));
     }
 

@@ -1518,7 +1518,7 @@ public final class CoreTests {
         boolean contrast = true;
         for (ThemeSpec t : Themes.BUILTIN)
             if (Math.abs(Themes.luma(t.color(ThemeSpec.TEXT)) - Themes.luma(t.color(ThemeSpec.WINDOW))) < 0.5) contrast = false;
-        check("тема: во встроенных текст читается на фоне", contrast && Themes.BUILTIN.size() == 6);
+        check("тема: во встроенных текст читается на фоне", contrast && Themes.BUILTIN.size() == 8);
 
         List<ThemeSpec> mine = new ArrayList<>();
         ThemeSpec c1 = Themes.copyOf(Themes.defaultTheme(), mine);
@@ -1754,6 +1754,25 @@ public final class CoreTests {
         Progress.Week hr = Progress.weeks(sums, now).get(0);
         check("progress: week vs last week", hr.metric() == Progress.Metric.HIT_RATE && Math.abs(hr.current() - 80) < 1e-9
                 && Math.abs(hr.previous() - 50) < 1e-9 && Math.abs(hr.diff() - 30) < 1e-9);
+        Settings sty = new Settings();
+        check("style: minecraft is the default", sty.uiStyle == Themes.STYLE_MINECRAFT);
+        sty.uiStyle = 9;
+        check("style: bad value falls back", sty.clamp().uiStyle == Themes.STYLE_MINECRAFT);
+        sty.uiStyle = Themes.STYLE_MODERN;
+        check("style: saved", Settings.fromMap(sty.toMap()).uiStyle == Themes.STYLE_MODERN);
+        check("style: palettes", Themes.forStyle(Themes.STYLE_MINECRAFT, null).id().equals("minecraft")
+                && Themes.forStyle(Themes.STYLE_MODERN, null).id().equals("modern") && Themes.forStyle(Themes.STYLE_CLASSIC, Themes.defaultTheme()) == Themes.defaultTheme());
+        IndicatorConfig ic = new IndicatorConfig();
+        ic.jrVolume = 30;
+        ic.tbVolume = 140;
+        IndicatorConfig back = IndicatorConfig.fromMap(ic.clamp().toMap());
+        check("jr volume: saved and clamped", back.jrVolume == 30 && back.tbVolume == 100);
+        Map<String, Object> old = new java.util.LinkedHashMap<>(ic.toMap());
+        old.remove("jrVolume");
+        old.remove("tbVolume");
+        old.put("soundVolume", 40);
+        IndicatorConfig migrated = IndicatorConfig.fromMap(old);
+        check("jr volume: old config uses the shared volume", migrated.jrVolume == 40 && migrated.tbVolume == 40);
         Lang.setEnglish(false);
     }
 }

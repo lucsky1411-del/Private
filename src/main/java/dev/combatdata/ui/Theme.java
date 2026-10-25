@@ -16,7 +16,29 @@ public final class Theme {
     public static int FILTERED;
     public static int GRID, GRID_5;
     public static boolean dark;
-    public static final int R_WINDOW = 6, R_PANEL = 4, R_CTRL = 3;
+    public static int R_WINDOW = 6, R_PANEL = 4, R_CTRL = 3;
+    /** Current menu style (Themes.STYLE_*): corner shapes, text shadow and button look. */
+    public static int style = dev.combatdata.core.Themes.STYLE_CLASSIC;
+    public static boolean shadow;
+
+    /** Corner radius for this style: square in Minecraft, rounder in Modern. */
+    public static int radius(int r) {
+        return style == dev.combatdata.core.Themes.STYLE_MINECRAFT ? 0 : style == dev.combatdata.core.Themes.STYLE_MODERN && r > 0 ? r + 2 : r;
+    }
+
+    public static int mixColor(int a, int b, double f) {
+        return dev.combatdata.core.Themes.mix(a, b, f);
+    }
+
+    public static boolean minecraft() {
+        return style == dev.combatdata.core.Themes.STYLE_MINECRAFT;
+    }
+
+    public static void applyStyle(int s, ThemeSpec classic) {
+        style = s;
+        shadow = s == dev.combatdata.core.Themes.STYLE_MINECRAFT;
+        apply(dev.combatdata.core.Themes.forStyle(s, classic));
+    }
 
     private static ThemeSpec current;
 
