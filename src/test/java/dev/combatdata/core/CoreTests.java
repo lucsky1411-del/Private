@@ -40,6 +40,7 @@ public final class CoreTests {
         indicators();
         aimCoach();
         coachAndLanguage();
+        reports();
         // Check names are ASCII: the Windows console (CP866) garbles Cyrillic.
         System.out.println("CoreTests: " + checks + " checks, " + failures + " failed");
         if (failures > 0) System.exit(1);
@@ -1782,6 +1783,49 @@ public final class CoreTests {
         old.put("soundVolume", 40);
         IndicatorConfig migrated = IndicatorConfig.fromMap(old);
         check("jr volume: old config uses the shared volume", migrated.jrVolume == 40 && migrated.tbVolume == 40);
+        Lang.setEnglish(false);
+    }
+
+    static void reports() {
+        Lang.set(Lang.EN);
+        // Weak jump reset (mostly late), good aim: focus must be jump reset with "too late" advice.
+        Progress.Metrics m = new Progress.Metrics(40, 34, 10, 3, 34 * 2.8, 0, 0, 34 * 0.95, 8, 5);
+        Detail d = Detail.ofCounts(40, 37, 1, 1, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                3, 1, 6, 2, 5, 3, 1, 0, 0, 2, 10, 1, 0, 0);
+        Report.Result r = Report.of(m, d, null, null, 1, 0, 0);
+        check("report: aim good", r.line(Report.Skill.AIM).grade() == SkillScores.Grade.GOOD);
+        check("report: jump reset is the main focus", !r.focus().isEmpty() && r.focus().get(0).skill() == Report.Skill.JUMP_RESET
+                && r.focus().get(0).en().contains("too late"));
+        check("report: headline names strength and weakness", String.join(" ", r.headline(true)).contains("Strength: ")
+                && String.join(" ", r.headline(true)).contains("Biggest thing to improve: Jump reset"));
+        check("report: at most three focus points", r.focus().size() <= 3);
+
+        // Sessions by day and blocks.
+        long day = 24L * 3600 * 1000, t0 = 100 * day;
+        List<Progress.Summary> sums = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            Progress.Metrics mi = new Progress.Metrics(20, i < 6 ? 10 : 16, 0, 0, 0, 0, 0, 0);
+            sums.add(new Progress.Summary("r" + i, t0 + i * day + 3600_000, 600_000, List.of(), mi, Map.of(), Detail.ZERO));
+            if (i == 3) sums.add(new Progress.Summary("r3b", t0 + i * day + 7200_000, 600_000, List.of(), mi, Map.of(), Detail.ZERO));
+        }
+        java.time.ZoneId utc = java.time.ZoneId.of("UTC");
+        List<Report.Session> byDay = Report.sessions(sums, true, utc), byRec = Report.sessions(sums, false, utc);
+        check("report: sessions by day and by recording", byDay.size() == 12 && byRec.size() == 13 && byDay.get(3).recordings() == 2);
+        Report.Result last5 = Report.last(byDay, 5);
+        Report.Line hit = last5.line(Report.Skill.HITTING);
+        check("report: last block vs the one before", last5.sessions() == 5 && last5.hasPrevious() && Math.abs(hit.value() - 80) < 1e-9
+                && Math.abs(hit.previous() - 55) < 1e-9 && hit.better() > 0);
+        check("report: trend sentence", String.join(" ", last5.headline(false)).contains("Better than before: Hitting"));
+        check("report: windows and milestones", Report.windows(12, 5).equals(List.of(5, 10, 12)) && Report.windows(3, 5).equals(List.of(3))
+                && Report.milestone(12, 5) == 10 && Report.milestone(4, 5) == 0);
+        Settings st = new Settings();
+        st.reportStep = 7;
+        st.reportByDay = false;
+        st.lastReport = 14;
+        Settings sb = Settings.fromMap(st.toMap());
+        check("report: settings saved", sb.reportStep == 7 && !sb.reportByDay && sb.lastReport == 14 && new Settings().diffCount(sb) >= 2);
+        Lang.set(Lang.DE);
+        check("report: german text", String.join(" ", r.headline(true)).contains("Größte Baustelle"));
         Lang.setEnglish(false);
     }
 }

@@ -936,9 +936,10 @@ final class StatsView {
             y += LINE + 4;
         }
         y = hiddenLine(ui, x, y, w);
+        y = summaryBlock(ui, x, y, w);
         y = coachBlock(ui, x, y, w);
         y = compareLine(ui, x, y, w);
-        y = insightsBlock(ui, x, y, w);
+        if (CombatDataClient.settings().expertMode) y = insightsBlock(ui, x, y, w);
         boolean expert = CombatDataClient.settings().expertMode;
         Stats.HitStats hs = res.hits();
         int attacksTotal = hs.confirmed() + hs.unconfirmed() + hs.misses();
@@ -1059,6 +1060,68 @@ final class StatsView {
         }
         int rowsN = (tiles.size() + cols - 1) / cols;
         return y + rowsN * (th + gap) + 2;
+    }
+
+    /**
+     * The verdict for this recording in plain sentences, then up to three things to train, each with its reason.
+     * Click a point to open its page.
+     */
+    private int summaryBlock(Ui ui, int x, int y, int w) {
+        Stats.HitStats hs = res.hits();
+        if (hs.confirmed() + hs.unconfirmed() + hs.misses() + res.combo().taken() == 0) return y;
+        Report.Result r = Report.of(Progress.Metrics.of(res), Detail.of(res, aimRes), null, null, 1, 0, 0);
+        List<String> head = r.headline(true);
+        List<String> lines = new ArrayList<>();
+        for (String sent : head) lines.addAll(ui.wrap(sent, w - 16));
+        int fh = 0;
+        List<List<String>> fl = new ArrayList<>();
+        for (Report.Focus fo : r.focus()) {
+            List<String> ls = ui.wrap(fo.text(), w - 30);
+            fl.add(ls);
+            fh += ls.size() * LINE + 3;
+        }
+        int bh = 6 + LINE + 2 + lines.size() * LINE + (fl.isEmpty() ? 0 : 6 + LINE + fh) + 4;
+        box(ui, x, y, w, bh, false);
+        ui.g.fill(x, y + 3, x + 3, y + bh - 3, Theme.ACCENT);
+        int ty = y + 5;
+        ui.text(Theme.head(t("Итог", "Summary", "Zusammenfassung")), x + 8, ty, Theme.ACCENT);
+        ty += LINE + 2;
+        for (String l : lines) {
+            ui.text(l, x + 8, ty, Theme.TEXT);
+            ty += LINE;
+        }
+        if (!fl.isEmpty()) {
+            ty += 6;
+            ui.text(Theme.head(t("Что тренировать", "What to train", "Was du trainieren solltest")), x + 8, ty, Theme.ACCENT);
+            ty += LINE;
+            for (int i = 0; i < fl.size(); i++) {
+                List<String> ls = fl.get(i);
+                int fhI = ls.size() * LINE;
+                boolean hov = ui.hover(x + 4, ty - 1, w - 8, fhI + 2);
+                if (hov) ui.g.fill(x + 4, ty - 1, x + w - 4, ty + fhI + 1, Theme.ROW_HOVER);
+                ui.text((i + 1) + ".", x + 10, ty, Theme.ACCENT);
+                int ly = ty;
+                for (String l : ls) {
+                    ui.text(l, x + 22, ly, hov ? Theme.TEXT_STRONG : Theme.TEXT);
+                    ly += LINE;
+                }
+                Insights.Page page = pageOf(r.focus().get(i).skill());
+                ui.click(x + 4, ty - 1, w - 8, fhI + 2, () -> go(page));
+                ty += fhI + 3;
+            }
+        }
+        return y + bh + 6;
+    }
+
+    private static Insights.Page pageOf(Report.Skill s) {
+        return switch (s) {
+            case AIM -> Insights.Page.ATTACK_AIM;
+            case HITTING -> Insights.Page.ATTACK_HITS;
+            case CHARGE -> Insights.Page.ATTACK_STRIKES;
+            case JUMP_RESET -> Insights.Page.DEFENSE_JUMP;
+            case TRADES -> Insights.Page.FIGHTS_TRADES;
+            case CAUGHT -> Insights.Page.DEFENSE_TAKEN;
+        };
     }
 
     private boolean glossaryOpen;

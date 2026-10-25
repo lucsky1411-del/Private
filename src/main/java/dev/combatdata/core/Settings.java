@@ -54,6 +54,10 @@ public final class Settings {
     public int uiStyle = Themes.STYLE_JAVA;
     /** The first-start setup has been shown. */
     public boolean setupDone = false;
+    /** Overall report: every N sessions; a session is a play day or one recording. lastReport: last milestone shown. */
+    public int reportStep = 5;
+    public boolean reportByDay = true;
+    public int lastReport = 0;
     public boolean fsTitle = true, fsHits = true, fsJr = true, fsCombo = true, fsTrades = true, fsReach = false,
             fsThreeBlock = false, fsTaken = false, fsColors = true;
     public int fsLayout = FightSummary.LAYOUT_TWO_LINES, fsBgOpacity = 63, fsDelaySec = 10, fsShowSec = 5;
@@ -158,6 +162,8 @@ public final class Settings {
         soundVolume = Math.max(0, Math.min(100, soundVolume));
         language = language >= Lang.AUTO && language <= Lang.DE ? language : Lang.AUTO;
         uiStyle = uiStyle >= Themes.STYLE_CLASSIC && uiStyle <= Themes.STYLE_NORISK ? uiStyle : Themes.STYLE_JAVA;
+        reportStep = Math.max(2, Math.min(100, reportStep));
+        lastReport = Math.max(0, lastReport);
         statPingLimitMs = Math.max(MIN_PING_LIMIT, Math.min(MAX_PING_LIMIT, statPingLimitMs));
         statMinFightHits = Math.max(1, Math.min(MAX_FIGHT_HITS, statMinFightHits));
         tradeGapMs = Math.max(500, Math.min(5000, tradeGapMs));
@@ -243,6 +249,8 @@ public final class Settings {
         expertMode = c.expertMode;
         uiStyle = c.uiStyle;
         setupDone = c.setupDone;
+        reportStep = c.reportStep;
+        reportByDay = c.reportByDay;
         fsTitle = c.fsTitle;
         fsHits = c.fsHits;
         fsJr = c.fsJr;
@@ -272,6 +280,7 @@ public final class Settings {
         a.remove("fsX");
         a.remove("fsY");
         a.remove("indicators");
+        a.remove("lastReport");
         int n = 0;
         for (Map.Entry<String, Object> e : a.entrySet()) if (!e.getValue().equals(b.get(e.getKey()))) n++;
         return n;
@@ -328,6 +337,9 @@ public final class Settings {
         m.put("uiStyle", uiStyle);
         m.put("styleRev", 2);
         m.put("setupDone", setupDone);
+        m.put("reportStep", reportStep);
+        m.put("reportByDay", reportByDay);
+        m.put("lastReport", lastReport);
         m.put("fsTitle", fsTitle);
         m.put("fsHits", fsHits);
         m.put("fsJr", fsJr);
@@ -399,6 +411,9 @@ public final class Settings {
         if (m.get("expertMode") instanceof Boolean b) s.expertMode = b;
         if (m.get("uiStyle") instanceof Number n) s.uiStyle = n.intValue();
         if (m.get("setupDone") instanceof Boolean b) s.setupDone = b;
+        if (m.get("reportStep") instanceof Number n) s.reportStep = n.intValue();
+        if (m.get("reportByDay") instanceof Boolean b) s.reportByDay = b;
+        if (m.get("lastReport") instanceof Number n) s.lastReport = n.intValue();
         if (m.get("fsTitle") instanceof Boolean b) s.fsTitle = b;
         if (m.get("fsHits") instanceof Boolean b) s.fsHits = b;
         if (m.get("fsJr") instanceof Boolean b) s.fsJr = b;

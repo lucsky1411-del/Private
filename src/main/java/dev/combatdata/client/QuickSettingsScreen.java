@@ -84,6 +84,16 @@ public final class QuickSettingsScreen extends Screen {
                         "Sounds of the jump reset indicator. Click: +25%, after 100% back to 0%",
                         "Sounds der Jump-Reset-Anzeige. Klick: +25 %, nach 100 % wieder 0 %"),
                 () -> s().indicators.jrVolume = s().indicators.jrVolume >= 100 ? 0 : Math.min(100, (s().indicators.jrVolume / 25 + 1) * 25)));
+        rows.add(new Row(() -> t("Общий отчёт каждые", "Overall report every", "Gesamtbericht alle") + " " + s().reportStep + " "
+                + (s().reportByDay ? t("дней", "play days", "Spieltage") : t("записей", "recordings", "Aufnahmen")),
+                () -> t("Клик: 5, 7, 10, 20. День или запись меняется во вкладке «Отчёт».", "Click: 5, 7, 10, 20. Day or recording is set on the Report tab.",
+                        "Klick: 5, 7, 10, 20. Tag oder Aufnahme stellst du im Tab „Bericht“ ein."),
+                () -> {
+                    int[] st = {5, 7, 10, 20};
+                    int i = 0;
+                    while (i < st.length && st[i] != s().reportStep) i++;
+                    s().reportStep = st[(i + 1) % st.length];
+                }));
         rows.add(new Row(() -> t("Надпись REC", "REC label", "REC-Anzeige") + ": " + onOff(s().hudVisible),
                 () -> t("Показывает, что идёт запись", "Shows that recording is running", "Zeigt, dass die Aufnahme läuft"),
                 () -> s().hudVisible = !s().hudVisible));

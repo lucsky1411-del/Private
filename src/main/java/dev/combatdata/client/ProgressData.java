@@ -66,6 +66,28 @@ public final class ProgressData {
         t.start();
     }
 
+    /** Sessions as the report counts them (play days or recordings, as set). */
+    public static List<Report.Session> sessions(Snapshot snap, Settings s) {
+        return Report.sessions(snap.summaries(), s.reportByDay, java.time.ZoneId.systemDefault());
+    }
+
+    /** Tells the player in chat when a new overall report is ready (every N sessions). The first run only remembers. */
+    private static void announceMilestone(Snapshot snap) {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        // Settings belong to the main thread.
+        mc.execute(() -> {
+            Settings s = CombatDataClient.settings();
+            int n = sessions(snap, s).size(), m = Report.milestone(n, s.reportStep);
+            if (m <= s.lastReport) return;
+            boolean first = s.lastReport == 0 && n > s.reportStep;
+            s.lastReport = m;
+            CombatDataClient.saveSettings();
+            if (!first) Recorder.chat(mc, Lang.t("Новый общий отчёт: " + m + " сессий. Меню → Отчёт",
+                    "New overall report: " + m + " sessions. Menu → Report",
+                    "Neuer Gesamtbericht: " + m + " Sessions. Menü → Bericht"));
+        });
+    }
+
     private static void run(String key, StatFilter sf, JumpResetEvaluator.Params p, int interp, long gap) {
         try {
             ProgressCache cache = ProgressCache.load(cacheFile());
@@ -104,6 +126,7 @@ public final class ProgressData {
             out.sort(Comparator.comparingLong(Progress.Summary::wallStartMs));
             snapshot = new Snapshot(key, List.copyOf(out), Map.copyOf(byFile));
             version++;
+            announceMilestone(snapshot);
         } catch (Exception ex) {
             CombatDataClient.LOG.error("[CD] прогресс: ошибка расчёта", ex);
         } finally {

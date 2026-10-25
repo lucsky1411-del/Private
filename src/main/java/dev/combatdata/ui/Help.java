@@ -193,4 +193,10 @@ final class Help {
                         "Green: good. Yellow: fair. Red: worth practicing. Grey: not enough data.",
                         "Grün: gut. Gelb: okay. Rot: lohnt sich zu üben. Grau: zu wenig Daten.")});
     }
+
+    static String report() {
+        return t("Общий отчёт объединяет последние сессии: короткий итог, три главных пункта для тренировки и навыки с изменением к прошлому блоку того же размера.\nСессия: день игры или одна запись. Каждые N сессий появляется новый общий отчёт, в чате будет сообщение.",
+                "The overall report combines your last sessions: a short verdict, the three main things to train and your skills with the change against the block of the same size before.\nA session is a play day or one recording. Every N sessions a new overall report is ready and you get a chat message.",
+                "Der Gesamtbericht fasst deine letzten Sessions zusammen: ein kurzes Urteil, die drei wichtigsten Trainingspunkte und deine Fähigkeiten mit der Veränderung zum gleich großen Block davor.\nEine Session ist ein Spieltag oder eine Aufnahme. Alle N Sessions gibt es einen neuen Gesamtbericht und eine Nachricht im Chat.");
+    }
 }

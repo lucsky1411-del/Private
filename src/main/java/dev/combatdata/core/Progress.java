@@ -79,7 +79,12 @@ public final class Progress {
     }
 
     public record Summary(String file, long wallStartMs, long durationMs, List<String> servers, Metrics all,
-                          Map<UUID, Opp> opponents) {
+                          Map<UUID, Opp> opponents, Detail detail) {
+        public Summary(String file, long wallStartMs, long durationMs, List<String> servers, Metrics all,
+                       Map<UUID, Opp> opponents) {
+            this(file, wallStartMs, durationMs, servers, all, opponents, Detail.ZERO);
+        }
+
         public Metrics select(UUID opp) {
             if (opp == null) return all;
             Opp o = opponents.get(opp);
@@ -102,7 +107,7 @@ public final class Progress {
 
     /** Bump the version when the summary format changes; cached summaries with an older key are recomputed. */
     public static String cacheKey(StatFilter sf, JumpResetEvaluator.Params p, int interpMs, long tradeGapMs) {
-        return "v2/" + sf + "/" + p + "/" + interpMs + "/" + tradeGapMs;
+        return "v3/" + sf + "/" + p + "/" + interpMs + "/" + tradeGapMs;
     }
 
     public static Summary summarize(String file, Recording r, JumpResetEvaluator.Params p, int interpMs, StatFilter sf) {
@@ -130,7 +135,8 @@ public final class Progress {
         }
         Set<String> servers = new LinkedHashSet<>();
         for (Event e : r.events()) if (e instanceof SegmentEvent s && s.server() != null) servers.add(s.server());
-        return new Summary(file, r.wallStartMs(), r.durationMs(), List.copyOf(servers), Metrics.of(all), opps);
+        Detail detail = Detail.of(all, AimAnalysis.analyze(kept, AttackEvent.DEFAULT_RANGE));
+        return new Summary(file, r.wallStartMs(), r.durationMs(), List.copyOf(servers), Metrics.of(all), opps, detail);
     }
 
     public static List<Event> dropSmallFights(List<Event> ev, StatFilter sf) {
@@ -264,6 +270,7 @@ public final class Progress {
             opp.put(e.getKey().toString(), x);
         }
         o.put("opp", opp);
+        o.put("det", s.detail().toJson());
         return o;
     }
 
@@ -282,7 +289,8 @@ public final class Progress {
                 }
             }
         }
-        return new Summary(file, lng(m, "start"), lng(m, "dur"), List.copyOf(servers), metrics(m.get("all")), opps);
+        return new Summary(file, lng(m, "start"), lng(m, "dur"), List.copyOf(servers), metrics(m.get("all")), opps,
+                Detail.fromJson(m.get("det")));
     }
 
     private static int num(Map<?, ?> m, String k) {

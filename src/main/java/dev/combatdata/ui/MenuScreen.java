@@ -19,7 +19,7 @@ import org.lwjgl.glfw.GLFW;
 public final class MenuScreen extends Screen {
     public enum TabId {
         RECORDINGS("Записи", "Recordings", "Aufnahmen"), VIEW("Просмотр", "View", "Ansicht"),
-        PROGRESS("Прогресс", "Progress", "Fortschritt"), INDICATORS("Индикаторы", "Indicators", "Indikatoren"),
+        PROGRESS("Прогресс", "Progress", "Fortschritt"), REPORT("Отчёт", "Report", "Bericht"), INDICATORS("Индикаторы", "Indicators", "Indikatoren"),
         SETTINGS("Настройки", "Settings", "Einstellungen");
         private final String ru, en, de;
 
@@ -43,6 +43,7 @@ public final class MenuScreen extends Screen {
     final RecordingsTab recordings = new RecordingsTab(this);
     final ViewTab view = new ViewTab(this);
     final ProgressTab progress = new ProgressTab(this);
+    final ReportTab report = new ReportTab(this);
     final IndicatorsTab indicators = new IndicatorsTab(this);
     final SettingsTab settingsTab = new SettingsTab(this);
     private TabId tab = lastTab;
@@ -111,6 +112,7 @@ public final class MenuScreen extends Screen {
             case RECORDINGS -> recordings;
             case VIEW -> view;
             case PROGRESS -> progress;
+            case REPORT -> report;
             case INDICATORS -> indicators;
             case SETTINGS -> settingsTab;
         };
@@ -267,6 +269,7 @@ public final class MenuScreen extends Screen {
             {"#########", "#.#.#.#.#", "#########", "#.......#", "#.......#", "#.......#", "#########", "#.#.#.#.#", "#########"},
             {".......#.", ".......#.", "....#..#.", "....#..#.", ".#..#..#.", ".#..#..#.", ".#..#..#.", ".#..#..#.", "#########"},
             {"........#", ".......#.", "......#..", "...#.#...", "..#.#....", ".#.......", "#........", ".........", "#########"},
+            {"..#####..", "#########", "#.......#", "#.#####.#", "#.......#", "#.####..#", "#.......#", "#.#####.#", "#########"},
             {".##...##.", "####.####", "#########", "#########", ".#######.", "..#####..", "...###...", "....#....", "........."},
             {"...###...", ".#.###.#.", "..#####..", "###...###", "###...###", "###...###", "..#####..", ".#.###.#.", "...###..."}};
 

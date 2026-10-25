@@ -318,6 +318,8 @@ public final class Recorder {
                 Files.createDirectories(dir);
                 Cdrec.write(file, rec, modVersion());
                 ProgressData.invalidate();
+                // Recompute in the background so a reached report milestone is announced right away.
+                ProgressData.request(CombatDataClient.settings(), false);
                 CombatDataClient.LOG.info("[CD] {}: {} ({} событий)", auto ? "автосохранение" : "запись сохранена",
                         file, rec.events().size());
                 lastSavedAuto = auto;
@@ -372,7 +374,7 @@ public final class Recorder {
         }
     }
 
-    static void chat(Minecraft mc, String text) {
+    public static void chat(Minecraft mc, String text) {
         if (mc.player != null) mc.player.displayClientMessage(Component.literal("[Combat Data] " + text), false);
     }
 
