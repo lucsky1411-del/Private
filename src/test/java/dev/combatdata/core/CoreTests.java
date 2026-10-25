@@ -1745,6 +1745,15 @@ public final class CoreTests {
         check("coach: texts in every language", !tiles.get(0).explain().isEmpty() && !tiles.get(0).target().isEmpty());
         Lang.set(Lang.DE);
         check("coach: german name", tiles.get(0).name().equals("Zielen") && tiles.get(0).gradeText().equals("gut"));
+        long now = 30L * 24 * 3600 * 1000;
+        Progress.Metrics good = new Progress.Metrics(20, 16, 0, 0, 0, 0, 0, 0), bad = new Progress.Metrics(20, 10, 0, 0, 0, 0, 0, 0);
+        List<Progress.Summary> sums = List.of(
+                new Progress.Summary("a", now - 2L * 24 * 3600 * 1000, 60_000, List.of(), good, Map.of()),
+                new Progress.Summary("b", now - 9L * 24 * 3600 * 1000, 60_000, List.of(), bad, Map.of()),
+                new Progress.Summary("c", now - 20L * 24 * 3600 * 1000, 60_000, List.of(), bad, Map.of()));
+        Progress.Week hr = Progress.weeks(sums, now).get(0);
+        check("progress: week vs last week", hr.metric() == Progress.Metric.HIT_RATE && Math.abs(hr.current() - 80) < 1e-9
+                && Math.abs(hr.previous() - 50) < 1e-9 && Math.abs(hr.diff() - 30) < 1e-9);
         Lang.setEnglish(false);
     }
 }

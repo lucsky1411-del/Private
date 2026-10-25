@@ -264,6 +264,7 @@ final class ProgressTab implements Tab {
         if (error != null) head = error;
         ui.text(Draw.ellipsize(ui.font, head, w), x, top, error != null ? Theme.RED : Theme.MUTED);
         top += 12;
+        top = weekStrip(ui, snap, x, top, w);
         ph = y + h - top;
         if (points.isEmpty()) {
             Draw.roundBordered(ui.g, x, top, w, ph, Theme.R_PANEL, Theme.BORDER, Theme.PANEL);
@@ -274,6 +275,37 @@ final class ProgressTab implements Tab {
             return;
         }
         chart(ui, snap, x, top, w, ph);
+    }
+
+    /**
+     * Each skill this week with the change against last week, so progress is visible without reading the chart.
+     * Green: better, red: worse (for 3 block hit higher is better too: it counts your own). Click picks the metric.
+     */
+    private int weekStrip(Ui ui, ProgressData.Snapshot snap, int x, int y, int w) {
+        List<Progress.Week> weeks = Progress.weeks(snap.summaries(), System.currentTimeMillis());
+        boolean any = false;
+        for (Progress.Week wk : weeks) any |= Double.isFinite(wk.current());
+        if (!any) return y;
+        ui.text(t("Эта неделя против прошлой:", "This week vs last week:", "Diese Woche vs. letzte Woche:"), x, y + 2, Theme.DIM);
+        Flow f = new Flow(x, y + 13, w);
+        for (Progress.Week wk : weeks) {
+            if (!Double.isFinite(wk.current())) continue;
+            double d = wk.diff();
+            String ds = !Double.isFinite(d) ? "" : wk.metric().percent ? " " + (d >= 0 ? "▲" : "▼") + Fmt.num(Math.abs(d), 0)
+                    : " " + (d >= 0 ? "▲" : "▼") + Fmt.num(Math.abs(d), 2);
+            String label = metricName(wk.metric(), true) + " " + value(wk.metric(), wk.current()) + ds;
+            int cw = ui.font.width(label) + 12;
+            int[] p = f.place(cw, false);
+            boolean sel = wk.metric() == metric;
+            Progress.Metric m = wk.metric();
+            ui.chip(p[0], p[1], cw, label, sel, () -> {
+                metric = m;
+            });
+            if (Double.isFinite(d) && Math.abs(d) >= (m.percent ? 1 : 0.02)) {
+                ui.g.fill(p[0] + 3, p[1] + 12, p[0] + cw - 3, p[1] + 13, d > 0 ? Theme.GREEN : Theme.RED);
+            }
+        }
+        return f.bottom() + 4;
     }
 
     private String summaryLine(ProgressData.Snapshot snap) {

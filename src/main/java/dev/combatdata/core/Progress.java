@@ -188,6 +188,28 @@ public final class Progress {
         if (!Double.isNaN(v)) out.add(new Point(t, v, m.samples(sum), src));
     }
 
+    public static final long WEEK_MS = 7L * 24 * 3600 * 1000;
+
+    /** This week against the week before, per metric; values are NaN without enough data. */
+    public record Week(Metric metric, double current, double previous) {
+        public double diff() {
+            return Double.isFinite(current) && Double.isFinite(previous) ? current - previous : Double.NaN;
+        }
+    }
+
+    public static List<Week> weeks(List<Summary> all, long nowMs) {
+        Metrics cur = Metrics.ZERO, prev = Metrics.ZERO;
+        for (Summary s : all) {
+            long age = nowMs - s.wallStartMs();
+            if (age < 0) continue;
+            if (age < WEEK_MS) cur = cur.plus(s.all());
+            else if (age < 2 * WEEK_MS) prev = prev.plus(s.all());
+        }
+        List<Week> out = new ArrayList<>();
+        for (Metric m : Metric.values()) out.add(new Week(m, m.value(cur), m.value(prev)));
+        return out;
+    }
+
     public static List<Summary> previous(List<Summary> all, long beforeMs, int n) {
         List<Summary> out = new ArrayList<>();
         for (Summary s : all) if (s.wallStartMs() < beforeMs) out.add(s);

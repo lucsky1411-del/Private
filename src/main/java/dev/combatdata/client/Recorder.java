@@ -244,7 +244,7 @@ public final class Recorder {
         boolean open = menuRequested;
         menuRequested = false;
         while (CombatDataClient.MENU.consumeClick()) open = true;
-        if (open && mc.screen == null) mc.setScreen(new dev.combatdata.ui.MenuScreen());
+        if (open && mc.screen == null) mc.setScreen(dev.combatdata.client.SetupScreen.entry());
     }
 
     public static int bufferSize() { return BUFFER.size(); }
