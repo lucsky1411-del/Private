@@ -39,6 +39,30 @@ final class StatsView {
         };
     }
 
+    /**
+     * Pages shown in the selector. The simple view hides the detail pages (W-tap, knockback, timeline); a hidden page
+     * opened from an insight still shows, with the full list.
+     */
+    private static int[] modeMap(int sub, int cur) {
+        int n = modes(sub, false).length;
+        int[] all = new int[n];
+        for (int i = 0; i < n; i++) all[i] = i;
+        if (CombatDataClient.settings().expertMode) return all;
+        int[] simple = switch (sub) {
+            case ATTACK -> new int[]{A_HITS, A_AIM, A_STRIKES, A_COMBO};
+            case DEFENSE -> new int[]{D_JUMP, D_TAKEN};
+            default -> new int[]{F_OPPONENTS, F_FIGHTS, F_TRADES, F_DISTANCE};
+        };
+        for (int v : simple) if (v == cur) return simple;
+        return all;
+    }
+
+    private static String[] pick(String[] names, int[] map) {
+        String[] out = new String[map.length];
+        for (int i = 0; i < map.length; i++) out[i] = names[map[i]];
+        return out;
+    }
+
     interface Header {
         void draw(Ui ui, int x, int y, int w);
     }
@@ -334,14 +358,17 @@ final class StatsView {
         Flow f = new Flow(x, y, w);
         boolean any = false;
         if (sub != OVERVIEW) {
-            String[] m = modes(sub, false);
-            if (ui.segmentedWidth(m) > w) m = modes(sub, true);
-            int[] p = f.place(ui.segmentedWidth(m), false);
             int cur = sub == ATTACK ? attackMode : sub == DEFENSE ? defenseMode : fightsMode;
-            ui.segmented(p[0], p[1], m, cur, i -> {
-                if (sub == ATTACK) attackMode = i;
-                else if (sub == DEFENSE) defenseMode = i;
-                else fightsMode = i;
+            int[] map = modeMap(sub, cur);
+            String[] m = pick(modes(sub, false), map);
+            if (ui.segmentedWidth(m) > w) m = pick(modes(sub, true), map);
+            int[] p = f.place(ui.segmentedWidth(m), false);
+            int shown = 0;
+            for (int k = 0; k < map.length; k++) if (map[k] == cur) shown = k;
+            ui.segmented(p[0], p[1], m, shown, i -> {
+                if (sub == ATTACK) attackMode = map[i];
+                else if (sub == DEFENSE) defenseMode = map[i];
+                else fightsMode = map[i];
                 scroll = 0;
             });
             any = true;
@@ -357,6 +384,18 @@ final class StatsView {
                     scroll = 0;
                 });
             }
+        }
+        {
+            boolean ex = CombatDataClient.settings().expertMode;
+            String label = t("Вид: ", "View: ", "Ansicht: ") + (ex ? t("эксперт", "expert", "Experte") : t("простой", "simple", "einfach"));
+            int cw = ui.font.width(label) + 12;
+            int[] p = f.place(cw, false);
+            ui.chip(p[0], p[1] + 3, cw, label, ex, () -> {
+                CombatDataClient.settings().expertMode = !CombatDataClient.settings().expertMode;
+                CombatDataClient.saveSettings();
+                scroll = 0;
+            });
+            any = true;
         }
         if (rec != null) {
             StatFilter.WeaponView wv = weaponView();
@@ -897,8 +936,10 @@ final class StatsView {
             y += LINE + 4;
         }
         y = hiddenLine(ui, x, y, w);
+        y = coachBlock(ui, x, y, w);
         y = compareLine(ui, x, y, w);
         y = insightsBlock(ui, x, y, w);
+        boolean expert = CombatDataClient.settings().expertMode;
         List<Card> cards = new ArrayList<>();
         Stats.HitStats hs = res.hits();
         int attacksTotal = hs.confirmed() + hs.unconfirmed() + hs.misses();
@@ -907,6 +948,11 @@ final class StatsView {
         } else {
             cards.add(hitsCard(hs).with(Help.hits()));
             cards.add(jumpCard(res.jump()).with(Help.jump()));
+        }
+        if (attacksTotal > 0 && !expert) {
+            cards.add(aimCard(hs, aimRes).with(Help.aim()));
+            cards.add(tradesCard(res.trades()).with(Help.trades()));
+        } else if (attacksTotal > 0 || res.combo().taken() > 0) {
             if (res.taken().rated() > 0) cards.add(takenCard(res.taken(), res.threeBlock()).with(Help.taken()));
             cards.add(reachCard(hs).with(Help.reach()));
             cards.add(aimCard(hs, aimRes).with(Help.aim()));
@@ -920,7 +966,7 @@ final class StatsView {
                     new Kv(t("Средний", "Mean", "Ø"), res.pingMean() > 0 ? Fmt.num(res.pingMean(), 0) + t(" мс", " ms") : "—"),
                     new Kv(t("Разброс σ", "Spread σ", "Streuung σ"), res.pingMean() > 0 ? Fmt.num(res.pingSigma(), 0) + t(" мс", " ms") : "—")), 2).with(Help.ping()));
         }
-        cards.add(recordCard());
+        if (expert) cards.add(recordCard());
         int cols = w >= 330 ? 2 : 1, gap = 8, cw = (w - gap * (cols - 1)) / cols;
         int[] colY = new int[cols];
         Arrays.fill(colY, y);
@@ -934,7 +980,78 @@ final class StatsView {
         }
         int bottom = y;
         for (int v : colY) bottom = Math.max(bottom, v);
-        return bottom;
+        return glossaryBlock(ui, x, bottom + 2, w);
+    }
+
+    /** Key numbers: graded color, or strong text when there is too little data to judge. */
+    private static int graded(SkillScores.Grade g) {
+        return g == SkillScores.Grade.NONE ? Theme.TEXT_STRONG : gradeColor(g);
+    }
+
+    private static int gradeColor(SkillScores.Grade g) {
+        return switch (g) {
+            case GOOD -> Theme.GREEN;
+            case FAIR -> Theme.AMBER;
+            case WORK -> Theme.RED;
+            case NONE -> Theme.DIM;
+        };
+    }
+
+    /** One tile per skill: grade, value, what is good and what the number means. Click opens the skill's page. */
+    private int coachBlock(Ui ui, int x, int y, int w) {
+        Stats.HitStats hs = res.hits();
+        if (hs.confirmed() + hs.unconfirmed() + hs.misses() + res.combo().taken() == 0) return y;
+        List<SkillScores.Tile> tiles = SkillScores.tiles(res, aimRes);
+        int cols = w >= 440 ? 4 : w >= 220 ? 2 : 1, gap = 6, tw = (w - gap * (cols - 1)) / cols;
+        int th = 4 + LINE * 2 + 2;
+        int maxLines = 1;
+        for (SkillScores.Tile tl : tiles) maxLines = Math.max(maxLines, Math.min(3, ui.wrap(tl.explain(), tw - 14).size()));
+        th += maxLines * LINE + 4;
+        for (int i = 0; i < tiles.size(); i++) {
+            SkillScores.Tile tl = tiles.get(i);
+            int tx = x + (i % cols) * (tw + gap), ty = y + (i / cols) * (th + gap);
+            int color = gradeColor(tl.grade());
+            boolean hov = ui.hover(tx, ty, tw, th);
+            Draw.round(ui.g, tx, ty, tw, th, Theme.R_CTRL, hov ? Theme.ROW_HOVER : Theme.WINDOW);
+            ui.g.fill(tx, ty + 3, tx + 3, ty + th - 3, color);
+            ui.text(Draw.ellipsize(ui.font, tl.name(), tw - 60), tx + 8, ty + 4, Theme.TEXT_STRONG);
+            ui.textRight(tl.gradeText(), tx + tw - 5, ty + 4, color);
+            String v = tl.value();
+            ui.text(v, tx + 8, ty + 4 + LINE, color);
+            line(ui, tw - 16 - ui.font.width(v), "  " + tl.target(), tx + 8 + ui.font.width(v), ty + 4 + LINE, Theme.DIM);
+            int ly = ty + 6 + LINE * 2;
+            List<String> ls = ui.wrap(tl.explain(), tw - 14);
+            for (int k = 0; k < Math.min(3, ls.size()); k++) {
+                ui.text(ls.get(k), tx + 8, ly, Theme.MUTED);
+                ly += LINE;
+            }
+            Insights.Page page = tl.page();
+            ui.click(tx, ty, tw, th, () -> go(page));
+        }
+        int rowsN = (tiles.size() + cols - 1) / cols;
+        return y + rowsN * (th + gap) + 2;
+    }
+
+    private boolean glossaryOpen;
+
+    /** Terms used across the mod, explained once in plain words. */
+    private int glossaryBlock(Ui ui, int x, int y, int w) {
+        String head = (glossaryOpen ? "▾ " : "▸ ") + t("Словарь терминов", "Glossary", "Begriffe erklärt");
+        boolean hov = ui.hover(x, y, w, 14);
+        ui.text(head, x, Ui.textY(y, 14), hov ? Theme.TEXT_STRONG : Theme.MUTED);
+        ui.click(x, y, w, 14, () -> glossaryOpen = !glossaryOpen);
+        y += 16;
+        if (!glossaryOpen) return y;
+        for (String[] e : Help.glossary()) {
+            ui.text(e[0], x + 4, y, Theme.TEXT_STRONG);
+            y += LINE;
+            for (String l : ui.wrap(e[1], w - 12)) {
+                if (visible(y, LINE)) ui.text(l, x + 8, y, Theme.MUTED);
+                y += LINE;
+            }
+            y += 3;
+        }
+        return y;
     }
 
     private int hiddenLine(Ui ui, int x, int y, int w) {
@@ -1083,7 +1200,8 @@ final class StatsView {
 
     private static Card hitsCard(Stats.HitStats h) {
         return new Card(t("Попадания", "Hits", "Treffer"), List.of(
-                new Kv(t("Точность", "Accuracy", "Trefferquote"), Fmt.pct(h.hitRatePct()), Theme.TEXT_STRONG),
+                new Kv(t("Точность", "Accuracy", "Trefferquote"), Fmt.pct(h.hitRatePct()), graded(SkillScores.grade(
+                        h.confirmed() + h.unconfirmed() + h.misses() >= SkillScores.MIN_ATTACKS ? h.hitRatePct() : Double.NaN, 75, 60))),
                 new Kv(t("Подтверждено уроном", "Confirmed by damage", "Durch Schaden bestätigt"), String.valueOf(h.confirmed()), Theme.GREEN),
                 new Kv(t("Промахов", "Misses", "Fehlschläge"), String.valueOf(h.misses()), h.misses() > 0 ? Theme.RED : Theme.TEXT),
                 new Kv(t("  из них не дотянулся", "  of them out of range", "  davon zu weit weg"), String.valueOf(h.missesOutOfRange())),
@@ -1093,7 +1211,7 @@ final class StatsView {
     private static Card reachCard(Stats.HitStats h) {
         boolean none = h.confirmed() == 0;
         return new Card(t("Дистанция ударов, блоков", "Hit distance, blocks", "Trefferdistanz, Blöcke"), List.of(
-                new Kv(t("Средняя", "Mean", "Ø"), none ? "—" : Fmt.num(h.reachMean(), 2), Theme.TEXT_STRONG),
+                new Kv(t("Средняя", "Mean", "Ø"), none ? "—" : Fmt.num(h.reachMean(), 2), graded(none ? SkillScores.Grade.NONE : SkillScores.reach(h.reachMean()))),
                 new Kv(t("Дальше дальности", "Past range", "Über Reichweite"), none ? "—" : Fmt.pct(h.sharePastRangePct())),
                 new Kv(t("Медиана", "Median"), none ? "—" : Fmt.num(h.reachMedian(), 2)),
                 new Kv(t("Максимум", "Max", "Max."), none ? "—" : Fmt.num(h.reachMax(), 2)),
@@ -1107,7 +1225,8 @@ final class StatsView {
         String misses = ar.aimMisses() == 0 ? "—" : t("← ", "← ") + ar.sideMisses(AimAnalysis.Side.LEFT) + "  → " + ar.sideMisses(AimAnalysis.Side.RIGHT)
                 + "  ↑ " + ar.sideMisses(AimAnalysis.Side.ABOVE) + "  ↓ " + ar.sideMisses(AimAnalysis.Side.BELOW);
         return new Card(t("Прицел", "Aim", "Zielen"), List.of(
-                new Kv(t("Прицел на противнике", "Crosshair on opponent", "Fadenkreuz auf Gegner"), ar.total() == 0 ? "—" : Fmt.pct(ar.accuracyPct()), Theme.TEXT_STRONG),
+                new Kv(t("Прицел на противнике", "Crosshair on opponent", "Fadenkreuz auf Gegner"), ar.total() == 0 ? "—" : Fmt.pct(ar.accuracyPct()),
+                        graded(SkillScores.grade(ar.total() >= SkillScores.MIN_AIM ? ar.accuracyPct() : Double.NaN, 85, 70))),
                 new Kv(t("Промахи (куда ушёл прицел)", "Misses (where the crosshair went)", "Fehlschläge (wohin das Fadenkreuz ging)"), misses),
                 new Kv(t("По горизонтали (yaw)", "Horizontal (yaw)", "Horizontal (Yaw)"), none ? "—" : Fmt.num(h.aimYawAbsMean(), 1) + "°"),
                 new Kv(t("Средний сдвиг yaw", "Mean yaw offset", "Ø Yaw-Versatz"), none ? "—" : Fmt.signed(bias, 1) + "°" + side),
@@ -1132,7 +1251,8 @@ final class StatsView {
     private static Card jumpCard(Stats.JumpStats j) {
         boolean none = j.attempts() == 0, noSucc = j.success() == 0;
         List<Kv> rows = new ArrayList<>(List.of(
-                new Kv(t("Успешных", "Successful", "Erfolgreich"), j.success() + (none ? "" : " (" + Fmt.pct(j.successRatePct()) + ")"), Theme.GREEN),
+                new Kv(t("Успешных", "Successful", "Erfolgreich"), j.success() + (none ? "" : " (" + Fmt.pct(j.successRatePct()) + ")"),
+                        graded(SkillScores.grade(j.attempts() >= SkillScores.MIN_JR ? j.successRatePct() : Double.NaN, 60, 40))),
                 new Kv(t("Попыток", "Attempts", "Versuche"), String.valueOf(j.attempts())),
                 new Kv(t("Рано / поздно", "Early / late", "Zu früh / zu spät"), j.early() + " / " + j.late(), j.early() + j.late() > 0 ? Theme.RED : Theme.TEXT),
                 new Kv(t("Без прыжка", "No jump", "Kein Sprung"), String.valueOf(j.noAttempt())),
@@ -1161,7 +1281,8 @@ final class StatsView {
 
     private Card chargeCard(Stats.HitStats hs) {
         return new Card(t("Заряд атаки", "Attack charge", "Schlagaufladung"), List.of(
-                new Kv(t("Средний заряд", "Mean charge", "Ø Aufladung"), hs.confirmed() == 0 ? "—" : Fmt.pct(hs.strengthMean() * 100), Theme.TEXT_STRONG),
+                new Kv(t("Средний заряд", "Mean charge", "Ø Aufladung"), hs.confirmed() == 0 ? "—" : Fmt.pct(hs.strengthMean() * 100),
+                        graded(hs.confirmed() == 0 ? SkillScores.Grade.NONE : SkillScores.charge(hs.strengthMean()))),
                 new Kv(t("Без заряда (по интервалам)", "Uncharged (by intervals)", "Ungeladen (nach Abständen)"), cdSummary().n() == 0 ? "—"
                         : cdSummary().rushed() + " (" + Fmt.pct(cdSummary().rushedPct()) + ")"),
                 new Kv(t("Полный (выше 0.9)", "Full (above 0.9)", "Voll (über 0,9)"), hs.confirmed() == 0 ? "—" : Fmt.pct(hs.fullChargePct())),
@@ -1420,6 +1541,7 @@ final class StatsView {
             }
         }
         y += 6;
+        if (!CombatDataClient.settings().expertMode) return y;
 
         double[] yaw = ar.samples().stream().mapToDouble(sm -> sm.a().aimYawDeg()).toArray();
         double[] pitch = ar.samples().stream().mapToDouble(sm -> sm.a().aimPitchDeg()).toArray();
@@ -1840,7 +1962,7 @@ final class StatsView {
     private static Card takenCard(Stats.TakenStats tk, Stats.ThreeBlockStats mine) {
         return new Card(t("Удары по вам", "Hits on you", "Treffer auf dich"), List.of(
                 new Kv(t("3 block hit против вас", "3 block hit against you", "3 Block Hit gegen dich"), tk.caught() + " (" + Fmt.pct(tk.caughtPct()) + ")",
-                        tk.caughtPct() >= 25 ? Theme.RED : Theme.TEXT_STRONG),
+                        graded(SkillScores.caught(tk.caughtPct()))),
                 new Kv(t("Средняя дистанция", "Mean distance", "Ø Distanz"), Fmt.num(tk.reachMean(), 2) + t(" бл.", " bl.", " Bl.")),
                 new Kv(t("Ваши 3 block hit", "Your 3 block hits", "Deine 3 Block Hits"), mine.classified() == 0 ? "—" : Fmt.pct(mine.sharePct())),
                 new Kv(t("Максимум", "Max", "Max."), Fmt.num(tk.reachMax(), 2) + t(" бл.", " bl.", " Bl.")),
@@ -1916,7 +2038,8 @@ final class StatsView {
     private static Card tradesCard(Trades.Summary s) {
         if (s.total() == 0) return new Card(t("Размены", "Trades"), List.of(new Kv(t("Разменов нет", "No trades", "Keine Trades"), "")), 1);
         List<Kv> rows = new ArrayList<>(List.of(
-                new Kv(t("Первый удар", "First hit", "Erster Treffer"), Fmt.pct(s.firstPct()) + " (" + s.first() + "/" + s.total() + ")", Theme.TEXT_STRONG),
+                new Kv(t("Первый удар", "First hit", "Erster Treffer"), Fmt.pct(s.firstPct()) + " (" + s.first() + "/" + s.total() + ")",
+                        graded(s.total() >= SkillScores.MIN_TRADES ? SkillScores.firstHit(s.firstPct()) : SkillScores.Grade.NONE)),
                 new Kv(t("Победы / поражения / ничьи", "Won / lost / drawn", "Gewonnen / verloren / unentschieden"), s.wins() + " / " + s.losses() + " / " + s.draws()),
                 new Kv(t("Вес ударов: ваших / его", "Hit weight: yours / theirs", "Treffergewicht: deins / seins"), Fmt.num(s.weightMine(), 1) + " / " + Fmt.num(s.weightTheirs(), 1)),
                 new Kv(t("Побед, когда вторым", "Won when second", "Gewonnen als Zweiter"), Fmt.pct(s.winSecondPct()), s.countSecond() > 0 && s.winSecondPct() < 30 ? Theme.RED : Theme.TEXT),

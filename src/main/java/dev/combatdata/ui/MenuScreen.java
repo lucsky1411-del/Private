@@ -277,17 +277,22 @@ public final class MenuScreen extends Screen {
      * only the chip stays; Ctrl+F works either way.
      */
     private void findButton(Ui ui, int leftLimit, int closeX, int y) {
-        String label = t("Поиск", "Search", "Suchen"), key = "Ctrl+F";
+        String label = t("Поиск по меню…", "Search the menu…", "Menü durchsuchen…"), key = "Ctrl+F";
         int kw = font.width(key) + 10, lw = font.width(label), right = closeX - 6;
-        boolean withLabel = right - kw - 6 - lw - 6 >= leftLimit + 8;
-        int w = kw + (withLabel ? lw + 12 : 4), x = right - w;
+        boolean withLabel = right - kw - 6 - lw - 24 >= leftLimit + 8;
+        int w = kw + (withLabel ? lw + 28 : 18), x = right - w;
         if (x < leftLimit + 8) return;
         boolean hov = ui.hover(x, y, w, 14);
-        if (hov) Draw.round(ui.g, x, y, w, 14, Theme.R_CTRL, Theme.ROW_HOVER);
-        if (withLabel) ui.text(label, x + 6, Ui.textY(y, 14), hov ? Theme.TEXT : Theme.MUTED);
+        // Looks like a text field so it reads as "you can search here", not as a label.
+        Draw.roundBordered(ui.g, x, y, w, 14, Theme.R_CTRL, hov ? Theme.ACCENT : Theme.BORDER, hov ? Theme.ROW_HOVER : Theme.INSET);
+        int iy = y + (14 - LOUPE.length) / 2, ic = hov ? Theme.ACCENT : Theme.MUTED;
+        for (int r = 0; r < LOUPE.length; r++) {
+            for (int c = 0; c < LOUPE[r].length(); c++) if (LOUPE[r].charAt(c) == '#') ui.g.fill(x + 5 + c, iy + r, x + 6 + c, iy + r + 1, ic);
+        }
+        if (withLabel) ui.text(label, x + 16, Ui.textY(y, 14), hov ? Theme.TEXT : Theme.DIM);
         int kx = right - kw - 2;
-        Draw.roundBordered(ui.g, kx, y + 1, kw, 12, Theme.R_CTRL, hov ? Theme.CTRL_HOVER : Theme.BORDER, Theme.RAISED);
-        ui.textCenter(key, kx + kw / 2, Ui.textY(y + 1, 12), hov ? Theme.TEXT_STRONG : Theme.TEXT);
+        Draw.roundBordered(ui.g, kx, y + 2, kw, 10, Theme.R_CTRL, Theme.BORDER, Theme.RAISED);
+        ui.textCenter(key, kx + kw / 2, Ui.textY(y + 2, 10), hov ? Theme.TEXT_STRONG : Theme.MUTED);
         ui.click(x, y, w, 14, this::openFind);
     }
 

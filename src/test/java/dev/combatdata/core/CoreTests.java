@@ -39,6 +39,7 @@ public final class CoreTests {
         autosaveAndFixes();
         indicators();
         aimCoach();
+        coachAndLanguage();
         // Check names are ASCII: the Windows console (CP866) garbles Cyrillic.
         System.out.println("CoreTests: " + checks + " checks, " + failures + " failed");
         if (failures > 0) System.exit(1);
@@ -1707,6 +1708,43 @@ public final class CoreTests {
         check("aim: generic insight without coach", hasInsight(plain, "aim-miss"));
         check("aim: coach insight replaces generic", !hasInsight(coached, "aim-miss")
                 && coached.stream().anyMatch(i -> i.id().startsWith("aim-coach") && i.page() == Insights.Page.ATTACK_AIM));
+        Lang.setEnglish(false);
+    }
+
+    static void coachAndLanguage() {
+        Lang.set(Lang.DE);
+        check("lang: german picked", Lang.t("ру", "en", "de").equals("de") && Lang.t("ру", "en").equals("en") && Lang.english());
+        Lang.set(Lang.RU);
+        check("lang: russian", Lang.t("ру", "en", "de").equals("ру") && !Lang.english());
+        check("lang: auto follows the game", Lang.resolve(Lang.AUTO, "de_at") == Lang.DE && Lang.resolve(Lang.AUTO, "ru_ru") == Lang.RU
+                && Lang.resolve(Lang.AUTO, "en_us") == Lang.EN && Lang.resolve(Lang.DE, "en_us") == Lang.DE);
+        Settings st = new Settings();
+        st.language = Lang.DE;
+        check("settings: german survives clamp and save", Settings.fromMap(st.clamp().toMap()).language == Lang.DE);
+        st.applyPreset(Settings.PRESET_TRAINING);
+        check("preset: training", st.expertMode && st.indicators.enabled && st.autoSave && st.fightSummary);
+        st.applyPreset(Settings.PRESET_RECORD_ONLY);
+        check("preset: record only", !st.indicators.enabled && !st.hudVisible && !st.fightSummary && st.autoSave && st.recordMode() == Settings.REC_FULL);
+        st.applyPreset(Settings.PRESET_SIMPLE);
+        check("preset: simple", !st.expertMode && !st.indicators.enabled && st.hudVisible);
+        check("settings: expert flag saved", Settings.fromMap(st.toMap()).expertMode == st.expertMode);
+
+        Lang.set(Lang.EN);
+        check("grade: thresholds", SkillScores.grade(90, 85, 70) == SkillScores.Grade.GOOD && SkillScores.grade(75, 85, 70) == SkillScores.Grade.FAIR
+                && SkillScores.grade(50, 85, 70) == SkillScores.Grade.WORK && SkillScores.grade(Double.NaN, 85, 70) == SkillScores.Grade.NONE
+                && SkillScores.caught(5) == SkillScores.Grade.GOOD && SkillScores.caught(40) == SkillScores.Grade.WORK);
+        List<Event> ev = new ArrayList<>();
+        long t = 0;
+        for (int i = 0; i < 18; i++) ev.add(aimAt(t += 600, Outcome.HIT_CONFIRMED, 2.5, 0.3, 0, 0, 0.6, 0, 0, 0, true));
+        for (int i = 0; i < 2; i++) ev.add(aimAt(t += 600, Outcome.MISS, 2.5, 10, 0, Double.NaN, Double.NaN, 0, 0, 0, true));
+        Stats.Result sr = Stats.compute(new Recording(1, "me", new UUID(0, 1), "26.1.2", 0, 30_000, ev), JumpResetEvaluator.Params.DEFAULT, Stats.Filter.ALL, 3);
+        var tiles = SkillScores.tiles(sr, AimAnalysis.analyze(ev, 3));
+        check("coach: four tiles", tiles.size() == 4);
+        check("coach: aim graded good", tiles.get(0).grade() == SkillScores.Grade.GOOD && tiles.get(0).value().equals("90%"));
+        check("coach: no jump data -> none", tiles.get(2).grade() == SkillScores.Grade.NONE && tiles.get(2).value().equals("—"));
+        check("coach: texts in every language", !tiles.get(0).explain().isEmpty() && !tiles.get(0).target().isEmpty());
+        Lang.set(Lang.DE);
+        check("coach: german name", tiles.get(0).name().equals("Zielen") && tiles.get(0).gradeText().equals("gut"));
         Lang.setEnglish(false);
     }
 }

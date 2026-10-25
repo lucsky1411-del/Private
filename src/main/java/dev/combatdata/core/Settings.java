@@ -72,6 +72,42 @@ public final class Settings {
         return m;
     }
 
+    public static final int PRESET_SIMPLE = 0, PRESET_TRAINING = 1, PRESET_RECORD_ONLY = 2;
+
+    /**
+     * Sets the handful of switches that decide how much the mod shows. Everything else (filters, colors, windows)
+     * is kept. Indicators are part of it because they are the most visible thing on screen.
+     */
+    public void applyPreset(int preset) {
+        setRecordMode(REC_FULL);
+        switch (preset) {
+            case PRESET_TRAINING -> {
+                expertMode = true;
+                indicators.enabled = true;
+                hudVisible = true;
+                fightSummary = true;
+                autoSave = true;
+                soundOnSave = true;
+            }
+            case PRESET_RECORD_ONLY -> {
+                expertMode = false;
+                indicators.enabled = false;
+                hudVisible = false;
+                fightSummary = false;
+                autoSave = true;
+                soundOnSave = false;
+            }
+            default -> {
+                expertMode = false;
+                indicators.enabled = false;
+                hudVisible = true;
+                fightSummary = true;
+                autoSave = false;
+                soundOnSave = true;
+            }
+        }
+    }
+
     public int recordMode() {
         int m = notRecordedMask();
         return m == 0 ? REC_FULL : m == Features.LITE ? REC_LITE : REC_CUSTOM;

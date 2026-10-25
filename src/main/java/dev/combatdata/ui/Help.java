@@ -8,8 +8,8 @@ final class Help {
     }
 
     static String overview() {
-        return t("Выводы сверху: самое важное, что видно по записи. Клик по выводу открывает нужный график. Ниже карточки с цифрами, «Подробнее» раскрывает остальное.",
-                "Insights on top: the most important things in this recording. Click one to open the right chart. Below are cards with numbers, \"More\" shows the rest.", "Oben die Erkenntnisse: das Wichtigste aus dieser Aufnahme. Klick auf eine öffnet das passende Diagramm. Darunter Karten mit Zahlen, „Mehr“ zeigt den Rest.");
+        return t("Сверху плитки: оценка по каждому навыку, клик открывает подробности. Затем главные советы и карточки с цифрами. «Вид: простой / эксперт» переключает между главным и всеми цифрами.",
+                "Tiles on top: a grade per skill, click one for details. Then the most important tips, then cards with numbers. \"View: simple / expert\" switches between the key numbers and everything.", "Oben die Kacheln: eine Bewertung pro Fähigkeit, Klick zeigt Details. Dann die wichtigsten Tipps, dann Karten mit Zahlen. „Ansicht: einfach / Experte“ wechselt zwischen den wichtigsten Zahlen und allem.");
     }
 
     static String hits() {
@@ -149,5 +149,48 @@ final class Help {
     static String themes() {
         return t("Тема меняет цвета меню. Выбор видно сразу, сохраняется по «Применить».\nВстроенные темы не меняются: «Создать копию» делает свою, у неё можно поменять каждый цвет (клик по цвету: ползунки, клик по коду: ввести hex) и название.\n«Копировать код» кладёт тему в буфер обмена строкой, её можно отправить другу; «Вставить код» добавляет тему из буфера обмена.",
                 "A theme changes the menu colors. You see the choice right away, it is saved on Apply.\nBuilt-in themes do not change: \"Make a copy\" creates your own, where every color (click a color: sliders, click its code: type hex) and the name can be changed.\n\"Copy code\" puts the theme on the clipboard as text you can send to a friend; \"Paste code\" adds a theme from the clipboard.", "Ein Theme ändert die Menüfarben. Du siehst die Auswahl sofort, gespeichert wird mit „Übernehmen“.\nEingebaute Themes ändern sich nicht: „Kopie erstellen“ legt dein eigenes an, bei dem du jede Farbe (Klick auf Farbe: Regler, Klick auf Code: Hex eingeben) und den Namen ändern kannst.\n„Code kopieren“ legt das Theme als Text in die Zwischenablage, den du einem Freund schicken kannst; „Code einfügen“ fügt ein Theme aus der Zwischenablage hinzu.");
+    }
+
+    /** Terms used across the mod, explained once. */
+    static java.util.List<String[]> glossary() {
+        return java.util.List.of(
+                new String[]{"Jump reset", t("Прыжок сразу после удара по вам. Гасит часть отбрасывания, вы остаётесь ближе к противнику.",
+                        "A jump right after you get hit. It cancels part of the knockback, so you stay closer to the opponent.",
+                        "Ein Sprung direkt nachdem du getroffen wurdest. Er hebt einen Teil des Rückstoßes auf, du bleibst näher am Gegner.")},
+                new String[]{t("Размен (trade)", "Trade", "Trade"), t("Короткий обмен ударами с одним противником. Выигрывает тот, кто попал больше.",
+                        "A short exchange of hits with one opponent. Whoever lands more hits wins it.",
+                        "Ein kurzer Schlagabtausch mit einem Gegner. Wer mehr Treffer landet, gewinnt ihn.")},
+                new String[]{t("Комбо", "Combo", "Combo"), t("Сколько ваших ударов подряд прошло, пока противник не ответил.",
+                        "How many of your hits landed in a row before the opponent hit back.",
+                        "Wie viele deiner Treffer hintereinander saßen, bevor der Gegner zurückschlug.")},
+                new String[]{"3 block hit", t("Удар, который засчитался, хотя на экране противника вы были дальше его дальности: ответить он не мог.",
+                        "A hit that counted although on the opponent's screen you were beyond their reach: they could not hit back.",
+                        "Ein Treffer, der zählte, obwohl du auf dem Bildschirm des Gegners außerhalb seiner Reichweite warst: er konnte nicht zurückschlagen.")},
+                new String[]{"W-tap / S-tap", t("Короткое отпускание W или нажатие S после удара, чтобы вернуть спринт и сильнее отбросить следующим ударом.",
+                        "Briefly releasing W or tapping S after a hit to get sprint back, so the next hit knocks back further.",
+                        "Kurz W loslassen oder S antippen nach einem Treffer, um den Sprint zurückzuholen, damit der nächste Treffer weiter wegstößt.")},
+                new String[]{"Fly out", t("Прыжок с зажатой S, чтобы улететь дальше. Не считается jump reset.",
+                        "A jump while holding S to fly further away. Not counted as a jump reset.",
+                        "Ein Sprung mit gehaltenem S, um weiter wegzufliegen. Zählt nicht als Jump Reset.")},
+                new String[]{t("Заряд", "Charge", "Aufladung"), t("Насколько восстановилась атака. Выше 90% удар полный: больше урона, возможен крит или удар с разбега.",
+                        "How far your attack has recovered. Above 90% the hit is full: more damage, and it can be a crit or a sprint hit.",
+                        "Wie weit sich dein Angriff erholt hat. Über 90 % ist der Schlag voll: mehr Schaden, und er kann ein Crit oder Sprint-Treffer sein.")},
+                new String[]{t("Крит", "Crit", "Crit"), t("Удар в падении после прыжка, урон × 1,5.", "A hit while falling after a jump, damage × 1.5.",
+                        "Ein Schlag im Fallen nach einem Sprung, Schaden × 1,5.")},
+                new String[]{t("Дальность (reach)", "Reach", "Reichweite"), t("Расстояние от ваших глаз до места попадания. Обычная дальность атаки 3 блока.",
+                        "Distance from your eyes to where the hit landed. Normal attack range is 3 blocks.",
+                        "Abstand von deinen Augen bis zur Trefferstelle. Die normale Reichweite sind 3 Blöcke.")},
+                new String[]{t("Стрейф", "Strafe", "Strafen"), t("Движение противника вбок относительно вас, из-за него в него труднее попасть.",
+                        "The opponent moving sideways relative to you, which makes them harder to hit.",
+                        "Der Gegner bewegt sich seitlich zu dir, dadurch ist er schwerer zu treffen.")},
+                new String[]{"Yaw / Pitch", t("Отклонение прицела по горизонтали (yaw) и по вертикали (pitch), в градусах.",
+                        "How far the crosshair was off horizontally (yaw) and vertically (pitch), in degrees.",
+                        "Wie weit das Fadenkreuz horizontal (Yaw) und vertikal (Pitch) daneben lag, in Grad.")},
+                new String[]{"σ", t("Разброс: насколько значения отличаются друг от друга. Меньше значит стабильнее.",
+                        "Spread: how much the values differ from each other. Smaller means more consistent.",
+                        "Streuung: wie stark die Werte voneinander abweichen. Kleiner heißt gleichmäßiger.")},
+                new String[]{t("Цвета", "Colors", "Farben"), t("Зелёный: хорошо. Жёлтый: нормально. Красный: стоит потренировать. Серый: мало данных.",
+                        "Green: good. Yellow: fair. Red: worth practicing. Grey: not enough data.",
+                        "Grün: gut. Gelb: okay. Rot: lohnt sich zu üben. Grau: zu wenig Daten.")});
     }
 }

@@ -124,7 +124,7 @@ final class SettingsTab implements Tab {
 
     private int content(Ui ui, int x, int top, int w, int s) {
         return switch (s) {
-            case 0 -> keys(ui, x, heading(ui, x, whatToRecord(ui, x, recording(ui, x, top, w), w), w, t("Язык и клавиши", "Language and keys", "Sprache und Tasten")), w);
+            case 0 -> keys(ui, x, heading(ui, x, whatToRecord(ui, x, recording(ui, x, presets(ui, x, top, w), w), w), w, t("Язык и клавиши", "Language and keys", "Sprache und Tasten")), w);
             case 1 -> hud(ui, x, top, w);
             case 2 -> filters(ui, x, top, w);
             case 3 -> appearance(ui, x, top, w);
@@ -191,6 +191,34 @@ final class SettingsTab implements Tab {
         ui.click(bx, y, s, s, action);
     }
 
+    /** Three starting points; each sets only the switches that decide how much the mod shows. */
+    private int presets(Ui ui, int x, int y, int w) {
+        y = heading(ui, x, y, w, t("Быстрый старт", "Quick start", "Schnellstart"));
+        String[][] p = {
+                {t("Просто", "Simple", "Einfach"), t("Главное и советы, без индикаторов", "Key numbers and tips, no indicators", "Das Wichtigste und Tipps, ohne Anzeigen")},
+                {t("Тренировка", "Training", "Training"), t("Все цифры, индикаторы, автосохранение", "All numbers, indicators, autosave", "Alle Zahlen, Anzeigen, automatisch speichern")},
+                {t("Только запись", "Record only", "Nur aufnehmen"), t("Ничего на экране, бои сохраняются сами", "Nothing on screen, fights save themselves", "Nichts im Bild, Kämpfe speichern sich selbst")}};
+        int gap = 6, cols = w >= 300 ? 3 : 1, bw = (w - 20 - gap * (cols - 1)) / cols, bh = 30;
+        for (int i = 0; i < p.length; i++) {
+            int bx = x + 10 + (i % cols) * (bw + gap), by = y + 6 + (i / cols) * (bh + gap);
+            boolean hov = ui.hover(bx, by, bw, bh);
+            ui.mark(p[i][0], p[i][1], bx, by, bw, bh);
+            Draw.roundBordered(ui.g, bx, by, bw, bh, Theme.R_CTRL, hov ? Theme.ACCENT : Theme.BORDER, hov ? Theme.ROW_HOVER : Theme.WINDOW);
+            ui.text(Draw.ellipsize(ui.font, p[i][0], bw - 10), bx + 6, by + 4, Theme.TEXT_STRONG);
+            ui.text(Draw.ellipsize(ui.font, p[i][1], bw - 10), bx + 6, by + 16, Theme.MUTED);
+            int preset = i;
+            ui.click(bx, by, bw, bh, () -> {
+                draft.applyPreset(preset);
+                live().indicators.enabled = draft.indicators.enabled;
+            });
+        }
+        int rowsN = (p.length + cols - 1) / cols;
+        y += 6 + rowsN * (bh + gap);
+        ui.text(Draw.ellipsize(ui.font, t("Затем «Применить». Всё можно поменять ниже.", "Then press Apply. You can change anything below.",
+                "Danach „Übernehmen“. Alles lässt sich unten noch ändern."), w - 20), x + 10, y, Theme.DIM);
+        return y + 14;
+    }
+
     private int recording(Ui ui, int x, int y, int w) {
         Settings l = live();
         int rh = 38, right = x + w - 10;
@@ -208,7 +236,7 @@ final class SettingsTab implements Tab {
             cx += cw + 3;
         }
         y += rh;
-        row(ui, x, y, w, 26, t("Очищать буфер при смене сервера", "Clear buffer on server change", "Puffer bei Serverwechsel leeren"), null, draft.clearOnServerChange != l.clearOnServerChange);
+        row(ui, x, y, w, 26, t("Очищать буфер при смене сервера", "Clear buffer on server change", "Puffer bei Serverwechsel leeren"), t("Кадры с прошлого сервера не смешиваются с новыми", "Fights from the last server do not mix with the new one", "Kämpfe vom letzten Server vermischen sich nicht mit dem neuen"), draft.clearOnServerChange != l.clearOnServerChange);
         ui.toggle(right - 20, y + 7, draft.clearOnServerChange, v -> draft.clearOnServerChange = v);
         reset(ui, right - 26, y + 6, draft.clearOnServerChange != DEF.clearOnServerChange, onOff(DEF.clearOnServerChange),
                 () -> draft.clearOnServerChange = DEF.clearOnServerChange);
@@ -219,7 +247,7 @@ final class SettingsTab implements Tab {
                 draft.autoSave, l.autoSave, DEF.autoSave, v -> draft.autoSave = v);
         y = flag(ui, x, y, w, t("Звук при сохранении", "Sound on save", "Sound beim Speichern"), t("Высокий звук: сохранено, низкий: не удалось", "High: saved, low: failed", "Hoch: gerettet, tief: misslungen"), draft.soundOnSave,
                 l.soundOnSave, DEF.soundOnSave, v -> draft.soundOnSave = v);
-        row(ui, x, y, w, 26, t("Громкость звука", "Sound volume", "Lautstärke"), null, draft.soundVolume != l.soundVolume);
+        row(ui, x, y, w, 26, t("Громкость звука", "Sound volume", "Lautstärke"), t("Громкость звука сохранения", "Volume of the save sound", "Lautstärke des Speichertons"), draft.soundVolume != l.soundVolume);
         int tw = ui.buttonWidth(t("Проба", "Test", "Testen"));
         ui.button(right - tw, y + 5, tw, 16, t("Проба", "Test", "Testen"), Ui.Kind.GHOST, draft.soundOnSave && draft.soundVolume > 0,
                 () -> dev.combatdata.client.Sounds.preview(Minecraft.getInstance(), draft));
@@ -282,7 +310,7 @@ final class SettingsTab implements Tab {
         y = flag(ui, x, y, w, t("Не учитывать высокий пинг", "Ignore high ping", "Hohen Ping ignorieren"), t("Удары, когда ваш пинг выше порога", "Hits while your ping is above the limit", "Treffer, während dein Ping über dem Limit liegt"),
                 draft.statHighPing, l.statHighPing, DEF.statHighPing, v -> draft.statHighPing = v);
         int right = x + w - 10, sw = 72;
-        row(ui, x, y, w, 26, t("Порог пинга", "Ping limit", "Ping-Limit"), null, draft.statPingLimitMs != l.statPingLimitMs);
+        row(ui, x, y, w, 26, t("Порог пинга", "Ping limit", "Ping-Limit"), t("Удары при пинге выше не идут в статистику", "Hits above this ping are left out of the stats", "Treffer über diesem Ping zählen nicht für die Statistik"), draft.statPingLimitMs != l.statPingLimitMs);
         ui.stepper(right - sw, y + 5, sw, draft.statPingLimitMs + t(" мс", " ms"), () -> {
             draft.statPingLimitMs -= 25;
             draft.clamp();
@@ -386,12 +414,12 @@ final class SettingsTab implements Tab {
         ui.g.fill(pxl, pyl + ph / 2, pxl + pw, pyl + ph, 0xFF5D8C3A);
         dev.combatdata.client.RecHud.preview(ui.g, ui.font, pxl + 6, pyl + (ph - 13) / 2, draft);
         y += 30;
-        row(ui, x, y, w, 26, t("Показывать надпись записи", "Show recording label", "Aufnahme-Anzeige zeigen"), null, draft.hudVisible != l.hudVisible);
+        row(ui, x, y, w, 26, t("Показывать надпись записи", "Show recording label", "Aufnahme-Anzeige zeigen"), t("Надпись REC в углу экрана", "The REC label in the corner of the screen", "Die REC-Anzeige in der Bildschirmecke"), draft.hudVisible != l.hudVisible);
         ui.toggle(right - 20, y + 7, draft.hudVisible, v -> draft.hudVisible = v);
         reset(ui, right - 26, y + 6, draft.hudVisible != DEF.hudVisible, onOff(DEF.hudVisible),
                 () -> draft.hudVisible = DEF.hudVisible);
         y += 26;
-        row(ui, x, y, w, 26, t("Масштаб надписи", "Label scale", "Größe der Anzeige"), null, draft.hudScale != l.hudScale);
+        row(ui, x, y, w, 26, t("Масштаб надписи", "Label scale", "Größe der Anzeige"), t("Размер надписи REC", "Size of the REC label", "Größe der REC-Anzeige"), draft.hudScale != l.hudScale);
         ui.stepper(right - 72, y + 5, 72, String.format(Locale.ROOT, "%.2fx", draft.hudScale), () -> {
             draft.hudScale -= 0.25;
             draft.clamp();
@@ -402,7 +430,7 @@ final class SettingsTab implements Tab {
         reset(ui, right - 76, y + 6, draft.hudScale != DEF.hudScale, String.format(Locale.ROOT, "%.2fx", DEF.hudScale),
                 () -> draft.hudScale = DEF.hudScale);
         y += 26;
-        row(ui, x, y, w, 26, t("Непрозрачность фона", "Background opacity", "Hintergrund-Deckkraft"), null, draft.hudBgOpacity != l.hudBgOpacity);
+        row(ui, x, y, w, 26, t("Непрозрачность фона", "Background opacity", "Hintergrund-Deckkraft"), t("0%: без фона, 100%: сплошной", "0%: no background, 100%: solid", "0 %: kein Hintergrund, 100 %: deckend"), draft.hudBgOpacity != l.hudBgOpacity);
         ui.stepper(right - 72, y + 5, 72, draft.hudBgOpacity + "%", () -> {
             draft.hudBgOpacity -= 10;
             draft.clamp();
@@ -416,9 +444,9 @@ final class SettingsTab implements Tab {
         y = choice(ui, x, y, w, t("Формат", "Format"), formats(), draft.hudFormat, l.hudFormat, DEF.hudFormat, v -> draft.hudFormat = v);
         y = choice(ui, x, y, w, t("Цвет текста", "Text color", "Textfarbe"), textColors(), draft.hudTextColor, l.hudTextColor, DEF.hudTextColor,
                 v -> draft.hudTextColor = v);
-        y = flag(ui, x, y, w, t("Кружок", "Dot", "Punkt"), null, draft.hudShowDot, l.hudShowDot, DEF.hudShowDot, v -> draft.hudShowDot = v);
-        y = flag(ui, x, y, w, t("Мигание кружка", "Blinking dot", "Blinkender Punkt"), null, draft.hudBlink, l.hudBlink, DEF.hudBlink, v -> draft.hudBlink = v);
-        y = flag(ui, x, y, w, t("Тень у текста", "Text shadow", "Textschatten"), null, draft.hudShadow, l.hudShadow, DEF.hudShadow, v -> draft.hudShadow = v);
+        y = flag(ui, x, y, w, t("Кружок", "Dot", "Punkt"), t("Цветной кружок перед REC", "Colored dot before REC", "Farbiger Punkt vor REC"), draft.hudShowDot, l.hudShowDot, DEF.hudShowDot, v -> draft.hudShowDot = v);
+        y = flag(ui, x, y, w, t("Мигание кружка", "Blinking dot", "Blinkender Punkt"), t("Кружок мигает, пока идёт запись", "The dot blinks while recording", "Der Punkt blinkt während der Aufnahme"), draft.hudBlink, l.hudBlink, DEF.hudBlink, v -> draft.hudBlink = v);
+        y = flag(ui, x, y, w, t("Тень у текста", "Text shadow", "Textschatten"), t("Легче читать на светлом фоне", "Easier to read on bright backgrounds", "Besser lesbar auf hellem Hintergrund"), draft.hudShadow, l.hudShadow, DEF.hudShadow, v -> draft.hudShadow = v);
         y = flag(ui, x, y, w, t("Скрывать на паузе", "Hide when paused", "Ausblenden, wenn pausiert"), t("Вне мира и в паузе одиночной игры", "Outside a world and in singleplayer pause", "Außerhalb einer Welt und in der Einzelspieler-Pause"), draft.hudHideWhenPaused,
                 l.hudHideWhenPaused, DEF.hudHideWhenPaused, v -> draft.hudHideWhenPaused = v);
         row(ui, x, y, w, 30, t("Положение надписи", "Label position", "Position der Anzeige"), t("Меняется сразу, без «Применить»", "Changes immediately, no Apply needed", "Wirkt sofort, kein „Übernehmen“ nötig"), false);
@@ -483,7 +511,7 @@ final class SettingsTab implements Tab {
         y = choice(ui, x, y, w, t("Вид", "Layout"), fsLayouts(), draft.fsLayout, l.fsLayout, DEF.fsLayout, v -> draft.fsLayout = v);
         y = flag(ui, x, y, w, t("Цветные цифры", "Colored numbers", "Farbige Zahlen"), t("Зелёный хорошо, жёлтый средне, красный плохо", "Green good, yellow fair, red bad", "Grün gut, gelb okay, rot schlecht"),
                 draft.fsColors, l.fsColors, DEF.fsColors, v -> draft.fsColors = v);
-        row(ui, x, y, w, 26, t("Непрозрачность фона", "Background opacity", "Hintergrund-Deckkraft"), null, draft.fsBgOpacity != l.fsBgOpacity);
+        row(ui, x, y, w, 26, t("Непрозрачность фона", "Background opacity", "Hintergrund-Deckkraft"), t("0%: без фона, 100%: сплошной", "0%: no background, 100%: solid", "0 %: kein Hintergrund, 100 %: deckend"), draft.fsBgOpacity != l.fsBgOpacity);
         ui.stepper(right - sw, y + 5, sw, draft.fsBgOpacity + "%", () -> {
             draft.fsBgOpacity -= 10;
             draft.clamp();
@@ -493,7 +521,7 @@ final class SettingsTab implements Tab {
         });
         reset(ui, right - sw - 4, y + 6, draft.fsBgOpacity != DEF.fsBgOpacity, DEF.fsBgOpacity + "%", () -> draft.fsBgOpacity = DEF.fsBgOpacity);
         y += 26;
-        row(ui, x, y, w, 26, t("Масштаб", "Scale", "Größe"), null, draft.fsScale != l.fsScale);
+        row(ui, x, y, w, 26, t("Масштаб", "Scale", "Größe"), t("Размер итога боя", "Size of the fight summary", "Größe der Kampfzusammenfassung"), draft.fsScale != l.fsScale);
         ui.stepper(right - sw, y + 5, sw, String.format(Locale.ROOT, "%.2fx", draft.fsScale), () -> {
             draft.fsScale -= 0.25;
             draft.clamp();
@@ -513,7 +541,7 @@ final class SettingsTab implements Tab {
         });
         reset(ui, right - sw - 4, y + 8, draft.fsDelaySec != DEF.fsDelaySec, DEF.fsDelaySec + t(" с", " s"), () -> draft.fsDelaySec = DEF.fsDelaySec);
         y += 30;
-        row(ui, x, y, w, 26, t("Показывается", "Shown for", "Angezeigt für"), null, draft.fsShowSec != l.fsShowSec);
+        row(ui, x, y, w, 26, t("Показывается", "Shown for", "Angezeigt für"), t("Сколько секунд виден итог", "How many seconds the summary stays", "Wie viele Sekunden die Zusammenfassung bleibt"), draft.fsShowSec != l.fsShowSec);
         ui.stepper(right - sw, y + 5, sw, draft.fsShowSec + t(" с", " s"), () -> {
             draft.fsShowSec--;
             draft.clamp();
