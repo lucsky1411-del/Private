@@ -37,15 +37,18 @@ jobs:
               print(f'::error title=build log part {i+1}::{enc}')
           PY
       - name: Check mixin targets against the game
+        continue-on-error: true
         run: |
-          JAR=$(find ~/.gradle/caches/fabric-loom .gradle/loom-cache -name 'minecraft-*merged*named*.jar' -o -name 'minecraft-clientOnly*named*.jar' -o -name 'minecraft-client*named*.jar' 2>/dev/null | grep -v sources | head -1)
-          echo "jar: $JAR"
+          set +e
+          cands=$(find ~/.gradle .gradle -name '*.jar' 2>/dev/null | grep -i minecraft | grep -iv sources)
+          JAR=$(echo "$cands" | grep -iE 'merged|client' | grep -iE 'named|mojang|official' | head -1)
+          [ -z "$JAR" ] && JAR=$(echo "$cands" | grep -iE 'merged|client' | head -1)
           out=""
           for c in net.minecraft.client.MouseHandler net.minecraft.client.Minecraft net.minecraft.client.multiplayer.MultiPlayerGameMode net.minecraft.client.multiplayer.ClientPacketListener net.minecraft.world.entity.LivingEntity; do
-            out="$out$(javap -p -cp "$JAR" $c | grep -E ' (onButton|startAttack|attack|handleAnimate|jumpFromGround|handleDamageEvent)\(')%0A"
+            out="$out$c: $(javap -p -cp "$JAR" $c 2>&1 | grep -E '(onButton|startAttack|attack|handleAnimate|jumpFromGround|handleDamageEvent)\(|Error' | tr '\n' ' ')%0A"
           done
-          echo "::warning title=mixin targets::jar $JAR%0A${out}"
-          grep -iE 'mixin|refmap|Unable to locate' build.log | head -20 | sed 's/%/%25/g' | tr '\n' '\r' | sed 's/\r/%0A/g' | xargs -0 -I{} echo "::warning title=mixin log::{}" || true
+          list=$(echo "$cands" | head -15 | tr '\n' ' ')
+          echo "::warning title=mixin targets::jar=$JAR%0A${out}%0Acandidates: $list"
       - name: Upload jar
         uses: actions/upload-artifact@v4
         with:
