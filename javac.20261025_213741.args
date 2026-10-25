@@ -1,0 +1,11 @@
+-Xmaxerrs
+2000
+-encoding
+UTF-8
+-d
+/tmp/claude-0/-home-claude/c20ca40e-4688-5160-b869-937a9581df09/scratchpad/chk
+-sourcepath
+src/main/java
+src/main/java/dev/combatdata/ui/StatsView.java
+src/main/java/dev/combatdata/ui/Help.java
+src/main/java/dev/combatdata/client/AttackCapture.java

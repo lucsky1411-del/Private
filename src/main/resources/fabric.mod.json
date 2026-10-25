@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "combatdata",
+  "version": "${version}",
+  "name": "Combat Data",
+  "description": "Records your sword PvP fights and shows stats and charts right in the game.",
+  "authors": ["fate"],
+  "license": "MIT",
+  "icon": "assets/combatdata/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.combatdata.CombatDataClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.2",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "mixins": [
+    "combatdata.mixins.json"
+  ]
+}

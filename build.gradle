@@ -1,0 +1,47 @@
+plugins {
+    // 1.21.11 is obfuscated: compile against Mojang names and remap the jar for the game
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+}
+
+// Game version is appended so each jar shows which Minecraft it is for, e.g. 0.2.1+1.21.11
+version = "${project.mod_version}+${project.minecraft_version}"
+group = project.maven_group
+base { archivesName = project.archives_base_name }
+
+repositories {
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = 'UTF-8'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+// Core regression tests (no JUnit), run as part of ./gradlew build
+tasks.register('coreTests', JavaExec) {
+    group = 'verification'
+    description = 'Combat Data core tests'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.combatdata.core.CoreTests'
+    jvmArgs '-Dstdout.encoding=UTF-8'
+}
+tasks.named('check') { dependsOn 'coreTests' }
+
+// No JUnit tests; without this Gradle 9 fails on the empty test task.
+tasks.named('test') { enabled = false }
