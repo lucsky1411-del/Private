@@ -41,7 +41,7 @@ jobs:
         run: |
           set +e
           cands=$(find ~/.gradle .gradle -name '*.jar' 2>/dev/null | grep -i minecraft | grep -iv sources)
-          JAR=$(echo "$cands" | grep -iE 'merged|client' | grep -iE 'named|mojang|official' | head -1)
+          JAR=$(echo "$cands" | grep 'minecraftMaven/net/minecraft/minecraft-merged/' | head -1)
           [ -z "$JAR" ] && JAR=$(echo "$cands" | grep -iE 'merged|client' | head -1)
           out=""
           for c in net.minecraft.client.MouseHandler net.minecraft.client.Minecraft net.minecraft.client.multiplayer.MultiPlayerGameMode net.minecraft.client.multiplayer.ClientPacketListener net.minecraft.world.entity.LivingEntity; do
