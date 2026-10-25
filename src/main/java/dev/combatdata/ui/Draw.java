@@ -24,21 +24,40 @@ public final class Draw {
         }
     }
 
+    private static final java.util.Map<String, net.minecraft.resources.Identifier> SPRITES = new java.util.HashMap<>();
+
     /**
-     * A vanilla-style button: black outline, face with a light top-left and dark bottom-right edge. Hover lightens the
-     * face and turns the outline white, like the game's own buttons.
+     * A sprite from the game's own GUI atlas (widget/button, widget/checkbox, ...), nine-sliced to any size. These are
+     * vanilla textures drawn with the vanilla GUI pipeline, so they look exactly like Java menus and stay compatible
+     * with renderers such as VulkanMod.
      */
-    public static void bevel(GuiGraphics g, int x, int y, int w, int h, int face, boolean hover, boolean enabled) {
-        if (w <= 2 || h <= 2) return;
-        int f = !enabled ? Theme.mixColor(face, 0xFF000000, 0.45) : hover ? Theme.mixColor(face, 0xFFFFFFFF, 0.18) : face;
-        g.fill(x, y, x + w, y + h, hover && enabled ? 0xFFFFFFFF : 0xFF000000);
-        g.fill(x + 1, y + 1, x + w - 1, y + h - 1, f);
-        g.fill(x + 1, y + 1, x + w - 1, y + 2, Theme.mixColor(f, 0xFFFFFFFF, 0.35));
-        g.fill(x + 1, y + 1, x + 2, y + h - 1, Theme.mixColor(f, 0xFFFFFFFF, 0.25));
-        g.fill(x + 1, y + h - 2, x + w - 1, y + h - 1, Theme.mixColor(f, 0xFF000000, 0.4));
+    public static void sprite(GuiGraphics g, String name, int x, int y, int w, int h) {
+        if (w <= 0 || h <= 0) return;
+        net.minecraft.resources.Identifier id = SPRITES.computeIfAbsent(name, net.minecraft.resources.Identifier::withDefaultNamespace);
+        g.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, id, x, y, w, h);
+    }
+
+    /** A Java button: normal, highlighted (hover or selected) or disabled. */
+    public static void javaButton(GuiGraphics g, int x, int y, int w, int h, boolean highlight, boolean enabled) {
+        sprite(g, !enabled ? "widget/button_disabled" : highlight ? "widget/button_highlighted" : "widget/button", x, y, w, h);
+    }
+
+    /** NoRisk look: flat translucent fill with a 1px outline; highlight brightens the outline. */
+    public static void flat(GuiGraphics g, int x, int y, int w, int h, int fill, int border) {
+        if (w <= 0 || h <= 0) return;
+        g.fill(x, y, x + w, y + 1, border);
+        g.fill(x, y + h - 1, x + w, y + h, border);
+        g.fill(x, y + 1, x + 1, y + h - 1, border);
+        g.fill(x + w - 1, y + 1, x + w, y + h - 1, border);
+        if (w > 2 && h > 2) g.fill(x + 1, y + 1, x + w - 1, y + h - 1, fill);
     }
 
     public static void roundBordered(GuiGraphics g, int x, int y, int w, int h, int r, int border, int fill) {
+        // Square styles draw the outline as four edges, so a see-through fill does not show the border color behind it.
+        if (Theme.radius(r) == 0) {
+            flat(g, x, y, w, h, fill, border);
+            return;
+        }
         round(g, x, y, w, h, r, border);
         round(g, x + 1, y + 1, w - 2, h - 2, Math.max(0, r - 1), fill);
     }

@@ -50,8 +50,8 @@ public final class Settings {
     public boolean fightSummary = true;
     /** Simple view hides detail numbers and charts; expert shows everything. */
     public boolean expertMode = false;
-    /** Menu style: Themes.STYLE_CLASSIC, STYLE_MINECRAFT or STYLE_MODERN. */
-    public int uiStyle = Themes.STYLE_MINECRAFT;
+    /** Menu style: Themes.STYLE_CLASSIC, STYLE_JAVA or STYLE_NORISK. */
+    public int uiStyle = Themes.STYLE_JAVA;
     /** The first-start setup has been shown. */
     public boolean setupDone = false;
     public boolean fsTitle = true, fsHits = true, fsJr = true, fsCombo = true, fsTrades = true, fsReach = false,
@@ -60,7 +60,7 @@ public final class Settings {
     public double fsScale = 1.0;
     public boolean fsNearRec = true;
     public double fsX = DEFAULT_HUD_X, fsY = 0.08;
-    public String theme = Themes.DEFAULT_ID;
+    public String theme = "java";
     public List<ThemeSpec> customThemes = new ArrayList<>();
     /** Changed from its own menu tab right away, so it is not part of the Apply/Cancel draft. */
     public IndicatorConfig indicators = new IndicatorConfig();
@@ -157,7 +157,7 @@ public final class Settings {
         autoDeleteDays = Math.max(0, Math.min(3650, autoDeleteDays));
         soundVolume = Math.max(0, Math.min(100, soundVolume));
         language = language >= Lang.AUTO && language <= Lang.DE ? language : Lang.AUTO;
-        uiStyle = uiStyle >= Themes.STYLE_CLASSIC && uiStyle <= Themes.STYLE_MODERN ? uiStyle : Themes.STYLE_MINECRAFT;
+        uiStyle = uiStyle >= Themes.STYLE_CLASSIC && uiStyle <= Themes.STYLE_NORISK ? uiStyle : Themes.STYLE_JAVA;
         statPingLimitMs = Math.max(MIN_PING_LIMIT, Math.min(MAX_PING_LIMIT, statPingLimitMs));
         statMinFightHits = Math.max(1, Math.min(MAX_FIGHT_HITS, statMinFightHits));
         tradeGapMs = Math.max(500, Math.min(5000, tradeGapMs));
@@ -326,6 +326,7 @@ public final class Settings {
         m.put("fightSummary", fightSummary);
         m.put("expertMode", expertMode);
         m.put("uiStyle", uiStyle);
+        m.put("styleRev", 2);
         m.put("setupDone", setupDone);
         m.put("fsTitle", fsTitle);
         m.put("fsHits", fsHits);
@@ -416,6 +417,8 @@ public final class Settings {
         if (m.get("fsX") instanceof Number n) s.fsX = n.doubleValue();
         if (m.get("fsY") instanceof Number n) s.fsY = n.doubleValue();
         if (m.get("theme") instanceof String th) s.theme = th;
+        // Before the style revision the Java/NoRisk styles had fixed colors: start them with their own theme once.
+        if (!(m.get("styleRev") instanceof Number) && s.uiStyle != Themes.STYLE_CLASSIC) s.theme = Themes.themeForStyle(s.uiStyle);
         if (m.get("customThemes") instanceof List<?> l) {
             for (Object o : l) {
                 ThemeSpec t = ThemeSpec.fromMap(o, Themes.defaultTheme());

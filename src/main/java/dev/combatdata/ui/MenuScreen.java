@@ -233,43 +233,83 @@ public final class MenuScreen extends Screen {
         Ui ui = new Ui(g, font, mouseX, mouseY, targets, modal != null || findOpen ? 1 : 0);
         ui.find = find;
         // The window must fit the screen: at GUI scale 4 on 720p the screen is only 320x180.
-        int ww = Math.min(width - 4, Math.max(300, Math.min(width - 16, 560)));
+        int ww = Math.min(width - 4, Math.max(300, Math.min(width - 16, 600)));
         int wh = Math.min(height - 4, Math.max(200, Math.min(height - 16, 340)));
         int wx = (width - ww) / 2, wy = (height - wh) / 2;
-        Draw.roundBordered(g, wx, wy, ww, wh, Theme.R_WINDOW, Theme.BORDER, Theme.WINDOW);
         boolean compact = wh < 240;
-        if (!compact) ui.text("Combat Data", wx + 10, wy + 9, Theme.TEXT_STRONG);
-        int cb = 14, cbx = wx + ww - 8 - cb, cby = wy + 6;
+        // Sidebar with the main sections (icon + name; icons only when narrow), content panel next to it.
+        boolean wideBar = ww >= 420;
+        int sbW = wideBar ? 64 : 26, gapW = 4;
+        Draw.roundBordered(g, wx, wy, sbW, wh, Theme.R_WINDOW, Theme.BORDER, Theme.WINDOW);
+        int mx = wx + sbW + gapW, mw = ww - sbW - gapW;
+        Draw.roundBordered(g, mx, wy, mw, wh, Theme.R_WINDOW, Theme.BORDER, Theme.WINDOW);
+        sidebar(ui, wx, wy, sbW, wh, wideBar);
+        ui.text(Theme.head("Combat Data"), mx + 10, wy + 9, Theme.TEXT_STRONG);
+        int cb = 14, cbx = mx + mw - 8 - cb, cby = wy + 6;
         boolean ch = ui.hover(cbx, cby, cb, cb);
         if (ch) Draw.round(g, cbx, cby, cb, cb, Theme.R_CTRL, Theme.RAISED_HOVER);
         ui.textCenter("×", cbx + cb / 2 + 1, Ui.textY(cby, cb), ch ? Theme.TEXT_STRONG : Theme.MUTED);
         ui.click(cbx, cby, cb, cb, this::onClose);
-        int tx = wx + 8, ty = compact ? wy + 5 : wy + 24, line = ty + 18, top = line + 8;
-        // Narrow windows (large GUI scale) get tighter tabs so all of them fit next to the close button.
-        int tabsW = 0;
-        for (TabId t : TabId.values()) tabsW += font.width(t.label()) + 18;
-        int tabPad = tabsW <= ww - 40 ? 16 : 8;
-        int tabsEnd = wx + 8;
-        for (TabId t : TabId.values()) tabsEnd += font.width(t.label()) + tabPad + 2;
-        findButton(ui, compact ? tabsEnd : wx + 10 + font.width("Combat Data"), cbx, cby);
-        for (TabId t : TabId.values()) {
-            int tw = font.width(t.label()) + tabPad;
-            boolean sel = t == tab, hov = ui.hover(tx, ty, tw, 16);
-            if (sel) Draw.round(g, tx, ty, tw, 16, Theme.R_CTRL, Theme.RAISED);
-            else if (hov) Draw.round(g, tx, ty, tw, 16, Theme.R_CTRL, Theme.ROW_HOVER);
-            ui.textCenter(t.label(), tx + tw / 2, Ui.textY(ty, 16), sel ? Theme.TEXT_STRONG : (hov ? Theme.TEXT : Theme.MUTED));
-            ui.click(tx, ty, tw, 16, () -> switchTab(t));
-            tx += tw + 2;
-        }
-        g.fill(wx + 8, line, wx + ww - 8, line + 1, Theme.BORDER);
+        findButton(ui, mx + 10 + font.width(Theme.head("Combat Data")), cbx, cby);
+        int line = wy + 24, top = line + 7;
+        g.fill(mx + 8, line, mx + mw - 8, line + 1, Theme.BORDER);
         find.at(tab, 0);
         find.beginFrame();
-        dev.combatdata.client.Safe.run("вкладка меню", () -> current().render(ui, wx + 10, top, ww - 20, wy + wh - 10 - top));
+        dev.combatdata.client.Safe.run("вкладка меню", () -> current().render(ui, mx + 10, top, mw - 20, wy + wh - 10 - top));
         findBox.visible = modal == null && findOpen;
         if (findBox.visible) renderFind(ui, wx, wy, ww, wh, compact);
         else findH = 0;
         if (modal != null) renderModal(ui, mouseX, mouseY, delta);
         else if (!findOpen) ui.drawTip(width, height);
+    }
+
+    private static final String[][] ICONS = {
+            {"#########", "#.#.#.#.#", "#########", "#.......#", "#.......#", "#.......#", "#########", "#.#.#.#.#", "#########"},
+            {".......#.", ".......#.", "....#..#.", "....#..#.", ".#..#..#.", ".#..#..#.", ".#..#..#.", ".#..#..#.", "#########"},
+            {"........#", ".......#.", "......#..", "...#.#...", "..#.#....", ".#.......", "#........", ".........", "#########"},
+            {".##...##.", "####.####", "#########", "#########", ".#######.", "..#####..", "...###...", "....#....", "........."},
+            {"...###...", ".#.###.#.", "..#####..", "###...###", "###...###", "###...###", "..#####..", ".#.###.#.", "...###..."}};
+
+    private void icon(GuiGraphics g, int index, int x, int y, int px, int color) {
+        String[] rows = ICONS[index];
+        for (int r = 0; r < rows.length; r++) {
+            for (int c = 0; c < rows[r].length(); c++) {
+                if (rows[r].charAt(c) == '#') g.fill(x + c * px, y + r * px, x + (c + 1) * px, y + (r + 1) * px, color);
+            }
+        }
+    }
+
+    /** The main sections down the left side, like a launcher: bigger targets and always visible. */
+    private void sidebar(Ui ui, int x, int y, int w, int h, boolean wideBar) {
+        GuiGraphics g = ui.g;
+        TabId[] all = TabId.values();
+        int eh = Math.min(wideBar ? 38 : 22, (h - 12) / all.length - 3);
+        boolean wide = wideBar && eh >= 30;
+        int ey = y + 6, px = wide ? 2 : 1;
+        for (int i = 0; i < all.length; i++) {
+            TabId t = all[i];
+            boolean sel = t == tab, hov = ui.hover(x + 3, ey, w - 6, eh);
+            int ex = x + 3, ewid = w - 6;
+            if (Theme.java()) {
+                if (sel || hov) Draw.javaButton(g, ex, ey, ewid, eh, true, true);
+            } else if (Theme.norisk()) {
+                if (sel) Draw.flat(g, ex, ey, ewid, eh, Theme.alpha(Theme.ACCENT, 0xB0), Theme.ACCENT_HOVER);
+                else if (hov) Draw.flat(g, ex, ey, ewid, eh, Theme.RAISED, Theme.BORDER);
+            } else {
+                if (sel) Draw.round(g, ex, ey, ewid, eh, Theme.R_CTRL, Theme.RAISED);
+                else if (hov) Draw.round(g, ex, ey, ewid, eh, Theme.R_CTRL, Theme.ROW_HOVER);
+            }
+            int color = Theme.java() ? (sel ? 0xFFFFFF55 : hov ? 0xFFFFFFFF : 0xFFC8C8C8)
+                    : Theme.norisk() ? (sel || hov ? 0xFFFFFFFF : Theme.TEXT)
+                    : sel ? Theme.ACCENT : hov ? Theme.TEXT : Theme.MUTED;
+            int iconW = 9 * px;
+            icon(g, i, x + (w - iconW) / 2, ey + (wide ? 5 : (eh - iconW) / 2), px, color);
+            String label = Theme.head(t.label());
+            if (wide) ui.textCenter(Draw.ellipsize(font, label, ewid - 4), x + w / 2, ey + eh - 12, color);
+            else if (hov) ui.tooltip(t.label());
+            ui.click(ex, ey, ewid, eh, () -> switchTab(t));
+            ey += eh + 3;
+        }
     }
 
     /**

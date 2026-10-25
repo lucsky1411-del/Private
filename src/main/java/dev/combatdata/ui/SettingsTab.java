@@ -289,7 +289,7 @@ final class SettingsTab implements Tab {
     static int heading(Ui ui, int x, int y, int w, String text) {
         if (ui.find != null) ui.find.group(text);
         ui.mark(text, null, x + 4, y + 3, w - 8, 18);
-        ui.text(text, x + 10, y + 10, Theme.ACCENT);
+        ui.text(Theme.head(text), x + 10, y + 10, Theme.ACCENT);
         ui.g.fill(x + 8, y + 21, x + w - 8, y + 22, Theme.BORDER);
         return y + 22;
     }
@@ -602,13 +602,15 @@ final class SettingsTab implements Tab {
         y = heading(ui, x, y, w, t("Стиль меню", "Menu style", "Menü-Stil"));
         String[] styles = {dev.combatdata.core.Themes.styleName(0), dev.combatdata.core.Themes.styleName(1),
                 dev.combatdata.core.Themes.styleName(2)};
-        if (ui.segmentedWidth(styles) > w - 120) styles = new String[]{t("Классика", "Classic", "Klassisch"), "Minecraft", "Modern"};
-        y = choice(ui, x, y, w, t("Стиль", "Style", "Stil"), styles, draft.uiStyle, live().uiStyle, DEF.uiStyle, v -> draft.uiStyle = v);
-        ui.text(Draw.ellipsize(ui.font, draft.uiStyle == dev.combatdata.core.Themes.STYLE_CLASSIC
-                        ? t("Цвета берутся из темы ниже.", "Colors come from the theme below.", "Die Farben kommen aus dem Theme unten.")
-                        : t("Свои цвета и формы. Тема ниже работает только в стиле «Классический».",
-                        "Own colors and shapes. The theme below only applies in the Classic style.",
-                        "Eigene Farben und Formen. Das Theme unten gilt nur im Stil „Klassisch“."), w - 20),
+        y = choice(ui, x, y, w, t("Стиль", "Style", "Stil"), styles, draft.uiStyle, live().uiStyle, DEF.uiStyle, v -> {
+            if (v == draft.uiStyle) return;
+            draft.uiStyle = v;
+            // Each style starts with its own colors; any theme can be picked afterwards.
+            draft.theme = dev.combatdata.core.Themes.themeForStyle(v);
+        });
+        ui.text(Draw.ellipsize(ui.font, t("Стиль задаёт формы и кнопки, цвета задаёт тема ниже: её можно менять в любом стиле.",
+                "The style sets shapes and buttons, the theme below sets the colors: change it in any style.",
+                "Der Stil bestimmt Formen und Knöpfe, das Theme unten die Farben: du kannst es in jedem Stil ändern."), w - 20),
                 x + 10, y + 4, Theme.DIM);
         y += 16;
         String head = t("Тема", "Theme");

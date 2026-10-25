@@ -940,33 +940,62 @@ final class StatsView {
         y = compareLine(ui, x, y, w);
         y = insightsBlock(ui, x, y, w);
         boolean expert = CombatDataClient.settings().expertMode;
-        List<Card> cards = new ArrayList<>();
         Stats.HitStats hs = res.hits();
         int attacksTotal = hs.confirmed() + hs.unconfirmed() + hs.misses();
         if (attacksTotal == 0 && res.combo().taken() == 0) {
-            cards.add(new Card(t("Бой", "Fight", "Kampf"), List.of(new Kv(t("Боевых событий нет", "No combat events", "Keine Kampfereignisse"), "")), 1));
-        } else {
-            cards.add(hitsCard(hs).with(Help.hits()));
-            cards.add(jumpCard(res.jump()).with(Help.jump()));
+            return cardGrid(ui, x, y, w, List.of(new Card(t("Бой", "Fight", "Kampf"),
+                    List.of(new Kv(t("Боевых событий нет", "No combat events", "Keine Kampfereignisse"), "")), 1)));
         }
-        if (attacksTotal > 0 && !expert) {
-            cards.add(aimCard(hs, aimRes).with(Help.aim()));
-            cards.add(tradesCard(res.trades()).with(Help.trades()));
-        } else if (attacksTotal > 0 || res.combo().taken() > 0) {
-            if (res.taken().rated() > 0) cards.add(takenCard(res.taken(), res.threeBlock()).with(Help.taken()));
-            cards.add(reachCard(hs).with(Help.reach()));
-            cards.add(aimCard(hs, aimRes).with(Help.aim()));
-            cards.add(threeBlockCard(hs).with(Help.threeBlock()));
-            cards.add(comboCard(res.combo()).with(Help.combo()));
-            cards.add(tradesCard(res.trades()).with(Help.trades()));
-            cards.add(chargeCard(hs).with(Help.charge()));
-            cards.add(typesCard(hs).with(Help.types()));
-            if (wtap.hasInput()) cards.add(wtapCard(wtap).with(Help.wtap()));
-            cards.add(new Card(t("Пинг", "Ping"), List.of(
+        // Cards grouped by topic, each group under its own heading.
+        List<Card> attack = new ArrayList<>(), defense = new ArrayList<>(), fights = new ArrayList<>(), more = new ArrayList<>();
+        if (attacksTotal > 0) {
+            attack.add(hitsCard(hs).with(Help.hits()));
+            attack.add(aimCard(hs, aimRes).with(Help.aim()));
+            if (expert) {
+                attack.add(reachCard(hs).with(Help.reach()));
+                attack.add(chargeCard(hs).with(Help.charge()));
+                attack.add(typesCard(hs).with(Help.types()));
+                if (wtap.hasInput()) attack.add(wtapCard(wtap).with(Help.wtap()));
+            }
+        }
+        defense.add(jumpCard(res.jump()).with(Help.jump()));
+        if (expert && res.taken().rated() > 0) defense.add(takenCard(res.taken(), res.threeBlock()).with(Help.taken()));
+        if (attacksTotal > 0) {
+            fights.add(tradesCard(res.trades()).with(Help.trades()));
+            if (expert) {
+                fights.add(comboCard(res.combo()).with(Help.combo()));
+                fights.add(threeBlockCard(hs).with(Help.threeBlock()));
+            }
+        }
+        if (expert) {
+            more.add(new Card(t("Пинг", "Ping"), List.of(
                     new Kv(t("Средний", "Mean", "Ø"), res.pingMean() > 0 ? Fmt.num(res.pingMean(), 0) + t(" мс", " ms") : "—"),
                     new Kv(t("Разброс σ", "Spread σ", "Streuung σ"), res.pingMean() > 0 ? Fmt.num(res.pingSigma(), 0) + t(" мс", " ms") : "—")), 2).with(Help.ping()));
+            more.add(recordCard());
         }
-        if (expert) cards.add(recordCard());
+        y = section(ui, x, y, w, t("Атака", "Attack", "Angriff"), attack, Insights.Page.ATTACK_HITS);
+        y = section(ui, x, y, w, t("Защита", "Defense", "Verteidigung"), defense, Insights.Page.DEFENSE_JUMP);
+        y = section(ui, x, y, w, t("Бои и размены", "Fights and trades", "Kämpfe und Trades"), fights, Insights.Page.FIGHTS_TRADES);
+        y = section(ui, x, y, w, t("Прочее", "More", "Sonstiges"), more, null);
+        int bottom = y;
+        return glossaryBlock(ui, x, bottom + 2, w);
+    }
+
+    /** A titled group of cards; the title links to the matching page. */
+    private int section(Ui ui, int x, int y, int w, String title, List<Card> cards, Insights.Page page) {
+        if (cards.isEmpty()) return y;
+        String h = Theme.head(title);
+        boolean hov = page != null && ui.hover(x, y, ui.font.width(h) + 16, 14);
+        ui.text(h, x, y + 3, hov ? Theme.TEXT_STRONG : Theme.ACCENT);
+        if (page != null) {
+            ui.text("›", x + ui.font.width(h) + 5, y + 3, hov ? Theme.TEXT_STRONG : Theme.DIM);
+            ui.click(x, y, ui.font.width(h) + 16, 14, () -> go(page));
+        }
+        ui.g.fill(x + ui.font.width(h) + 18, y + 7, x + w, y + 8, Theme.BORDER);
+        return cardGrid(ui, x, y + 16, w, cards) + 4;
+    }
+
+    private int cardGrid(Ui ui, int x, int y, int w, List<Card> cards) {
         int cols = w >= 330 ? 2 : 1, gap = 8, cw = (w - gap * (cols - 1)) / cols;
         int[] colY = new int[cols];
         Arrays.fill(colY, y);
@@ -980,7 +1009,7 @@ final class StatsView {
         }
         int bottom = y;
         for (int v : colY) bottom = Math.max(bottom, v);
-        return glossaryBlock(ui, x, bottom + 2, w);
+        return bottom;
     }
 
     /** Key numbers: graded color, or strong text when there is too little data to judge. */
@@ -1012,9 +1041,9 @@ final class StatsView {
             int tx = x + (i % cols) * (tw + gap), ty = y + (i / cols) * (th + gap);
             int color = gradeColor(tl.grade());
             boolean hov = ui.hover(tx, ty, tw, th);
-            Draw.round(ui.g, tx, ty, tw, th, Theme.R_CTRL, hov ? Theme.ROW_HOVER : Theme.WINDOW);
+            box(ui, tx, ty, tw, th, hov);
             ui.g.fill(tx, ty + 3, tx + 3, ty + th - 3, color);
-            ui.text(Draw.ellipsize(ui.font, tl.name(), tw - 60), tx + 8, ty + 4, Theme.TEXT_STRONG);
+            ui.text(Draw.ellipsize(ui.font, Theme.head(tl.name()), tw - 60), tx + 8, ty + 4, Theme.TEXT_STRONG);
             ui.textRight(tl.gradeText(), tx + tw - 5, ty + 4, color);
             String v = tl.value();
             ui.text(v, tx + 8, ty + 4 + LINE, color);
@@ -1136,7 +1165,7 @@ final class StatsView {
                 case GOOD -> Theme.GREEN;
             };
             boolean hov = ui.hover(x, y, w, rh - 2);
-            Draw.round(ui.g, x, y, w, rh - 2, Theme.R_CTRL, hov ? Theme.ROW_HOVER : Theme.WINDOW);
+            box(ui, x, y, w, rh - 2, hov);
             ui.g.fill(x, y + 2, x + 3, y + rh - 4, color);
             ui.text(Draw.ellipsize(ui.font, in.text(), w - 22), x + 8, Ui.textY(y, rh - 2), hov ? Theme.TEXT_STRONG : Theme.TEXT);
             ui.textRight("›", x + w - 5, Ui.textY(y, rh - 2), hov ? Theme.TEXT_STRONG : Theme.MUTED);
@@ -1147,8 +1176,14 @@ final class StatsView {
         return y + 4;
     }
 
+    /** Card background: a soft block in Classic, an outlined panel in Java and NoRisk (like their module cards). */
+    private static void box(Ui ui, int x, int y, int w, int h, boolean hov) {
+        if (Theme.style == Themes.STYLE_CLASSIC) Draw.round(ui.g, x, y, w, h, Theme.R_CTRL, hov ? Theme.ROW_HOVER : Theme.WINDOW);
+        else Draw.roundBordered(ui.g, x, y, w, h, 0, hov ? Theme.TEXT : Theme.BORDER, hov ? Theme.ROW_HOVER : Theme.PANEL);
+    }
+
     private void card(Ui ui, int x, int y, int w, Card c, boolean open) {
-        Draw.round(ui.g, x, y, w, c.height(open), Theme.R_CTRL, Theme.WINDOW);
+        box(ui, x, y, w, c.height(open), false);
         boolean more = c.rows().size() > c.main();
         int titleW = w - 12;
         int right = x + w - 6;
@@ -1168,7 +1203,7 @@ final class StatsView {
                 if (!expanded.remove(key)) expanded.add(key);
             });
         }
-        ui.text(Draw.ellipsize(ui.font, c.title(), titleW), x + 6, y + 4, Theme.TEXT_STRONG);
+        ui.text(Draw.ellipsize(ui.font, Theme.head(c.title()), titleW), x + 6, y + 4, Theme.TEXT_STRONG);
         int ry = y + 16;
         for (int i = 0; i < c.shown(open); i++) {
             Kv kv = c.rows().get(i);

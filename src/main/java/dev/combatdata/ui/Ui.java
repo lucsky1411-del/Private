@@ -70,6 +70,11 @@ public final class Ui {
         if (hov) tip = text;
     }
 
+    /** A tooltip for any hovered area, drawn at the end of the frame like the (i) tips. */
+    public void tooltip(String text) {
+        tip = text;
+    }
+
     private void drawI(int x, int y, boolean hov) {
         // "i" built from two fills: the Minecraft font renders it offset and too thin for a 9x9 circle.
         int c = hov ? Theme.ON_ACCENT : Theme.TEXT;
@@ -166,9 +171,15 @@ public final class Ui {
                 fg = enabled ? Theme.TEXT : Theme.DIM;
             }
         }
-        if (Theme.minecraft() && kind != Kind.GHOST) {
-            Draw.bevel(g, x, y, w, h, kind == Kind.PRIMARY ? Theme.ACCENT : Theme.RAISED, hov, enabled);
-            fg = !enabled ? 0xFFA0A0A0 : kind == Kind.DANGER ? Theme.RED : 0xFFFFFFFF;
+        if (Theme.java()) {
+            // Real Java buttons; the main action gets yellow text instead of a colored face, like vanilla.
+            if (kind != Kind.GHOST || hov) Draw.javaButton(g, x, y, w, h, hov, enabled);
+            fg = !enabled ? 0xFFA0A0A0 : kind == Kind.DANGER ? Theme.RED : kind == Kind.PRIMARY ? 0xFFFFFF55 : 0xFFFFFFFF;
+        } else if (Theme.norisk()) {
+            int fill = kind == Kind.PRIMARY && enabled ? Theme.alpha(Theme.ACCENT, hov ? 0xF0 : 0xC8) : kind == Kind.GHOST && !hov ? 0 : Theme.RAISED;
+            int border = hov ? Theme.TEXT : kind == Kind.PRIMARY && enabled ? Theme.ACCENT_HOVER : Theme.BORDER;
+            if (fill != 0 || hov) Draw.flat(g, x, y, w, h, fill, border);
+            fg = !enabled ? Theme.DIM : kind == Kind.DANGER ? Theme.RED : 0xFFFFFFFF;
         } else if (bg != 0) Draw.round(g, x, y, w, h, Theme.R_CTRL, bg);
         textCenter(Draw.ellipsize(font, label, w - 6), x + w / 2, textY(y, h), fg);
         if (enabled) click(x, y, w, h, onClick);
@@ -177,11 +188,15 @@ public final class Ui {
     public void toggle(int x, int y, boolean on, Consumer<Boolean> set) {
         int w = 20, h = 11;
         boolean hov = hover(x, y, w, h);
-        if (Theme.minecraft()) {
-            // Square track with a beveled block as the knob, like the game's sliders.
-            g.fill(x, y, x + w, y + h, 0xFF000000);
-            g.fill(x + 1, y + 1, x + w - 1, y + h - 1, on ? Theme.ACCENT : 0xFF3A3A3A);
-            Draw.bevel(g, on ? x + w - 9 : x, y - 1, 9, h + 2, 0xFF8B8B8B, hov, true);
+        if (Theme.java()) {
+            // The game's checkbox, right-aligned in the switch area.
+            int s = 12, cx = x + w - s, cy = y + (h - s) / 2;
+            Draw.sprite(g, on ? (hov ? "widget/checkbox_selected_highlighted" : "widget/checkbox_selected")
+                    : (hov ? "widget/checkbox_highlighted" : "widget/checkbox"), cx, cy, s, s);
+        } else if (Theme.norisk()) {
+            Draw.flat(g, x, y, w, h, on ? Theme.alpha(Theme.ACCENT, 0xD0) : Theme.INSET, hov ? Theme.TEXT : Theme.BORDER);
+            int kx = on ? x + w - 9 : x + 2;
+            g.fill(kx, y + 2, kx + 7, y + h - 2, on ? 0xFFFFFFFF : Theme.MUTED);
         } else {
             Draw.round(g, x, y, w, h, 5, on ? (hov ? Theme.ACCENT_HOVER : Theme.ACCENT) : (hov ? Theme.CTRL_HOVER : Theme.SWITCH_OFF));
             Draw.circle(g, on ? x + w - 9 : x + 2, y + 2, 7, Theme.KNOB);
@@ -191,10 +206,16 @@ public final class Ui {
 
     public void stepper(int x, int y, int w, String value, Runnable minus, Runnable plus) {
         int h = CTRL_H, b = 14;
-        Draw.roundBordered(g, x, y, w, h, Theme.R_CTRL, Theme.BORDER, Theme.INSET);
         boolean hm = hover(x, y, b, h), hp = hover(x + w - b, y, b, h);
-        if (hm) Draw.round(g, x + 1, y + 1, b - 1, h - 2, 2, Theme.RAISED);
-        if (hp) Draw.round(g, x + w - b, y + 1, b - 1, h - 2, 2, Theme.RAISED);
+        if (Theme.java()) {
+            Draw.sprite(g, "widget/text_field", x + b, y, w - 2 * b, h);
+            Draw.javaButton(g, x, y, b, h, hm, true);
+            Draw.javaButton(g, x + w - b, y, b, h, hp, true);
+        } else {
+            Draw.roundBordered(g, x, y, w, h, Theme.R_CTRL, Theme.BORDER, Theme.INSET);
+            if (hm) Draw.round(g, x + 1, y + 1, b - 1, h - 2, 2, Theme.RAISED);
+            if (hp) Draw.round(g, x + w - b, y + 1, b - 1, h - 2, 2, Theme.RAISED);
+        }
         textCenter("-", x + b / 2, textY(y, h), Theme.TEXT);
         textCenter("+", x + w - b / 2, textY(y, h), Theme.TEXT);
         textCenter(value, x + w / 2, textY(y, h), Theme.TEXT_STRONG);
@@ -205,28 +226,51 @@ public final class Ui {
     public void chip(int x, int y, int w, String label, boolean selected, Runnable onClick) {
         int h = 12;
         boolean hov = hover(x, y, w, h);
-        Draw.roundBordered(g, x, y, w, h, Theme.R_CTRL, selected ? Theme.ACCENT : (hov ? Theme.CTRL_HOVER : Theme.BORDER), Theme.WINDOW);
-        textCenter(label, x + w / 2, textY(y, h), selected ? Theme.ACCENT : (hov ? Theme.TEXT : Theme.MUTED));
+        if (Theme.java()) {
+            Draw.javaButton(g, x, y, w, h, hov || selected, true);
+            textCenter(label, x + w / 2, textY(y, h), selected ? 0xFFFFFF55 : (hov ? 0xFFFFFFFF : 0xFFE0E0E0));
+        } else if (Theme.norisk()) {
+            Draw.flat(g, x, y, w, h, selected ? Theme.alpha(Theme.ACCENT, 0x70) : Theme.alpha(Theme.INSET, 0x80),
+                    selected ? Theme.ACCENT : (hov ? Theme.TEXT : Theme.BORDER));
+            textCenter(label, x + w / 2, textY(y, h), selected || hov ? 0xFFFFFFFF : Theme.MUTED);
+        } else {
+            Draw.roundBordered(g, x, y, w, h, Theme.R_CTRL, selected ? Theme.ACCENT : (hov ? Theme.CTRL_HOVER : Theme.BORDER), Theme.WINDOW);
+            textCenter(label, x + w / 2, textY(y, h), selected ? Theme.ACCENT : (hov ? Theme.TEXT : Theme.MUTED));
+        }
         click(x, y, w, h, onClick);
     }
 
     public int segmentedWidth(String[] items) {
         int total = 4;
-        for (String it : items) total += font.width(it) + 14;
+        for (String it : items) total += font.width(Theme.head(it)) + 14;
         return total + 2 * (items.length - 1);
     }
 
     public int segmented(int x, int y, String[] items, int selected, Consumer<Integer> select) {
         int h = 14, pad = 2, total = pad;
-        for (String it : items) total += font.width(it) + 14;
+        for (String it : items) total += font.width(Theme.head(it)) + 14;
         total += pad * (items.length - 1) + pad;
-        Draw.round(g, x, y, total, h + pad * 2, Theme.R_PANEL, Theme.INSET);
+        if (!Theme.java() && !Theme.norisk()) Draw.round(g, x, y, total, h + pad * 2, Theme.R_PANEL, Theme.INSET);
         int cx = x + pad;
         for (int i = 0; i < items.length; i++) {
-            int w = font.width(items[i]) + 14;
+            String label = Theme.head(items[i]);
+            int w = font.width(label) + 14;
             boolean sel = i == selected, hov = hover(cx, y + pad, w, h);
-            if (sel) Draw.round(g, cx, y + pad, w, h, Theme.R_CTRL, Theme.RAISED_HOVER);
-            textCenter(items[i], cx + w / 2, textY(y + pad, h), sel ? Theme.TEXT_STRONG : (hov ? Theme.TEXT : Theme.MUTED));
+            int fg;
+            if (Theme.java()) {
+                // Like the game's tab bars: every item is a button, the selected one stays lit with yellow text.
+                Draw.javaButton(g, cx, y + pad, w, h, sel || hov, true);
+                fg = sel ? 0xFFFFFF55 : hov ? 0xFFFFFFFF : 0xFFD0D0D0;
+            } else if (Theme.norisk()) {
+                // Like NoRisk's top tabs: the selected one is filled with the accent and outlined.
+                if (sel) Draw.flat(g, cx, y + pad, w, h, Theme.alpha(Theme.ACCENT, 0xC0), Theme.ACCENT_HOVER);
+                else Draw.flat(g, cx, y + pad, w, h, hov ? Theme.RAISED : Theme.alpha(Theme.RAISED, 0x70), hov ? Theme.TEXT : Theme.BORDER);
+                fg = sel || hov ? 0xFFFFFFFF : Theme.TEXT;
+            } else {
+                if (sel) Draw.round(g, cx, y + pad, w, h, Theme.R_CTRL, Theme.RAISED_HOVER);
+                fg = sel ? Theme.TEXT_STRONG : (hov ? Theme.TEXT : Theme.MUTED);
+            }
+            textCenter(label, cx + w / 2, textY(y + pad, h), fg);
             int idx = i;
             click(cx, y + pad, w, h, () -> select.accept(idx));
             cx += w + pad;
@@ -238,6 +282,12 @@ public final class Ui {
         if (content <= view) return;
         int barH = Math.max(12, h * view / content);
         int barY = y + (int) Math.round((h - barH) * (scroll / (content - view)));
-        Draw.round(g, x, barY, 3, barH, 1, Theme.RAISED_HOVER);
+        if (Theme.java()) {
+            Draw.sprite(g, "widget/scroller", x - 2, barY, 6, barH);
+        } else if (Theme.norisk()) {
+            g.fill(x, barY, x + 3, barY + barH, Theme.ACCENT);
+        } else {
+            Draw.round(g, x, barY, 3, barH, 1, Theme.RAISED_HOVER);
+        }
     }
 }

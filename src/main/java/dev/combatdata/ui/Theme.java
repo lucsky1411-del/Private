@@ -17,27 +17,58 @@ public final class Theme {
     public static int GRID, GRID_5;
     public static boolean dark;
     public static int R_WINDOW = 6, R_PANEL = 4, R_CTRL = 3;
-    /** Current menu style (Themes.STYLE_*): corner shapes, text shadow and button look. */
-    public static int style = dev.combatdata.core.Themes.STYLE_CLASSIC;
-    public static boolean shadow;
+    /** Current menu style (Themes.STYLE_*): shapes, widgets, transparency and text shadow. Colors come from the theme. */
+    public static int style = Themes.STYLE_CLASSIC;
+    public static boolean shadow, caps;
 
-    /** Corner radius for this style: square in Minecraft, rounder in Modern. */
+    /** Corner radius for this style: Java and NoRisk are square. */
     public static int radius(int r) {
-        return style == dev.combatdata.core.Themes.STYLE_MINECRAFT ? 0 : style == dev.combatdata.core.Themes.STYLE_MODERN && r > 0 ? r + 2 : r;
+        return style == Themes.STYLE_CLASSIC ? r : 0;
+    }
+
+    public static boolean java() {
+        return style == Themes.STYLE_JAVA;
+    }
+
+    public static boolean norisk() {
+        return style == Themes.STYLE_NORISK;
+    }
+
+    /** Headings and tab names: upper case in the NoRisk style. */
+    public static String head(String s) {
+        return caps && s != null ? s.toUpperCase(java.util.Locale.ROOT) : s;
     }
 
     public static int mixColor(int a, int b, double f) {
-        return dev.combatdata.core.Themes.mix(a, b, f);
+        return Themes.mix(a, b, f);
     }
 
-    public static boolean minecraft() {
-        return style == dev.combatdata.core.Themes.STYLE_MINECRAFT;
-    }
+    private static int appliedStyle = -1;
 
-    public static void applyStyle(int s, ThemeSpec classic) {
+    public static void applyStyle(int s, ThemeSpec spec) {
+        if (spec == null || (s == appliedStyle && spec.equals(current))) return;
+        appliedStyle = s;
         style = s;
-        shadow = s == dev.combatdata.core.Themes.STYLE_MINECRAFT;
-        apply(dev.combatdata.core.Themes.forStyle(s, classic));
+        shadow = s != Themes.STYLE_CLASSIC;
+        caps = s == Themes.STYLE_NORISK;
+        current = null;
+        apply(spec);
+        // Java and NoRisk let the (blurred) game show through, like their own menus.
+        if (s == Themes.STYLE_NORISK) {
+            WINDOW = alpha(WINDOW, 0xB4);
+            PANEL = alpha(PANEL, 0x8C);
+            INSET = alpha(INSET, 0xA0);
+            RAISED = alpha(RAISED, 0xB0);
+        } else if (s == Themes.STYLE_JAVA) {
+            WINDOW = alpha(WINDOW, 0xC8);
+            PANEL = alpha(PANEL, 0xB4);
+            INSET = alpha(INSET, 0xC0);
+        }
+        RAISED_HOVER = Themes.mix(RAISED, TEXT, 0.07);
+        ROW_HOVER = Themes.mix(PANEL, TEXT, s == Themes.STYLE_CLASSIC ? 0.03 : 0.08);
+        FILTERED = Themes.mix(DIM, PANEL, 0.3);
+        GRID = Themes.mix(INSET, TEXT, 0.05);
+        GRID_5 = Themes.mix(INSET, TEXT, 0.11);
     }
 
     private static ThemeSpec current;

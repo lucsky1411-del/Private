@@ -1542,7 +1542,7 @@ public final class CoreTests {
         ld.clamp();
         check("тема: удалённая тема заменяется темой по умолчанию", ld.theme.equals(Themes.DEFAULT_ID)
                 && ld.diffCount(st) == 2);
-        Settings bad = Settings.fromMap(Map.of("theme", "nope", "customThemes", List.of(Map.of("id", "terracotta"), "x",
+        Settings bad = Settings.fromMap(Map.of("styleRev", 2, "theme", "nope", "customThemes", List.of(Map.of("id", "terracotta"), "x",
                 Map.of("id", "c", "name", "N", "colors", Map.of("accent", "#00FF00", "text", "zz")))));
         check("тема: повреждённые записи тем отбрасываются, цвета из темы по умолчанию",
                 bad.theme.equals(Themes.DEFAULT_ID) && bad.customThemes.size() == 1
@@ -1755,13 +1755,22 @@ public final class CoreTests {
         check("progress: week vs last week", hr.metric() == Progress.Metric.HIT_RATE && Math.abs(hr.current() - 80) < 1e-9
                 && Math.abs(hr.previous() - 50) < 1e-9 && Math.abs(hr.diff() - 30) < 1e-9);
         Settings sty = new Settings();
-        check("style: minecraft is the default", sty.uiStyle == Themes.STYLE_MINECRAFT);
+        check("style: java is the default", sty.uiStyle == Themes.STYLE_JAVA && sty.theme.equals("java"));
         sty.uiStyle = 9;
-        check("style: bad value falls back", sty.clamp().uiStyle == Themes.STYLE_MINECRAFT);
-        sty.uiStyle = Themes.STYLE_MODERN;
-        check("style: saved", Settings.fromMap(sty.toMap()).uiStyle == Themes.STYLE_MODERN);
-        check("style: palettes", Themes.forStyle(Themes.STYLE_MINECRAFT, null).id().equals("minecraft")
-                && Themes.forStyle(Themes.STYLE_MODERN, null).id().equals("modern") && Themes.forStyle(Themes.STYLE_CLASSIC, Themes.defaultTheme()) == Themes.defaultTheme());
+        check("style: bad value falls back", sty.clamp().uiStyle == Themes.STYLE_JAVA);
+        sty.uiStyle = Themes.STYLE_NORISK;
+        sty.theme = "obsidian";
+        Settings sb = Settings.fromMap(sty.toMap());
+        check("style: saved with any theme (colors free in every style)", sb.uiStyle == Themes.STYLE_NORISK && sb.theme.equals("obsidian"));
+        Map<String, Object> pre = new java.util.LinkedHashMap<>(sty.toMap());
+        pre.remove("styleRev");
+        pre.put("uiStyle", Themes.STYLE_JAVA);
+        pre.put("theme", "terracotta");
+        check("style: old config gets the style's colors once", Settings.fromMap(pre).theme.equals("java"));
+        pre.put("uiStyle", Themes.STYLE_CLASSIC);
+        check("style: classic keeps its theme", Settings.fromMap(pre).theme.equals("terracotta"));
+        check("style: palettes exist", Themes.builtin(Themes.themeForStyle(Themes.STYLE_JAVA)).id().equals("java")
+                && Themes.builtin(Themes.themeForStyle(Themes.STYLE_NORISK)).id().equals("norisk"));
         IndicatorConfig ic = new IndicatorConfig();
         ic.jrVolume = 30;
         ic.tbVolume = 140;

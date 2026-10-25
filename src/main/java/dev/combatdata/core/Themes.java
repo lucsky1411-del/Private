@@ -23,10 +23,10 @@ public final class Themes {
                     0x9EA2A8, 0x5FC4D6, 0x76C68A, 0xE5736B, 0xE0B050, 0x8C9EF5),
             new ThemeSpec("nether", "Nether", 0x241718, 0x2D1D1F, 0x1B1112, 0x452B2E, 0x382427, 0xF0E0DC,
                     0xB39A96, 0xF0703A, 0x8CC084, 0xFF6B6B, 0xF2B84B, 0x7FA7E0),
-            new ThemeSpec("minecraft", "Minecraft", 0x2B2B2B, 0x1E1E1E, 0x000000, 0x0A0A0A, 0x6F6F6F, 0xFFFFFF,
-                    0xA0A0A0, 0x5B9C3A, 0x55FF55, 0xFF5555, 0xFFAA00, 0x55AAFF),
-            new ThemeSpec("modern", "Modern", 0x1A1A1A, 0x212121, 0x141414, 0x2E2E2E, 0x2A2A2A, 0xF2F2F2,
-                    0x9A9A9A, 0xE5484D, 0x4CC38A, 0xF2555A, 0xF5B83D, 0x5B9DFF),
+            new ThemeSpec("java", "Java", 0x101010, 0x1C1C1C, 0x000000, 0x6E6E6E, 0x3A3A3A, 0xFFFFFF,
+                    0xA8A8A8, 0xFFD94A, 0x55FF55, 0xFF5555, 0xFFAA00, 0x55AAFF),
+            new ThemeSpec("norisk", "NoRisk", 0x174A17, 0x226422, 0x0F360F, 0x2FCB2F, 0x1F5C1F, 0xFFFFFF,
+                    0xCFE8CF, 0x2BD62B, 0x55FF55, 0xFF5555, 0xF2C200, 0x55AAFF),
             new ThemeSpec("quartz", "Quartz", 0xF3F1EC, 0xFBFAF7, 0xE7E4DD, 0xD3CFC6, 0xE9E6DF, 0x2B2A27,
                     0x6E6B64, 0xC2552F, 0x2E8B47, 0xC8382B, 0xB07A10, 0x2F6FB5));
 
@@ -34,20 +34,24 @@ public final class Themes {
     }
 
     /** Menu styles: the colors and shapes of the whole menu. Classic uses the theme picked in Appearance. */
-    public static final int STYLE_CLASSIC = 0, STYLE_MINECRAFT = 1, STYLE_MODERN = 2;
+    /**
+     * Menu styles decide shapes, widgets and transparency; colors always come from the chosen theme, so every style
+     * can be recolored. Picking a style also picks its matching theme as a starting point.
+     */
+    public static final int STYLE_CLASSIC = 0, STYLE_JAVA = 1, STYLE_NORISK = 2;
 
-    public static ThemeSpec forStyle(int style, ThemeSpec classic) {
+    public static String themeForStyle(int style) {
         return switch (style) {
-            case STYLE_MINECRAFT -> builtin("minecraft");
-            case STYLE_MODERN -> builtin("modern");
-            default -> classic;
+            case STYLE_JAVA -> "java";
+            case STYLE_NORISK -> "norisk";
+            default -> DEFAULT_ID;
         };
     }
 
     public static String styleName(int style) {
         return switch (style) {
-            case STYLE_MINECRAFT -> "Minecraft";
-            case STYLE_MODERN -> t("Современный (как NoRisk)", "Modern (NoRisk-like)", "Modern (wie NoRisk)");
+            case STYLE_JAVA -> "Java";
+            case STYLE_NORISK -> t("Как NoRisk", "NoRisk-like", "Wie NoRisk");
             default -> t("Классический", "Classic", "Klassisch");
         };
     }
