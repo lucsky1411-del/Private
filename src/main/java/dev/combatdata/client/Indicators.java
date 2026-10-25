@@ -130,7 +130,7 @@ public final class Indicators {
         IndicatorConfig c = cfg();
         c.enabled = !c.enabled;
         CombatDataClient.saveSettings();
-        if (mc.player != null) mc.player.sendOverlayMessage(Component.literal(c.enabled
-                ? t("Индикаторы включены", "Indicators on") : t("Индикаторы скрыты", "Indicators hidden")));
+        if (mc.player != null) mc.player.displayClientMessage(Component.literal(c.enabled
+                ? t("Индикаторы включены", "Indicators on") : t("Индикаторы скрыты", "Indicators hidden")), true);
     }
 }

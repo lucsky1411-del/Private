@@ -972,7 +972,7 @@ final class SettingsTab implements Tab {
         ui.button(right - bw, y + 7, bw, 16, t("Открыть", "Open"), Ui.Kind.SECONDARY, true, () -> {
             try {
                 java.nio.file.Files.createDirectories(Recordings.dir());
-                net.minecraft.Util.getPlatform().openUri(Recordings.dir().toUri());
+                net.minecraft.util.Util.getPlatform().openUri(Recordings.dir().toUri());
             } catch (Exception ex) {
                 CombatDataClient.LOG.warn("[CD] не удалось открыть папку: {}", ex.toString());
             }

@@ -6,7 +6,7 @@ import dev.combatdata.client.Recordings;
 import dev.combatdata.core.Cdrec;
 import dev.combatdata.core.Recording;
 import dev.combatdata.core.RecordingQuery;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import static dev.combatdata.core.Lang.t;
 
 import java.io.IOException;
