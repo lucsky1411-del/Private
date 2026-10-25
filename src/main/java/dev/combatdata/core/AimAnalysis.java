@@ -74,9 +74,9 @@ public final class AimAnalysis {
         }
     }
 
-    public record Tip(String id, Tone tone, double importance, String ru, String en) {
+    public record Tip(String id, Tone tone, double importance, String ru, String en, String de) {
         public String text() {
-            return Lang.t(ru, en);
+            return Lang.t(ru, en, de);
         }
     }
 
@@ -254,17 +254,18 @@ public final class AimAnalysis {
                         n + " из " + miss + " промахов прицел был " + (l ? "левее" : "правее") + " противника: цельтесь чуть "
                                 + (l ? "правее" : "левее"),
                         n + " of " + miss + " misses had the crosshair " + (l ? "left" : "right") + " of the opponent: aim a bit more to the "
-                                + (l ? "right" : "left")));
+                                + (l ? "right" : "left"), n + " von " + miss + " Fehlschlägen war das Fadenkreuz " + (l ? "links" : "rechts") + " vom Gegner: ziel etwas mehr nach "
+                                + (l ? "rechts" : "links")));
             }
             if (above >= 3 && above >= 0.4 * miss) {
                 out.add(new Tip("aim-miss-high", Tone.BAD, 0.9 + above / (double) miss,
                         above + " из " + miss + " промахов ушли над головой: цельтесь ниже, в грудь",
-                        above + " of " + miss + " misses went over the head: aim lower, at the chest"));
+                        above + " of " + miss + " misses went over the head: aim lower, at the chest", above + " von " + miss + " Fehlschläge gingen über den Kopf: ziel tiefer, auf die Brust"));
             }
             if (below >= 3 && below >= 0.4 * miss) {
                 out.add(new Tip("aim-miss-low", Tone.BAD, 0.9 + below / (double) miss,
                         below + " из " + miss + " промахов ушли ниже ног: цельтесь выше, в грудь",
-                        below + " of " + miss + " misses went below the feet: aim higher, at the chest"));
+                        below + " of " + miss + " misses went below the feet: aim higher, at the chest", below + " von " + miss + " Fehlschläge gingen unter die Füße: ziel höher, auf die Brust"));
             }
         }
 
@@ -276,21 +277,24 @@ public final class AimAnalysis {
             if (r.leadDeg() <= -0.8 && worse) {
                 String rr = Double.isFinite(r.trackRatio()) ? " (мышь успевает на " + Math.round(r.trackRatio() * 100) + "%)" : "";
                 String re = Double.isFinite(r.trackRatio()) ? " (your mouse keeps up " + Math.round(r.trackRatio() * 100) + "%)" : "";
+                String rd = Double.isFinite(r.trackRatio()) ? " (deine Maus kommt zu " + Math.round(r.trackRatio() * 100) + "% mit)" : "";
                 out.add(new Tip("aim-lag", Tone.BAD, 1.1 + Math.abs(r.leadDeg()) / 3 + Math.max(0, gap) / 50,
                         "Против стрейфа прицел отстаёт на " + Fmt1.f(-r.leadDeg()) + "°" + rr
                                 + ": ведите прицел вместе с противником, держите его чуть впереди",
                         "Against strafes your crosshair trails by " + Fmt1.f(-r.leadDeg()) + "°" + re
-                                + ": move with the opponent and keep the crosshair slightly ahead"));
+                                + ": move with the opponent and keep the crosshair slightly ahead", "Gegen Strafes hängt dein Fadenkreuz hinterher um " + Fmt1.f(-r.leadDeg()) + "°" + rd
+                                + ": geh mit dem Gegner mit und halt das Fadenkreuz leicht vor ihm"));
             } else if (r.leadDeg() >= 1.2 && worse) {
                 out.add(new Tip("aim-overshoot", Tone.BAD, 1.0 + r.leadDeg() / 3,
                         "Против стрейфа прицел убегает вперёд на " + Fmt1.f(r.leadDeg()) + "°: ведите мышь спокойнее, не перекидывайте",
-                        "Against strafes your crosshair runs " + Fmt1.f(r.leadDeg()) + "° ahead: move the mouse more calmly, do not overshoot"));
+                        "Against strafes your crosshair runs " + Fmt1.f(r.leadDeg()) + "° ahead: move the mouse more calmly, do not overshoot", "Gegen Strafes läuft dein Fadenkreuz " + Fmt1.f(r.leadDeg()) + "° voraus: beweg die Maus ruhiger, schieß nicht übers Ziel hinaus"));
             } else if (gap >= 15) {
                 out.add(new Tip("aim-strafe", Tone.TIP, 0.8 + gap / 50,
                         "По стрейфящему противнику попадаете " + Math.round(st.pct()) + "%, по стоящему " + Math.round(sl.pct())
                                 + "%: тренируйте трекинг, следите за его телом, а не за прицелом",
                         "You hit " + Math.round(st.pct()) + "% against strafing opponents and " + Math.round(sl.pct())
-                                + "% against still ones: practice tracking, watch their body, not the crosshair"));
+                                + "% against still ones: practice tracking, watch their body, not the crosshair", "Du triffst " + Math.round(st.pct()) + "% gegen seitlich laufende Gegner und " + Math.round(sl.pct())
+                                + "% gegen stehende: übe Tracking, schau auf den Körper, nicht aufs Fadenkreuz"));
             }
         }
 
@@ -301,7 +305,8 @@ public final class AimAnalysis {
                     "Удары на резком повороте мыши попадают " + Math.round(fl.pct()) + "% против " + Math.round(ca.pct())
                             + "%: сначала наведитете прицел, потом бейте",
                     "Swings during a fast mouse turn land " + Math.round(fl.pct()) + "% vs " + Math.round(ca.pct())
-                            + "%: get the crosshair on them first, then click"));
+                            + "%: get the crosshair on them first, then click", "Schläge während einer schnellen Mausbewegung treffen " + Math.round(fl.pct()) + "% vs. " + Math.round(ca.pct())
+                            + "%: erst Fadenkreuz auf den Gegner, dann klicken"));
         }
 
         // Jumping opponents.
@@ -311,7 +316,8 @@ public final class AimAnalysis {
                     "Когда противник прыгает, попадаете " + Math.round(jp.pct()) + "% (иначе " + Math.round(lv.pct())
                             + "%): ведите прицел вверх-вниз вместе с ним",
                     "When the opponent jumps you hit " + Math.round(jp.pct()) + "% (otherwise " + Math.round(lv.pct())
-                            + "%): follow them up and down with the crosshair"));
+                            + "%): follow them up and down with the crosshair", "Wenn der Gegner springt, triffst du " + Math.round(jp.pct()) + "% (sonst " + Math.round(lv.pct())
+                            + "%): geh mit dem Fadenkreuz mit hoch und runter"));
         }
 
         // Own jumps / crits.
@@ -321,7 +327,8 @@ public final class AimAnalysis {
                     "В прыжке попадаете " + Math.round(ai.pct()) + "%, на земле " + Math.round(gr.pct())
                             + "%: в прыжке держите прицел на теле, не дёргайте мышь",
                     "In the air you hit " + Math.round(ai.pct()) + "%, on the ground " + Math.round(gr.pct())
-                            + "%: keep the crosshair on the body while jumping, do not jerk the mouse"));
+                            + "%: keep the crosshair on the body while jumping, do not jerk the mouse", "In der Luft triffst du " + Math.round(ai.pct()) + "%, am Boden " + Math.round(gr.pct())
+                            + "%: halt das Fadenkreuz beim Springen auf dem Körper, reiß die Maus nicht herum"));
         }
 
         // Long range: the body is a thin target.
@@ -331,7 +338,8 @@ public final class AimAnalysis {
                     "С 3+ блоков попадаете " + Math.round(far.pct()) + "% (вблизи " + Math.round(mid.pct())
                             + "%): там противник узкий, подойдите ближе или цельтесь точнее в центр",
                     "From 3+ blocks you hit " + Math.round(far.pct()) + "% (closer " + Math.round(mid.pct())
-                            + "%): they are thin there, step closer or aim more at the center"));
+                            + "%): they are thin there, step closer or aim more at the center", "Ab 3 Blöcken triffst du " + Math.round(far.pct()) + "% (näher " + Math.round(mid.pct())
+                            + "%): dort ist er schmal, geh näher ran oder ziel mehr auf die Mitte"));
         }
 
         // Steady offset even on hits.
@@ -342,7 +350,8 @@ public final class AimAnalysis {
                     "Прицел в среднем на " + Fmt1.f(Math.abs(r.biasDeg())) + "° " + (l ? "левее" : "правее")
                             + " центра противника: держите его по центру тела",
                     "Your crosshair sits " + Fmt1.f(Math.abs(r.biasDeg())) + "° " + (l ? "left" : "right")
-                            + " of the opponent's center on average: keep it on the middle of the body"));
+                            + " of the opponent's center on average: keep it on the middle of the body", "Dein Fadenkreuz sitzt im Schnitt " + Fmt1.f(Math.abs(r.biasDeg())) + "° " + (l ? "links" : "rechts")
+                            + " von der Gegnermitte: halt es in der Körpermitte"));
         }
 
         // Height on the body.
@@ -350,11 +359,11 @@ public final class AimAnalysis {
             if (r.meanY() > 0.85) {
                 out.add(new Tip("aim-height-high", Tone.TIP, 0.6 + (r.meanY() - 0.85) * 4,
                         "Бьёте в основном в голову (" + Math.round(r.meanY() * 100) + "% роста): цельтесь в грудь или шею, там больше запаса",
-                        "You mostly hit the head (" + Math.round(r.meanY() * 100) + "% of height): aim at the chest or neck, it leaves more room"));
+                        "You mostly hit the head (" + Math.round(r.meanY() * 100) + "% of height): aim at the chest or neck, it leaves more room", "Du triffst meist den Kopf (" + Math.round(r.meanY() * 100) + "% der Höhe): ziel auf Brust oder Hals, da hast du mehr Spielraum"));
             } else if (r.meanY() < 0.4) {
                 out.add(new Tip("aim-height-low", Tone.TIP, 0.6 + (0.4 - r.meanY()) * 4,
                         "Бьёте в основном по ногам (" + Math.round(r.meanY() * 100) + "% роста): поднимите прицел до груди, прыжки противника не уведут его",
-                        "You mostly hit the legs (" + Math.round(r.meanY() * 100) + "% of height): raise the crosshair to the chest so their jumps do not lose it"));
+                        "You mostly hit the legs (" + Math.round(r.meanY() * 100) + "% of height): raise the crosshair to the chest so their jumps do not lose it", "Du triffst meist die Beine (" + Math.round(r.meanY() * 100) + "% der Höhe): heb das Fadenkreuz auf Brusthöhe, damit du ihn bei Sprüngen nicht verlierst"));
             }
         }
 
@@ -362,20 +371,20 @@ public final class AimAnalysis {
         if (r.onTarget() >= 15 && Double.isFinite(r.edgePct()) && r.edgePct() >= 35) {
             out.add(new Tip("aim-edge", Tone.TIP, 0.6 + r.edgePct() / 100,
                     Math.round(r.edgePct()) + "% попаданий по самому краю хитбокса: это почти промахи, держите прицел ближе к центру",
-                    Math.round(r.edgePct()) + "% of hits landed on the very edge of the hitbox: those are near misses, keep closer to the center"));
+                    Math.round(r.edgePct()) + "% of hits landed on the very edge of the hitbox: those are near misses, keep closer to the center", Math.round(r.edgePct()) + "% der Treffer ganz am Rand der Hitbox: das sind Beinahe-Fehlschläge, bleib näher an der Mitte"));
         }
 
         // Shaky aim.
         if (Double.isFinite(r.spreadDeg()) && r.spreadDeg() >= 6 && r.total() >= 15) {
             out.add(new Tip("aim-shaky", Tone.TIP, 0.5 + r.spreadDeg() / 20,
                     "Прицел гуляет (разброс " + Fmt1.f(r.spreadDeg()) + "°): попробуйте чувствительность чуть ниже и держите прицел на противнике между ударами",
-                    "Your aim wanders (spread " + Fmt1.f(r.spreadDeg()) + "°): try a slightly lower sensitivity and keep the crosshair on them between hits"));
+                    "Your aim wanders (spread " + Fmt1.f(r.spreadDeg()) + "°): try a slightly lower sensitivity and keep the crosshair on them between hits", "Dein Zielen wackelt (Streuung " + Fmt1.f(r.spreadDeg()) + "°): probier eine etwas niedrigere Empfindlichkeit und halt das Fadenkreuz zwischen den Schlägen auf ihm"));
         }
 
         if (out.isEmpty() && acc >= 88 && r.total() >= 20) {
             out.add(new Tip("aim-good", Tone.GOOD, 0.5,
                     "Прицел в порядке: " + Math.round(acc) + "% взмахов на противнике",
-                    "Aim looks good: " + Math.round(acc) + "% of swings were on the opponent"));
+                    "Aim looks good: " + Math.round(acc) + "% of swings were on the opponent", "Zielen sieht gut aus: " + Math.round(acc) + "% der Schläge waren auf dem Gegner"));
         }
         out.sort(Comparator.comparing((Tip t) -> t.tone() == Tone.GOOD).thenComparing(Comparator.comparingDouble(Tip::importance).reversed())
                 .thenComparing(Tip::id));

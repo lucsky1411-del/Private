@@ -27,7 +27,7 @@ final class Find {
     private static final long HOLD_MS = 900, FADE_MS = 1700;
 
     private List<Entry> index;
-    private boolean indexEnglish;
+    private int indexLang = -1;
     private List<Entry> collecting;
     private MenuScreen.TabId tab;
     private int section;
@@ -39,7 +39,7 @@ final class Find {
     private long shownAt;
 
     boolean needsIndex() {
-        return index == null || indexEnglish != Lang.english();
+        return index == null || indexLang != Lang.current();
     }
 
     void invalidate() {
@@ -65,7 +65,7 @@ final class Find {
             out.add(paired ? e.withAlt(other.get(i).label() + " " + nz(other.get(i).hint())) : e);
         }
         index = out;
-        indexEnglish = Lang.english();
+        indexLang = Lang.current();
     }
 
     /** Called by the menu before a tab draws, and by tabs for their sections and groups. */

@@ -1,0 +1,8 @@
+{
+  "key.category.combatdata.main": "Combat Data",
+  "key.combatdata.open_menu": "Menü öffnen",
+  "key.combatdata.save_buffer": "Puffer speichern",
+  "key.combatdata.marker": "Markierung setzen",
+  "key.combatdata.reset_buffer": "Puffer leeren (zweimal drücken)",
+  "key.combatdata.toggle_indicators": "Indikatoren: ein/aus"
+}

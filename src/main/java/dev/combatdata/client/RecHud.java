@@ -42,12 +42,12 @@ public final class RecHud {
 
     static Label label(Settings s) {
         long saved = Recorder.lastSavedWall(), sinceSave = System.currentTimeMillis() - saved;
-        if (saved > 0 && sinceSave < 2500) return new Label(Recorder.lastSavedAuto() ? t("Бой сохранён", "Fight saved")
-                : t("Сохранено", "Saved"), GREEN, false, false);
+        if (saved > 0 && sinceSave < 2500) return new Label(Recorder.lastSavedAuto() ? t("Бой сохранён", "Fight saved", "Kampf gespeichert")
+                : t("Сохранено", "Saved", "Gespeichert"), GREEN, false, false);
         String now = Recorder.clock(Recorder.shownMs()), cap = Recorder.clock(Recorder.capacityMs());
         boolean time = s.hudFormat == Settings.HUD_TIME;
-        if (!Recorder.active()) return new Label("REC " + now + t(" пауза", " paused"), GREY, false, true);
-        if (Recorder.full()) return new Label(time ? "REC " + cap : "REC " + cap + t(" · перезапись", " · overwriting"), RED, true, false);
+        if (!Recorder.active()) return new Label("REC " + now + t(" пауза", " paused", " pausiert"), GREY, false, true);
+        if (Recorder.full()) return new Label(time ? "REC " + cap : "REC " + cap + t(" · перезапись", " · overwriting", " · wird überschrieben"), RED, true, false);
         return new Label(time ? "REC " + now : "REC " + now + " / " + cap, RED, true, false);
     }
 

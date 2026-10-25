@@ -14,12 +14,19 @@ final class StatsView {
     static final int F_OPPONENTS = 0, F_FIGHTS = 1, F_TRADES = 2, F_DISTANCE = 3, F_TIMELINE = 4;
 
     static String[] subs() {
+        if (Lang.german()) return new String[]{"Übersicht", "Angriff", "Verteidigung", "Kämpfe"};
         return Lang.english() ? new String[]{"Overview", "Attack", "Defense", "Fights"}
                 : new String[]{"Обзор", "Атака", "Защита", "Бои"};
     }
 
     private static String[] modes(int sub, boolean narrow) {
         boolean en = Lang.english();
+        if (Lang.german()) return switch (sub) {
+            case ATTACK -> narrow ? new String[]{"Treffer", "Zielen", "Arten", "Combo", "W-Tap"}
+                    : new String[]{"Treffer", "Zielen", "Schlagarten", "Combos", "W-Tap"};
+            case DEFENSE -> new String[]{"Jump Reset", "Rückstoß", narrow ? "Auf mich" : "Treffer auf mich"};
+            default -> new String[]{"Gegner", "Kämpfe", "Trades", narrow ? "Dist." : "Distanz", narrow ? "Zeit" : "Zeitleiste"};
+        };
         return switch (sub) {
             case ATTACK -> en ? (narrow ? new String[]{"Hits", "Aim", "Types", "Combo", "W-tap"}
                     : new String[]{"Hits", "Aim", "Strikes", "Combos", "W-tap"})
@@ -341,7 +348,7 @@ final class StatsView {
             boolean hits = sub == ATTACK && attackMode == A_HITS, jr = sub == DEFENSE && defenseMode == D_JUMP,
                     tk = sub == DEFENSE && defenseMode == D_TAKEN;
             if (hits || jr || tk) {
-                String[] gl = {t("График", "Chart"), t("Список", "List")};
+                String[] gl = {t("График", "Chart", "Diagramm"), t("Список", "List", "Liste")};
                 p = f.place(ui.segmentedWidth(gl), false);
                 ui.segmented(p[0], p[1], gl, (hits ? hitList : jr ? jrList : takenList) ? 1 : 0, i -> {
                     if (hits) hitList = i == 1;
@@ -353,7 +360,7 @@ final class StatsView {
         }
         if (rec != null) {
             StatFilter.WeaponView wv = weaponView();
-            String label = t("Оружие: ", "Weapon: ") + weaponViewName(wv);
+            String label = t("Оружие: ", "Weapon: ", "Waffe: ") + weaponViewName(wv);
             int cw = ui.font.width(label) + 12;
             int[] p = f.place(cw, false);
             ui.chip(p[0], p[1] + 3, cw, label, wv != StatFilter.WeaponView.ALL, () -> {
@@ -363,18 +370,18 @@ final class StatsView {
             any = true;
         }
         if (graphKind() != 0) {
-            toggleChip(ui, f, w < 360 ? t("Отфильтр.", "Filtered") : t("Показывать отфильтрованное", "Show filtered"),
+            toggleChip(ui, f, w < 360 ? t("Отфильтр.", "Filtered", "Gefiltert") : t("Показывать отфильтрованное", "Show filtered", "Gefilterte anzeigen"),
                     showFiltered, () -> showFiltered = !showFiltered);
         }
         if (opp != null) {
-            String label = t("Противник: ", "Opponent: ") + Draw.ellipsize(ui.font, oppName, w / 3) + "  ×";
+            String label = t("Противник: ", "Opponent: ", "Gegner: ") + Draw.ellipsize(ui.font, oppName, w / 3) + "  ×";
             int cw = ui.font.width(label) + 12;
             int[] p = f.place(cw, false);
             ui.chip(p[0], p[1] + 3, cw, label, true, () -> filter(null, null));
             any = true;
         }
         if (timeFrom >= 0) {
-            String label = t("Участок ", "Range ") + Fmt.clock(timeFrom) + "–" + Fmt.clock(timeTo) + "  ×";
+            String label = t("Участок ", "Range ", "Bereich ") + Fmt.clock(timeFrom) + "–" + Fmt.clock(timeTo) + "  ×";
             int cw = ui.font.width(label) + 12;
             int[] p = f.place(cw, false);
             ui.chip(p[0], p[1] + 3, cw, label, true, () -> timeFrom = timeTo = -1);
@@ -382,21 +389,21 @@ final class StatsView {
         }
         int g = graphKind();
         if (g == 1) {
-            toggleChip(ui, f, t("Неудачные", "Failed"), showFails, () -> showFails = !showFails);
-            toggleChip(ui, f, t("Без прыжка", "No jump"), showNoJump, () -> showNoJump = !showNoJump);
+            toggleChip(ui, f, t("Неудачные", "Failed", "Misslungen"), showFails, () -> showFails = !showFails);
+            toggleChip(ui, f, t("Без прыжка", "No jump", "Kein Sprung"), showNoJump, () -> showNoJump = !showNoJump);
             toggleChip(ui, f, "Fly out", showFlyOut, () -> showFlyOut = !showFlyOut);
         } else if (g == 5) {
-            toggleChip(ui, f, t("Повтор", "Replay"), replayOn, () -> replayOn = !replayOn);
+            toggleChip(ui, f, t("Повтор", "Replay", "Wiederholung"), replayOn, () -> replayOn = !replayOn);
         } else if (g == 4) {
-            toggleChip(ui, f, t("Снаряды", "Projectiles"), showProjectiles, () -> showProjectiles = !showProjectiles);
+            toggleChip(ui, f, t("Снаряды", "Projectiles", "Geschosse"), showProjectiles, () -> showProjectiles = !showProjectiles);
         } else if (g == 2) {
-            toggleChip(ui, f, t("Промахи", "Misses"), showMisses, () -> showMisses = !showMisses);
-            toggleChip(ui, f, t("Без подтв.", "Unconfirmed"), showUnconfirmed, () -> showUnconfirmed = !showUnconfirmed);
+            toggleChip(ui, f, t("Промахи", "Misses", "Fehlschläge"), showMisses, () -> showMisses = !showMisses);
+            toggleChip(ui, f, t("Без подтв.", "Unconfirmed", "Unbestätigt"), showUnconfirmed, () -> showUnconfirmed = !showUnconfirmed);
         }
         if (g != 0) {
             Chart c = chart();
             if (c.zoomed()) {
-                String l1 = t("По участку", "This range"), l2 = t("Весь масштаб", "Full view");
+                String l1 = t("По участку", "This range", "Dieser Bereich"), l2 = t("Весь масштаб", "Full view", "Gesamtansicht");
                 int w2 = ui.buttonWidth(l2), w1 = ui.buttonWidth(l1);
                 int[] p = f.place(w2, false);
                 ui.button(p[0], p[1] + 1, w2, 16, l2, Ui.Kind.GHOST, true, c::resetView);
@@ -406,7 +413,7 @@ final class StatsView {
                     timeTo = c.view().to();
                 });
             } else {
-                String hint = t("Колесо: масштаб", "Wheel: zoom");
+                String hint = t("Колесо: масштаб", "Wheel: zoom", "Mausrad: Zoom");
                 int[] p = f.place(ui.font.width(hint), true);
                 if (p != null) ui.text(hint, p[0], Ui.textY(p[1] + 1, 16), Theme.DIM);
             }
@@ -443,49 +450,49 @@ final class StatsView {
 
     private static String weaponViewName(StatFilter.WeaponView v) {
         return switch (v) {
-            case ALL -> t("Все", "All");
-            case SWORD -> t("Меч", "Sword");
+            case ALL -> t("Все", "All", "Alle");
+            case SWORD -> t("Меч", "Sword", "Schwert");
             case HAND -> t("Рука", "Hand");
-            case OTHER -> t("Другое", "Other");
+            case OTHER -> t("Другое", "Other", "Andere");
         };
     }
 
     static String weaponName(Weapon w) {
         return switch (w) {
-            case SWORD -> t("Меч", "Sword");
-            case AXE -> t("Топор", "Axe");
-            case MACE -> t("Булава", "Mace");
-            case SPEAR -> t("Копьё", "Spear");
+            case SWORD -> t("Меч", "Sword", "Schwert");
+            case AXE -> t("Топор", "Axe", "Axt");
+            case MACE -> t("Булава", "Mace", "Streitkolben");
+            case SPEAR -> t("Копьё", "Spear", "Speer");
             case HAND -> t("Рука", "Hand");
-            case OTHER -> t("Другое", "Other");
-            case UNKNOWN -> t("Не меч (старая запись)", "Not a sword (old recording)");
+            case OTHER -> t("Другое", "Other", "Andere");
+            case UNKNOWN -> t("Не меч (старая запись)", "Not a sword (old recording)", "Kein Schwert (alte Aufnahme)");
         };
     }
 
     static String hiddenName(StatFilter.Hidden h) {
         return switch (h) {
-            case SWORD -> t("меч", "sword");
-            case AXE -> t("топор", "axe");
-            case MACE -> t("булава", "mace");
-            case SPEAR -> t("копьё", "spear");
-            case HAND -> t("рука", "hand");
-            case OTHER_WEAPON -> t("другое оружие", "other weapon");
-            case UNKNOWN_WEAPON -> t("не меч", "not a sword");
-            case TEAMMATE -> t("тиммейты", "teammates");
+            case SWORD -> t("меч", "sword", "Schwert");
+            case AXE -> t("топор", "axe", "Axt");
+            case MACE -> t("булава", "mace", "Streitkolben");
+            case SPEAR -> t("копьё", "spear", "Speer");
+            case HAND -> t("рука", "hand", "Hand");
+            case OTHER_WEAPON -> t("другое оружие", "other weapon", "andere Waffe");
+            case UNKNOWN_WEAPON -> t("не меч", "not a sword", "kein Schwert");
+            case TEAMMATE -> t("тиммейты", "teammates", "Teammitglieder");
             case NPC -> "NPC";
-            case HIGH_PING -> t("высокий пинг", "high ping");
+            case HIGH_PING -> t("высокий пинг", "high ping", "hoher Ping");
         };
     }
 
     private static String projectileName(String typeId) {
         String id = shortId(typeId);
-        if (id == null) return t("неизвестно", "unknown");
+        if (id == null) return t("неизвестно", "unknown", "unbekannt");
         return switch (id) {
-            case "fishing_bobber" -> t("удочка", "rod");
-            case "arrow", "spectral_arrow" -> t("стрела", "arrow");
-            case "trident" -> t("трезубец", "trident");
-            case "snowball" -> t("снежок", "snowball");
-            case "egg" -> t("яйцо", "egg");
+            case "fishing_bobber" -> t("удочка", "rod", "Angel");
+            case "arrow", "spectral_arrow" -> t("стрела", "arrow", "Pfeil");
+            case "trident" -> t("трезубец", "trident", "Dreizack");
+            case "snowball" -> t("снежок", "snowball", "Schneeball");
+            case "egg" -> t("яйцо", "egg", "Ei");
             default -> id;
         };
     }
@@ -500,11 +507,11 @@ final class StatsView {
     }
 
     private static String incomingKindText(IncomingHitEvent h) {
-        if (h.kind() == null) return t("ближний (старая запись)", "melee (old recording)");
+        if (h.kind() == null) return t("ближний (старая запись)", "melee (old recording)", "Nahkampf (alte Aufnahme)");
         if (h.kindOr() == IncomingHitEvent.Kind.PROJECTILE) {
-            return t("снаряд · ", "projectile · ") + projectileName(h.projectile());
+            return t("снаряд · ", "projectile · ", "Geschoss · ") + projectileName(h.projectile());
         }
-        return t("ближний · ", "melee · ") + weaponText(h.weaponOr(), h.attackerItem());
+        return t("ближний · ", "melee · ", "Nahkampf · ") + weaponText(h.weaponOr(), h.attackerItem());
     }
 
     private static void toggleChip(Ui ui, Flow f, String label, boolean on, Runnable toggle) {
@@ -531,32 +538,32 @@ final class StatsView {
         String[] names;
         if (graphKind() == 1) {
             Stats.JumpStats j = res.jump();
-            summary = t("Попыток ", "Attempts ") + j.attempts() + t(" · успех ", " · success ") + Fmt.pct(j.successRatePct()) + " · σ "
+            summary = t("Попыток ", "Attempts ", "Versuche ") + j.attempts() + t(" · успех ", " · success ", " · Erfolg ") + Fmt.pct(j.successRatePct()) + " · σ "
                     + (j.attempts() == 0 ? "—" : Fmt.num(j.sigmaMs(), 0) + t(" мс", " ms"));
             colors = new int[]{Theme.GREEN, Theme.RED, Theme.MUTED, Theme.BLUE};
-            names = new String[]{t("успех", "success"), t("рано/поздно", "early/late"), t("без прыжка", "no jump"), "fly out"};
+            names = new String[]{t("успех", "success", "Erfolg"), t("рано/поздно", "early/late", "zu früh/zu spät"), t("без прыжка", "no jump", "kein Sprung"), "fly out"};
         } else if (graphKind() == 5) {
-            summary = t("Противник ", "Opponent ") + nz(distName) + t(" · средняя дистанция ", " · mean distance ") + Fmt.num(distMean, 2)
-                    + t(" бл.", " bl.") + (opp == null ? t(" · другой: фильтр в Противниках", " · other: filter in Opponents") : "");
+            summary = t("Противник ", "Opponent ", "Gegner ") + nz(distName) + t(" · средняя дистанция ", " · mean distance ", " · Ø Distanz ") + Fmt.num(distMean, 2)
+                    + t(" бл.", " bl.", " Bl.") + (opp == null ? t(" · другой: фильтр в Противниках", " · other: filter in Opponents", " · andere: in „Gegner“ filtern") : "");
             colors = new int[]{Theme.GREEN, Theme.RED, Theme.AMBER};
-            names = new String[]{t("ваш удар", "your hit"), t("его удар", "their hit"), "3 block hit"};
+            names = new String[]{t("ваш удар", "your hit", "dein Treffer"), t("его удар", "their hit", "sein Treffer"), "3 block hit"};
         } else if (graphKind() == 4) {
             Stats.TakenStats tk = res.taken();
-            summary = t("Ударов по вам ", "Hits on you ") + tk.rated() + t(" · ср. дистанция ", " · avg. distance ") + Fmt.num(tk.reachMean(), 2)
-                    + t(" · 3 block hit против вас ", " · 3 block hit against you ") + tk.caught() + " (" + Fmt.pct(tk.caughtPct()) + ")";
+            summary = t("Ударов по вам ", "Hits on you ", "Treffer auf dich ") + tk.rated() + t(" · ср. дистанция ", " · avg. distance ", " · Ø Distanz ") + Fmt.num(tk.reachMean(), 2)
+                    + t(" · 3 block hit против вас ", " · 3 block hit against you ", " · 3 Block Hit gegen dich ") + tk.caught() + " (" + Fmt.pct(tk.caughtPct()) + ")";
             colors = new int[]{Theme.RED, Theme.AMBER, Theme.DIM};
-            names = new String[]{t("удар", "hit"), "3 block hit", t("снаряд", "projectile")};
+            names = new String[]{t("удар", "hit", "Treffer"), "3 block hit", t("снаряд", "projectile", "Geschoss")};
         } else {
             Stats.HitStats hs = res.hits();
-            summary = t("Точность ", "Accuracy ") + Fmt.pct(hs.hitRatePct()) + t(" · ср. дистанция ", " · avg. distance ")
+            summary = t("Точность ", "Accuracy ", "Trefferquote ") + Fmt.pct(hs.hitRatePct()) + t(" · ср. дистанция ", " · avg. distance ", " · Ø Distanz ")
                     + (hs.confirmed() == 0 ? "—" : Fmt.num(hs.reachMean(), 2)) + " · 3 block hit " + res.threeBlock().count();
             colors = new int[]{Theme.GREEN, Theme.AMBER, Theme.RED, Theme.DIM};
-            names = new String[]{t("попал", "hit"), "3 block hit", t("промах", "miss"), t("без подтв.", "unconfirmed")};
+            names = new String[]{t("попал", "hit", "Treffer"), "3 block hit", t("промах", "miss", "Fehlschlag"), t("без подтв.", "unconfirmed", "unbestätigt")};
         }
         if (showFiltered) {
             names = Arrays.copyOf(names, names.length + 1);
             colors = Arrays.copyOf(colors, colors.length + 1);
-            names[names.length - 1] = t("отфильтр.", "filtered");
+            names[names.length - 1] = t("отфильтр.", "filtered", "gefiltert");
             colors[colors.length - 1] = Theme.FILTERED;
         }
         int legendW = 0;
@@ -610,20 +617,20 @@ final class StatsView {
             if (why != null) {
                 if (!showFiltered) continue;
                 color = Theme.FILTERED;
-                what = t("отфильтровано: ", "filtered: ") + hiddenName(why);
+                what = t("отфильтровано: ", "filtered: ", "gefiltert: ") + hiddenName(why);
             } else if (!h.rated()) {
                 if (!showProjectiles) continue;
                 color = Theme.DIM;
-                what = t("снаряд", "projectile");
+                what = t("снаряд", "projectile", "Geschoss");
             } else if (h.caught()) {
                 color = Theme.AMBER;
-                what = t("3 block hit против вас", "3 block hit against you");
+                what = t("3 block hit против вас", "3 block hit against you", "3 Block Hit gegen dich");
             } else {
                 color = Theme.RED;
                 what = weaponName(h.weaponOr());
             }
             out.add(new Chart.Point(h.t(), h.reach(), color, false, Fmt.clockMs(h.t()) + " · " + nz(h.attackerName()) + " · "
-                    + Fmt.num(h.reach(), 2) + t(" бл. · ", " bl. · ") + what, () -> takenDetails(h), h));
+                    + Fmt.num(h.reach(), 2) + t(" бл. · ", " bl. · ", " Bl. · ") + what, () -> takenDetails(h), h));
         }
         return out;
     }
@@ -658,8 +665,8 @@ final class StatsView {
                 StatFilter.Hidden why = sf.attack(a);
                 if (Double.isNaN(d) || (why != null && !showFiltered)) continue;
                 int color = why != null ? Theme.FILTERED : ThreeBlockHit.is(a, interp) ? Theme.AMBER : Theme.GREEN;
-                out.add(new Chart.Point(a.t(), d, color, false, Fmt.clockMs(a.t()) + t(" · ваш удар · ", " · your hit · ")
-                        + Fmt.num(d, 2) + t(" бл.", " bl.") + (why != null ? t(" · отфильтровано", " · filtered") : ""),
+                out.add(new Chart.Point(a.t(), d, color, false, Fmt.clockMs(a.t()) + t(" · ваш удар · ", " · your hit · ", " · dein Treffer · ")
+                        + Fmt.num(d, 2) + t(" бл.", " bl.", " Bl.") + (why != null ? t(" · отфильтровано", " · filtered", " · gefiltert") : ""),
                         () -> hitDetails(a, CombatDataClient.settings()), a));
             } else if (e instanceof IncomingHitEvent h && distOpp.equals(h.attacker())) {
                 if (distName == null) distName = h.attackerName();
@@ -667,8 +674,8 @@ final class StatsView {
                 StatFilter.Hidden why = sf.incoming(h);
                 if (Double.isNaN(d) || (why != null && !showFiltered)) continue;
                 int color = why != null ? Theme.FILTERED : h.caught() ? Theme.AMBER : Theme.RED;
-                out.add(new Chart.Point(h.t(), d, color, false, Fmt.clockMs(h.t()) + t(" · его удар · ", " · their hit · ")
-                        + Fmt.num(d, 2) + t(" бл.", " bl.") + (why != null ? t(" · отфильтровано", " · filtered") : ""),
+                out.add(new Chart.Point(h.t(), d, color, false, Fmt.clockMs(h.t()) + t(" · его удар · ", " · their hit · ", " · sein Treffer · ")
+                        + Fmt.num(d, 2) + t(" бл.", " bl.", " Bl.") + (why != null ? t(" · отфильтровано", " · filtered", " · gefiltert") : ""),
                         () -> takenDetails(h), h));
             }
         }
@@ -677,10 +684,10 @@ final class StatsView {
     }
 
     private int distanceTab(Ui ui, int x, int y, int w) {
-        if (distOpp != null && rec.skipped(Features.POSITIONS)) return skipped(ui, w, t("Позиции во время боя", "Positions during fights"), x, y);
-        String msg = distOpp == null ? t("Ударов нет: не с кем считать дистанцию.", "No hits: no opponent to measure distance to.")
+        if (distOpp != null && rec.skipped(Features.POSITIONS)) return skipped(ui, w, t("Позиции во время боя", "Positions during fights", "Positionen im Kampf"), x, y);
+        String msg = distOpp == null ? t("Ударов нет: не с кем считать дистанцию.", "No hits: no opponent to measure distance to.", "Keine Treffer: kein Gegner, zu dem man die Distanz messen könnte.")
                 : t("Нет позиций: они пишутся во время боя в новых записях (Настройки → Основные → Что записывать → «Позиции во время боя»).",
-                "No positions: they are recorded during fights in newer recordings (Settings → General → What to record → Positions during fights).");
+                "No positions: they are recorded during fights in newer recordings (Settings → General → What to record → Positions during fights).", "Keine Positionen: Sie werden in neueren Aufnahmen während Kämpfen aufgenommen (Einstellungen → Allgemein → Was aufnehmen → Positionen im Kampf).");
         line(ui, w, msg, x, y, Theme.DIM);
         return y + LINE;
     }
@@ -688,29 +695,29 @@ final class StatsView {
     private List<String[]> takenDetails(IncomingHitEvent h) {
         List<String[]> rows = new ArrayList<>();
         StatFilter.Hidden why = sf.incoming(h);
-        rows.add(new String[]{(h.caught() ? t("3 block hit против вас", "3 block hit against you") : t("Удар по вам", "Hit on you"))
-                + (why != null ? t(" · не в статистике: ", " · not counted: ") + hiddenName(why) : ""), ""});
-        rows.add(new String[]{t("Время от начала", "Time from start"), Fmt.clockMs(h.t())});
-        rows.add(new String[]{t("Кто ударил", "Hit by"), nz(h.attackerName())});
-        rows.add(new String[]{t("Удар", "Hit"), incomingKindText(h)});
-        rows.add(new String[]{t("Он на вашем экране", "Them on your screen"), Fmt.num(h.reach(), 2) + t(" бл.", " bl.")});
-        rows.add(new String[]{t("Ваша дальность", "Your range"), Fmt.num(h.rangeOr(AttackEvent.DEFAULT_RANGE), 2) + t(" бл.", " bl.")});
-        rows.add(new String[]{t("Его скорость к вам", "Their speed to you"), Fmt.signed(h.attackerTowardBps(), 1) + t(" бл/с", " bl/s")});
-        rows.add(new String[]{t("Ваша скорость от него", "Your speed away"), Fmt.signed(h.selfAwayBps(), 1) + t(" бл/с", " bl/s")});
-        rows.add(new String[]{t("Пинг его / ваш", "Ping theirs / yours"), (h.attackerPingMs() >= 0 ? h.attackerPingMs() + t(" мс", " ms") : "—")
+        rows.add(new String[]{(h.caught() ? t("3 block hit против вас", "3 block hit against you", "3 Block Hit gegen dich") : t("Удар по вам", "Hit on you", "Treffer auf dich"))
+                + (why != null ? t(" · не в статистике: ", " · not counted: ", " · nicht gezählt: ") + hiddenName(why) : ""), ""});
+        rows.add(new String[]{t("Время от начала", "Time from start", "Zeit ab Start"), Fmt.clockMs(h.t())});
+        rows.add(new String[]{t("Кто ударил", "Hit by", "Getroffen von"), nz(h.attackerName())});
+        rows.add(new String[]{t("Удар", "Hit", "Treffer"), incomingKindText(h)});
+        rows.add(new String[]{t("Он на вашем экране", "Them on your screen", "Er auf deinem Bildschirm"), Fmt.num(h.reach(), 2) + t(" бл.", " bl.", " Bl.")});
+        rows.add(new String[]{t("Ваша дальность", "Your range", "Deine Reichweite"), Fmt.num(h.rangeOr(AttackEvent.DEFAULT_RANGE), 2) + t(" бл.", " bl.", " Bl.")});
+        rows.add(new String[]{t("Его скорость к вам", "Their speed to you", "Sein Tempo auf dich zu"), Fmt.signed(h.attackerTowardBps(), 1) + t(" бл/с", " bl/s", " Bl./s")});
+        rows.add(new String[]{t("Ваша скорость от него", "Your speed away", "Dein Tempo weg"), Fmt.signed(h.selfAwayBps(), 1) + t(" бл/с", " bl/s", " Bl./s")});
+        rows.add(new String[]{t("Пинг его / ваш", "Ping theirs / yours", "Ping seiner / deiner"), (h.attackerPingMs() >= 0 ? h.attackerPingMs() + t(" мс", " ms") : "—")
                 + " / " + (h.pingMs() > 0 ? h.pingMs() + t(" мс", " ms") : "—")});
-        rows.add(new String[]{t("Отлёт за 0,5 с", "Knockback in 0.5 s"), kbText(h.kbAway())});
+        rows.add(new String[]{t("Отлёт за 0,5 с", "Knockback in 0.5 s", "Rückstoß in 0,5 s"), kbText(h.kbAway())});
         rows.add(new String[]{t("Сервер", "Server"), serverAt(h.t())});
         return rows;
     }
 
     private static String resultName(JumpResetEvaluator.Result r) {
         return switch (r) {
-            case SUCCESS -> t("Успех", "Success");
-            case TOO_EARLY -> t("Рано", "Early");
-            case TOO_LATE -> t("Поздно", "Late");
-            case NO_ATTEMPT -> t("Без прыжка", "No jump");
-            case NOT_APPLICABLE -> t("Не оценивается", "Not rated");
+            case SUCCESS -> t("Успех", "Success", "Erfolg");
+            case TOO_EARLY -> t("Рано", "Early", "Zu früh");
+            case TOO_LATE -> t("Поздно", "Late", "Zu spät");
+            case NO_ATTEMPT -> t("Без прыжка", "No jump", "Kein Sprung");
+            case NOT_APPLICABLE -> t("Не оценивается", "Not rated", "Nicht bewertet");
             case FLY_OUT -> "Fly out";
         };
     }
@@ -723,7 +730,7 @@ final class StatsView {
                 case NOT_APPLICABLE -> { }
                 case NO_ATTEMPT -> {
                     if (showNoJump) out.add(new Chart.Point(h.t(), 0, Theme.MUTED, true,
-                            Fmt.clockMs(h.t()) + t(" · без прыжка · ", " · no jump · ") + nz(h.attackerName()), () -> jumpDetails(a, s), h));
+                            Fmt.clockMs(h.t()) + t(" · без прыжка · ", " · no jump · ", " · kein Sprung · ") + nz(h.attackerName()), () -> jumpDetails(a, s), h));
                 }
                 case FLY_OUT -> {
                     if (showFlyOut) out.add(new Chart.Point(h.t(), a.deltaMs(), Theme.BLUE, false, Fmt.clockMs(h.t()) + " · "
@@ -745,7 +752,7 @@ final class StatsView {
                 StatFilter.Hidden why = sf.incoming(h);
                 if (why == null || a.result() == JumpResetEvaluator.Result.NOT_APPLICABLE) continue;
                 out.add(new Chart.Point(h.t(), a.hasJump() ? a.deltaMs() : 0, Theme.FILTERED, !a.hasJump(), Fmt.clockMs(h.t())
-                        + t(" · отфильтровано: ", " · filtered: ") + hiddenName(why) + " · " + nz(h.attackerName()),
+                        + t(" · отфильтровано: ", " · filtered: ", " · gefiltert: ") + hiddenName(why) + " · " + nz(h.attackerName()),
                         () -> jumpDetails(a, s), h));
             }
         }
@@ -755,28 +762,28 @@ final class StatsView {
     private List<String[]> jumpDetails(JumpResetEvaluator.Attempt a, Settings s) {
         IncomingHitEvent h = a.hit();
         long d = a.deltaMs();
-        String rel = !a.hasJump() ? "—" : d < s.jrLowerMs ? t("раньше на ", "early by ") + (s.jrLowerMs - d) + t(" мс", " ms")
-                : d > s.jrUpperMs ? t("позже на ", "late by ") + (d - s.jrUpperMs) + t(" мс", " ms") : t("в окне ", "in window ") + s.jrLowerMs + "…" + s.jrUpperMs + t(" мс", " ms");
+        String rel = !a.hasJump() ? "—" : d < s.jrLowerMs ? t("раньше на ", "early by ", "zu früh um ") + (s.jrLowerMs - d) + t(" мс", " ms")
+                : d > s.jrUpperMs ? t("позже на ", "late by ", "zu spät um ") + (d - s.jrUpperMs) + t(" мс", " ms") : t("в окне ", "in window ", "im Fenster ") + s.jrLowerMs + "…" + s.jrUpperMs + t(" мс", " ms");
         List<String[]> rows = new ArrayList<>();
         StatFilter.Hidden why = sf.incoming(h);
-        rows.add(new String[]{why != null ? t("Не в статистике: ", "Not counted: ") + hiddenName(why)
-                : a.result() == JumpResetEvaluator.Result.FLY_OUT ? t("Fly out (не jump reset)", "Fly out (not a jump reset)")
+        rows.add(new String[]{why != null ? t("Не в статистике: ", "Not counted: ", "Nicht gezählt: ") + hiddenName(why)
+                : a.result() == JumpResetEvaluator.Result.FLY_OUT ? t("Fly out (не jump reset)", "Fly out (not a jump reset)", "Fly out (kein Jump Reset)")
                 : "Jump reset: " + resultName(a.result()), ""});
-        rows.add(new String[]{t("Время от начала", "Time from start"), Fmt.clockMs(h.t())});
-        rows.add(new String[]{t("Удар", "Hit"), incomingKindText(h)});
-        if (Double.isFinite(h.reach())) rows.add(new String[]{t("Он на вашем экране", "Them on your screen"), Fmt.num(h.reach(), 2) + t(" бл.", " bl.")
-                + (h.caught() ? t(" · 3 block hit против вас", " · 3 block hit against you") : "")});
-        rows.add(new String[]{t("Прыжок", "Jump"), a.hasJump() ? Fmt.signed(d, 0) + t(" мс после удара", " ms after the hit") : t("не было", "none")});
-        rows.add(new String[]{t("Относительно окна", "Relative to window"), rel});
+        rows.add(new String[]{t("Время от начала", "Time from start", "Zeit ab Start"), Fmt.clockMs(h.t())});
+        rows.add(new String[]{t("Удар", "Hit", "Treffer"), incomingKindText(h)});
+        if (Double.isFinite(h.reach())) rows.add(new String[]{t("Он на вашем экране", "Them on your screen", "Er auf deinem Bildschirm"), Fmt.num(h.reach(), 2) + t(" бл.", " bl.", " Bl.")
+                + (h.caught() ? t(" · 3 block hit против вас", " · 3 block hit against you", " · 3 Block Hit gegen dich") : "")});
+        rows.add(new String[]{t("Прыжок", "Jump", "Sprung"), a.hasJump() ? Fmt.signed(d, 0) + t(" мс после удара", " ms after the hit", " ms nach dem Treffer") : t("не было", "none", "keine")});
+        rows.add(new String[]{t("Относительно окна", "Relative to window", "Relativ zum Fenster"), rel});
         JumpEvent je = a.hasJump() ? jumpAt(a.jumpT()) : null;
-        if (je != null) rows.add(new String[]{t("Клавиши при прыжке", "Keys at jump"), keysText(je)});
-        rows.add(new String[]{t("Кто ударил", "Hit by"), nz(h.attackerName())});
-        rows.add(new String[]{t("В момент удара", "At the hit"), h.groundedAtHit() ? t("на земле", "on ground") : t("в воздухе", "in the air")});
-        rows.add(new String[]{t("Прыжок зажат", "Jump held"), h.jumpHeld() ? (s.jrExcludeHeld ? t("да, исключён", "yes, excluded") : t("да", "yes")) : t("нет", "no")});
-        rows.add(new String[]{t("Нокбэк", "Knockback"), h.knockbackApplied() ? t("да", "yes") : t("нет", "no")});
-        rows.add(new String[]{t("Отлёт за 0,5 с", "Knockback in 0.5 s"), kbText(h.kbAway())});
+        if (je != null) rows.add(new String[]{t("Клавиши при прыжке", "Keys at jump", "Tasten beim Sprung"), keysText(je)});
+        rows.add(new String[]{t("Кто ударил", "Hit by", "Getroffen von"), nz(h.attackerName())});
+        rows.add(new String[]{t("В момент удара", "At the hit", "Beim Treffer"), h.groundedAtHit() ? t("на земле", "on ground", "am Boden") : t("в воздухе", "in the air", "in der Luft")});
+        rows.add(new String[]{t("Прыжок зажат", "Jump held", "Sprung gehalten"), h.jumpHeld() ? (s.jrExcludeHeld ? t("да, исключён", "yes, excluded", "ja, ausgeschlossen") : t("да", "yes", "ja")) : t("нет", "no", "nein")});
+        rows.add(new String[]{t("Нокбэк", "Knockback", "Rückstoß"), h.knockbackApplied() ? t("да", "yes", "ja") : t("нет", "no", "nein")});
+        rows.add(new String[]{t("Отлёт за 0,5 с", "Knockback in 0.5 s", "Rückstoß in 0,5 s"), kbText(h.kbAway())});
         rows.add(new String[]{t("Пинг", "Ping"), h.pingMs() > 0 ? h.pingMs() + t(" мс", " ms") : "—"});
-        rows.add(new String[]{t("T удара / прыжка", "T of hit / jump"), Fmt.clockMs(h.t()) + " / " + (a.hasJump() ? Fmt.clockMs(a.jumpT()) : "—")});
+        rows.add(new String[]{t("T удара / прыжка", "T of hit / jump", "Zeit Treffer / Sprung"), Fmt.clockMs(h.t()) + " / " + (a.hasJump() ? Fmt.clockMs(a.jumpT()) : "—")});
         rows.add(new String[]{t("Сервер", "Server"), serverAt(h.t())});
         return rows;
     }
@@ -787,14 +794,14 @@ final class StatsView {
     }
 
     static String keysText(JumpEvent j) {
-        if (!j.keysKnown()) return t("неизвестно (старая запись)", "unknown (old recording)");
+        if (!j.keysKnown()) return t("неизвестно (старая запись)", "unknown (old recording)", "unbekannt (alte Aufnahme)");
         List<String> k = new ArrayList<>();
         if (j.has(JumpEvent.KEY_FORWARD)) k.add("W");
         if (j.has(JumpEvent.KEY_LEFT)) k.add("A");
         if (j.has(JumpEvent.KEY_BACK)) k.add("S");
         if (j.has(JumpEvent.KEY_RIGHT)) k.add("D");
-        String s = k.isEmpty() ? t("нет", "none") : String.join("+", k);
-        return j.has(JumpEvent.KEY_SPRINT) ? s + t(", спринт", ", sprint") : s;
+        String s = k.isEmpty() ? t("нет", "none", "keine") : String.join("+", k);
+        return j.has(JumpEvent.KEY_SPRINT) ? s + t(", спринт", ", sprint", ", Sprint") : s;
     }
 
     private List<Chart.Point> buildHitPoints(Settings s) {
@@ -810,7 +817,7 @@ final class StatsView {
             StatFilter.Hidden why = sf.attack(a);
             if (why != null) {
                 if (showFiltered) out.add(new Chart.Point(a.t(), a.reach(), Theme.FILTERED, false, Fmt.clockMs(a.t()) + " · "
-                        + nz(a.targetName()) + " · " + Fmt.num(a.reach(), 2) + t(" бл. · отфильтровано: ", " bl. · filtered: ")
+                        + nz(a.targetName()) + " · " + Fmt.num(a.reach(), 2) + t(" бл. · отфильтровано: ", " bl. · filtered: ", " Bl. · gefiltert: ")
                         + hiddenName(why), () -> hitDetails(a, s), a));
                 continue;
             }
@@ -827,7 +834,7 @@ final class StatsView {
                 }
             }
             out.add(new Chart.Point(a.t(), a.reach(), color, false, Fmt.clockMs(a.t()) + " · " + nz(a.targetName()) + " · "
-                    + Fmt.num(a.reach(), 2) + t(" бл. · ", " bl. · ") + outcomeName(a, s.interpMs), () -> hitDetails(a, s), a));
+                    + Fmt.num(a.reach(), 2) + t(" бл. · ", " bl. · ", " Bl. · ") + outcomeName(a, s.interpMs), () -> hitDetails(a, s), a));
         }
         return out;
     }
@@ -838,33 +845,33 @@ final class StatsView {
 
     private static String outcomeName(AttackEvent a, int interp) {
         return switch (a.outcome()) {
-            case HIT_CONFIRMED -> ThreeBlockHit.is(a, interp) ? "3 block hit" : t("Попал", "Hit");
-            case HIT_UNCONFIRMED -> t("Без подтверждения", "Unconfirmed");
-            case MISS -> a.outOfRangeMiss(a.rangeOr(AttackEvent.DEFAULT_RANGE)) ? t("Не дотянулся", "Out of range") : t("Мимо", "Missed");
+            case HIT_CONFIRMED -> ThreeBlockHit.is(a, interp) ? "3 block hit" : t("Попал", "Hit", "Treffer");
+            case HIT_UNCONFIRMED -> t("Без подтверждения", "Unconfirmed", "Unbestätigt");
+            case MISS -> a.outOfRangeMiss(a.rangeOr(AttackEvent.DEFAULT_RANGE)) ? t("Не дотянулся", "Out of range", "Zu weit weg") : t("Мимо", "Missed", "Daneben");
         };
     }
 
     private List<String[]> hitDetails(AttackEvent a, Settings s) {
         List<String[]> rows = new ArrayList<>();
         StatFilter.Hidden why = sf.attack(a);
-        rows.add(new String[]{outcomeName(a, s.interpMs) + (why != null ? t(" · не в статистике: ", " · not counted: ") + hiddenName(why) : ""), ""});
-        rows.add(new String[]{t("Время от начала", "Time from start"), Fmt.clockMs(a.t())});
-        rows.add(new String[]{t("Цель", "Target"), nz(a.targetName())});
-        rows.add(new String[]{t("Оружие", "Weapon"), weaponText(a.weaponOr(), a.item())});
-        rows.add(new String[]{a.outcome() == Outcome.MISS ? t("До ближайшей точки", "To the nearest point") : t("Дистанция", "Distance"), Fmt.num(a.reach(), 2) + t(" бл.", " bl.")});
+        rows.add(new String[]{outcomeName(a, s.interpMs) + (why != null ? t(" · не в статистике: ", " · not counted: ", " · nicht gezählt: ") + hiddenName(why) : ""), ""});
+        rows.add(new String[]{t("Время от начала", "Time from start", "Zeit ab Start"), Fmt.clockMs(a.t())});
+        rows.add(new String[]{t("Цель", "Target", "Ziel"), nz(a.targetName())});
+        rows.add(new String[]{t("Оружие", "Weapon", "Waffe"), weaponText(a.weaponOr(), a.item())});
+        rows.add(new String[]{a.outcome() == Outcome.MISS ? t("До ближайшей точки", "To the nearest point", "Zum nächsten Punkt") : t("Дистанция", "Distance", "Distanz"), Fmt.num(a.reach(), 2) + t(" бл.", " bl.", " Bl.")});
         if (a.outcome() == Outcome.MISS) {
-            rows.add(new String[]{t("Луч до хитбокса", "Ray to hitbox"), Double.isFinite(a.rayDist()) ? Fmt.num(a.rayDist(), 2) + t(" бл.", " bl.") : t("мимо", "missed")});
+            rows.add(new String[]{t("Луч до хитбокса", "Ray to hitbox", "Strahl zur Hitbox"), Double.isFinite(a.rayDist()) ? Fmt.num(a.rayDist(), 2) + t(" бл.", " bl.", " Bl.") : t("мимо", "missed", "daneben")});
         }
-        rows.add(new String[]{t("Дальность атаки", "Attack range"), Fmt.num(a.rangeOr(AttackEvent.DEFAULT_RANGE), 2) + t(" бл.", " bl.")});
-        rows.add(new String[]{t("Тип удара", "Hit type"), typeName(a.type())});
-        rows.add(new String[]{t("Заряд", "Charge"), Fmt.pct(a.strength() * 100)});
-        rows.add(new String[]{t("Прицел yaw / pitch", "Aim yaw / pitch"), Fmt.signed(a.aimYawDeg(), 1) + "° / " + Fmt.signed(a.aimPitchDeg(), 1) + "°"});
-        rows.add(new String[]{t("Высота попадания", "Hit height"), Double.isFinite(a.hitV()) ? Fmt.pct(a.hitV() * 100) + t(" роста", " of height") : "—"});
+        rows.add(new String[]{t("Дальность атаки", "Attack range", "Reichweite"), Fmt.num(a.rangeOr(AttackEvent.DEFAULT_RANGE), 2) + t(" бл.", " bl.", " Bl.")});
+        rows.add(new String[]{t("Тип удара", "Hit type", "Schlagart"), typeName(a.type())});
+        rows.add(new String[]{t("Заряд", "Charge", "Aufladung"), Fmt.pct(a.strength() * 100)});
+        rows.add(new String[]{t("Прицел yaw / pitch", "Aim yaw / pitch", "Ziel Yaw / Pitch"), Fmt.signed(a.aimYawDeg(), 1) + "° / " + Fmt.signed(a.aimPitchDeg(), 1) + "°"});
+        rows.add(new String[]{t("Высота попадания", "Hit height", "Trefferhöhe"), Double.isFinite(a.hitV()) ? Fmt.pct(a.hitV() * 100) + t(" роста", " of height", " der Höhe") : "—"});
         if (a.outcome() == Outcome.HIT_CONFIRMED) {
             double od = ThreeBlockHit.opponentDistance(a, s.interpMs);
-            rows.add(new String[]{t("У противника на экране", "On opponent's screen"), Double.isNaN(od) ? t("нет данных", "no data") : "≈ " + Fmt.num(od, 1) + t(" бл.", " bl.")});
+            rows.add(new String[]{t("У противника на экране", "On opponent's screen", "Auf dem Bildschirm des Gegners"), Double.isNaN(od) ? t("нет данных", "no data", "keine Daten") : "≈ " + Fmt.num(od, 1) + t(" бл.", " bl.", " Bl.")});
         }
-        rows.add(new String[]{t("Пинг ваш / цели", "Ping yours / target"), (a.pingMs() > 0 ? a.pingMs() + t(" мс", " ms") : "—") + " / "
+        rows.add(new String[]{t("Пинг ваш / цели", "Ping yours / target", "Ping deiner / Ziel"), (a.pingMs() > 0 ? a.pingMs() + t(" мс", " ms") : "—") + " / "
                 + (a.targetPingMs() >= 0 ? a.targetPingMs() + t(" мс", " ms") : "—")});
         rows.add(new String[]{t("Сервер", "Server"), serverAt(a.t())});
         return rows;
@@ -896,7 +903,7 @@ final class StatsView {
         Stats.HitStats hs = res.hits();
         int attacksTotal = hs.confirmed() + hs.unconfirmed() + hs.misses();
         if (attacksTotal == 0 && res.combo().taken() == 0) {
-            cards.add(new Card(t("Бой", "Fight"), List.of(new Kv(t("Боевых событий нет", "No combat events"), "")), 1));
+            cards.add(new Card(t("Бой", "Fight", "Kampf"), List.of(new Kv(t("Боевых событий нет", "No combat events", "Keine Kampfereignisse"), "")), 1));
         } else {
             cards.add(hitsCard(hs).with(Help.hits()));
             cards.add(jumpCard(res.jump()).with(Help.jump()));
@@ -910,8 +917,8 @@ final class StatsView {
             cards.add(typesCard(hs).with(Help.types()));
             if (wtap.hasInput()) cards.add(wtapCard(wtap).with(Help.wtap()));
             cards.add(new Card(t("Пинг", "Ping"), List.of(
-                    new Kv(t("Средний", "Mean"), res.pingMean() > 0 ? Fmt.num(res.pingMean(), 0) + t(" мс", " ms") : "—"),
-                    new Kv(t("Разброс σ", "Spread σ"), res.pingMean() > 0 ? Fmt.num(res.pingSigma(), 0) + t(" мс", " ms") : "—")), 2).with(Help.ping()));
+                    new Kv(t("Средний", "Mean", "Ø"), res.pingMean() > 0 ? Fmt.num(res.pingMean(), 0) + t(" мс", " ms") : "—"),
+                    new Kv(t("Разброс σ", "Spread σ", "Streuung σ"), res.pingMean() > 0 ? Fmt.num(res.pingSigma(), 0) + t(" мс", " ms") : "—")), 2).with(Help.ping()));
         }
         cards.add(recordCard());
         int cols = w >= 330 ? 2 : 1, gap = 8, cw = (w - gap * (cols - 1)) / cols;
@@ -934,8 +941,8 @@ final class StatsView {
         String text, bl;
         Runnable action;
         if (filtersOff) {
-            text = t("Фильтры статистики выключены для этой записи", "Stat filters are off for this recording");
-            bl = t("Вернуть", "Restore");
+            text = t("Фильтры статистики выключены для этой записи", "Stat filters are off for this recording", "Statistikfilter sind für diese Aufnahme aus");
+            bl = t("Вернуть", "Restore", "Wiederherstellen");
             action = () -> {
                 filtersOff = false;
                 weaponOverride = null;
@@ -945,9 +952,9 @@ final class StatsView {
             if (n == 0) return y;
             List<String> parts = new ArrayList<>();
             for (Map.Entry<StatFilter.Hidden, Integer> e : res.hidden().entrySet()) parts.add(hiddenName(e.getKey()) + " " + e.getValue());
-            text = t("Скрыто фильтрами: ", "Hidden by filters: ") + n + " " + (Lang.english() ? (n == 1 ? "hit" : "hits")
+            text = t("Скрыто фильтрами: ", "Hidden by filters: ", "Durch Filter ausgeblendet: ") + n + " " + (Lang.german() ? "Treffer" : Lang.english() ? (n == 1 ? "hit" : "hits")
                     : Lang.plural(n, "удар", "удара", "ударов")) + " (" + String.join(", ", parts) + ")";
-            bl = t("Показать", "Show");
+            bl = t("Показать", "Show", "Anzeigen");
             action = () -> {
                 filtersOff = true;
                 weaponOverride = StatFilter.WeaponView.ALL;
@@ -988,10 +995,11 @@ final class StatsView {
         List<String> parts = new ArrayList<>();
         for (Progress.Delta d : deltas) {
             if (parts.size() == 3) break;
-            String v = d.metric().percent ? Fmt.signed(d.diff(), 0) + "%" : Fmt.signed(d.diff(), 2) + t(" бл.", " bl.");
+            String v = d.metric().percent ? Fmt.signed(d.diff(), 0) + "%" : Fmt.signed(d.diff(), 2) + t(" бл.", " bl.", " Bl.");
             parts.add(ProgressTab.metricName(d.metric(), false).toLowerCase(Locale.ROOT) + " " + v);
         }
-        String head = Lang.english() ? "Compared with the last " + compareN + (compareN == 1 ? " recording: " : " recordings: ")
+        String head = Lang.german() ? "Verglichen mit " + (compareN == 1 ? "der letzten Aufnahme: " : "den letzten " + compareN + " Aufnahmen: ")
+                : Lang.english() ? "Compared with the last " + compareN + (compareN == 1 ? " recording: " : " recordings: ")
                 : "По сравнению с " + (compareN == 1 ? "прошлой записью: " : "прошлыми " + compareN + " записями: ");
         line(ui, w, head + String.join(", ", parts), x, y, Theme.MUTED);
         return y + LINE + 4;
@@ -1000,7 +1008,7 @@ final class StatsView {
     private int insightsBlock(Ui ui, int x, int y, int w) {
         if (insights.isEmpty()) {
             if (res.hits().confirmed() + res.hits().misses() + res.combo().taken() == 0) return y;
-            line(ui, w, t("Выводы: явных проблем не найдено", "Insights: no obvious problems found"), x, y, Theme.DIM);
+            line(ui, w, t("Выводы: явных проблем не найдено", "Insights: no obvious problems found", "Erkenntnisse: keine offensichtlichen Probleme gefunden"), x, y, Theme.DIM);
             return y + LINE + 6;
         }
         int rh = 16;
@@ -1033,7 +1041,7 @@ final class StatsView {
             titleW -= Ui.INFO + 5;
         }
         if (more) {
-            String full = open ? t("Свернуть ▴", "Less ▴") : t("Подробнее ▾", "More ▾"), arrow = open ? "▴" : "▾";
+            String full = open ? t("Свернуть ▴", "Less ▴", "Weniger ▴") : t("Подробнее ▾", "More ▾", "Mehr ▾"), arrow = open ? "▴" : "▾";
             String label = ui.font.width(c.title()) + ui.font.width(full) + 20 + (c.info() != null ? Ui.INFO + 5 : 0) <= w ? full : arrow;
             boolean hov = ui.hover(x, y, right - x, 14);
             ui.textRight(label, right, y + 4, hov ? Theme.TEXT_STRONG : Theme.DIM);
@@ -1065,99 +1073,99 @@ final class StatsView {
             else if (e instanceof SegmentEvent s && s.server() != null) servers.add(s.server());
         }
         List<Kv> rows = new ArrayList<>();
-        rows.add(new Kv(t("Длительность", "Duration"), Fmt.clock(rec.durationMs())));
-        rows.add(new Kv(t("Атак / получено / прыжков", "Attacks / taken / jumps"), attacks + " / " + incoming + " / " + jumps));
-        rows.add(new Kv(t("Игрок", "Player"), rec.player() == null ? "?" : rec.player()));
-        if (markers > 0) rows.add(new Kv(t("Меток", "Markers"), String.valueOf(markers)));
-        rows.add(new Kv(t("Серверы", "Servers"), servers.isEmpty() ? "—" : String.join(", ", servers)));
-        return new Card(t("Запись", "Recording"), rows, 2);
+        rows.add(new Kv(t("Длительность", "Duration", "Dauer"), Fmt.clock(rec.durationMs())));
+        rows.add(new Kv(t("Атак / получено / прыжков", "Attacks / taken / jumps", "Angriffe / eingesteckt / Sprünge"), attacks + " / " + incoming + " / " + jumps));
+        rows.add(new Kv(t("Игрок", "Player", "Spieler"), rec.player() == null ? "?" : rec.player()));
+        if (markers > 0) rows.add(new Kv(t("Меток", "Markers", "Markierungen"), String.valueOf(markers)));
+        rows.add(new Kv(t("Серверы", "Servers", "Server"), servers.isEmpty() ? "—" : String.join(", ", servers)));
+        return new Card(t("Запись", "Recording", "Aufnahme"), rows, 2);
     }
 
     private static Card hitsCard(Stats.HitStats h) {
-        return new Card(t("Попадания", "Hits"), List.of(
-                new Kv(t("Точность", "Accuracy"), Fmt.pct(h.hitRatePct()), Theme.TEXT_STRONG),
-                new Kv(t("Подтверждено уроном", "Confirmed by damage"), String.valueOf(h.confirmed()), Theme.GREEN),
-                new Kv(t("Промахов", "Misses"), String.valueOf(h.misses()), h.misses() > 0 ? Theme.RED : Theme.TEXT),
-                new Kv(t("  из них не дотянулся", "  of them out of range"), String.valueOf(h.missesOutOfRange())),
-                new Kv(t("Без подтверждения", "Unconfirmed"), String.valueOf(h.unconfirmed()))), 3);
+        return new Card(t("Попадания", "Hits", "Treffer"), List.of(
+                new Kv(t("Точность", "Accuracy", "Trefferquote"), Fmt.pct(h.hitRatePct()), Theme.TEXT_STRONG),
+                new Kv(t("Подтверждено уроном", "Confirmed by damage", "Durch Schaden bestätigt"), String.valueOf(h.confirmed()), Theme.GREEN),
+                new Kv(t("Промахов", "Misses", "Fehlschläge"), String.valueOf(h.misses()), h.misses() > 0 ? Theme.RED : Theme.TEXT),
+                new Kv(t("  из них не дотянулся", "  of them out of range", "  davon zu weit weg"), String.valueOf(h.missesOutOfRange())),
+                new Kv(t("Без подтверждения", "Unconfirmed", "Unbestätigt"), String.valueOf(h.unconfirmed()))), 3);
     }
 
     private static Card reachCard(Stats.HitStats h) {
         boolean none = h.confirmed() == 0;
-        return new Card(t("Дистанция ударов, блоков", "Hit distance, blocks"), List.of(
-                new Kv(t("Средняя", "Mean"), none ? "—" : Fmt.num(h.reachMean(), 2), Theme.TEXT_STRONG),
-                new Kv(t("Дальше дальности", "Past range"), none ? "—" : Fmt.pct(h.sharePastRangePct())),
+        return new Card(t("Дистанция ударов, блоков", "Hit distance, blocks", "Trefferdistanz, Blöcke"), List.of(
+                new Kv(t("Средняя", "Mean", "Ø"), none ? "—" : Fmt.num(h.reachMean(), 2), Theme.TEXT_STRONG),
+                new Kv(t("Дальше дальности", "Past range", "Über Reichweite"), none ? "—" : Fmt.pct(h.sharePastRangePct())),
                 new Kv(t("Медиана", "Median"), none ? "—" : Fmt.num(h.reachMedian(), 2)),
-                new Kv(t("Максимум", "Max"), none ? "—" : Fmt.num(h.reachMax(), 2)),
-                new Kv(t("Разброс σ", "Spread σ"), none ? "—" : Fmt.num(h.reachSigma(), 2))), 2);
+                new Kv(t("Максимум", "Max", "Max."), none ? "—" : Fmt.num(h.reachMax(), 2)),
+                new Kv(t("Разброс σ", "Spread σ", "Streuung σ"), none ? "—" : Fmt.num(h.reachSigma(), 2))), 2);
     }
 
     private static Card aimCard(Stats.HitStats h, AimAnalysis.Result ar) {
         boolean none = h.aimSamples() == 0;
         double bias = h.aimYawBias();
-        String side = none || Math.abs(bias) < 0.05 ? "" : bias > 0 ? t(" (прицел левее)", " (aim to the left)") : t(" (прицел правее)", " (aim to the right)");
+        String side = none || Math.abs(bias) < 0.05 ? "" : bias > 0 ? t(" (прицел левее)", " (aim to the left)", " (Ziel zu weit links)") : t(" (прицел правее)", " (aim to the right)", " (Ziel zu weit rechts)");
         String misses = ar.aimMisses() == 0 ? "—" : t("← ", "← ") + ar.sideMisses(AimAnalysis.Side.LEFT) + "  → " + ar.sideMisses(AimAnalysis.Side.RIGHT)
                 + "  ↑ " + ar.sideMisses(AimAnalysis.Side.ABOVE) + "  ↓ " + ar.sideMisses(AimAnalysis.Side.BELOW);
-        return new Card(t("Прицел", "Aim"), List.of(
-                new Kv(t("Прицел на противнике", "Crosshair on opponent"), ar.total() == 0 ? "—" : Fmt.pct(ar.accuracyPct()), Theme.TEXT_STRONG),
-                new Kv(t("Промахи (куда ушёл прицел)", "Misses (where the crosshair went)"), misses),
-                new Kv(t("По горизонтали (yaw)", "Horizontal (yaw)"), none ? "—" : Fmt.num(h.aimYawAbsMean(), 1) + "°"),
-                new Kv(t("Средний сдвиг yaw", "Mean yaw offset"), none ? "—" : Fmt.signed(bias, 1) + "°" + side),
-                new Kv(t("По вертикали (pitch)", "Vertical (pitch)"), none ? "—" : Fmt.num(h.aimPitchAbsMean(), 1) + "°"),
-                new Kv(t("Высота попадания", "Hit height"), Double.isNaN(h.hitVMean()) ? "—" : Fmt.pct(h.hitVMean() * 100) + t(" роста", " of height")),
-                new Kv(t("В расчёте (от 1 блока)", "Counted (from 1 block)"), String.valueOf(h.aimSamples()))), 3);
+        return new Card(t("Прицел", "Aim", "Zielen"), List.of(
+                new Kv(t("Прицел на противнике", "Crosshair on opponent", "Fadenkreuz auf Gegner"), ar.total() == 0 ? "—" : Fmt.pct(ar.accuracyPct()), Theme.TEXT_STRONG),
+                new Kv(t("Промахи (куда ушёл прицел)", "Misses (where the crosshair went)", "Fehlschläge (wohin das Fadenkreuz ging)"), misses),
+                new Kv(t("По горизонтали (yaw)", "Horizontal (yaw)", "Horizontal (Yaw)"), none ? "—" : Fmt.num(h.aimYawAbsMean(), 1) + "°"),
+                new Kv(t("Средний сдвиг yaw", "Mean yaw offset", "Ø Yaw-Versatz"), none ? "—" : Fmt.signed(bias, 1) + "°" + side),
+                new Kv(t("По вертикали (pitch)", "Vertical (pitch)", "Vertikal (Pitch)"), none ? "—" : Fmt.num(h.aimPitchAbsMean(), 1) + "°"),
+                new Kv(t("Высота попадания", "Hit height", "Trefferhöhe"), Double.isNaN(h.hitVMean()) ? "—" : Fmt.pct(h.hitVMean() * 100) + t(" роста", " of height", " der Höhe")),
+                new Kv(t("В расчёте (от 1 блока)", "Counted (from 1 block)", "Gezählt (ab 1 Block)"), String.valueOf(h.aimSamples()))), 3);
     }
 
     private Card threeBlockCard(Stats.HitStats h) {
         Stats.ThreeBlockStats t = res.threeBlock();
         if (t.classified() == 0) {
-            return new Card("3 block hit", List.of(new Kv(t("Нет данных", "No data"), t("старая запись или пинг скрыт", "old recording or ping hidden"))), 1);
+            return new Card("3 block hit", List.of(new Kv(t("Нет данных", "No data", "Keine Daten"), t("старая запись или пинг скрыт", "old recording or ping hidden", "alte Aufnahme oder Ping verborgen"))), 1);
         }
         return new Card("3 block hit", List.of(
-                new Kv(t("Количество", "Count"), t.count() + " (" + Fmt.pct(t.sharePct()) + ")", Theme.AMBER),
-                new Kv(t("У противника в среднем", "On opponent's screen, mean"), "≈ " + Fmt.num(t.oppDistMean(), 2) + t(" бл.", " bl.")),
-                new Kv(t("Оценено ударов", "Hits rated"), String.valueOf(t.classified())),
-                new Kv(t("Без данных", "No data"), String.valueOf(Math.max(0, h.confirmed() - t.classified()))),
+                new Kv(t("Количество", "Count", "Anzahl"), t.count() + " (" + Fmt.pct(t.sharePct()) + ")", Theme.AMBER),
+                new Kv(t("У противника в среднем", "On opponent's screen, mean", "Auf dem Bildschirm des Gegners, Ø"), "≈ " + Fmt.num(t.oppDistMean(), 2) + t(" бл.", " bl.", " Bl.")),
+                new Kv(t("Оценено ударов", "Hits rated", "Bewertete Treffer"), String.valueOf(t.classified())),
+                new Kv(t("Без данных", "No data", "Keine Daten"), String.valueOf(Math.max(0, h.confirmed() - t.classified()))),
                 new Kv(t("Интерполяция", "Interpolation"), CombatDataClient.settings().interpMs + t(" мс", " ms"))), 2);
     }
 
     private static Card jumpCard(Stats.JumpStats j) {
         boolean none = j.attempts() == 0, noSucc = j.success() == 0;
         List<Kv> rows = new ArrayList<>(List.of(
-                new Kv(t("Успешных", "Successful"), j.success() + (none ? "" : " (" + Fmt.pct(j.successRatePct()) + ")"), Theme.GREEN),
-                new Kv(t("Попыток", "Attempts"), String.valueOf(j.attempts())),
-                new Kv(t("Рано / поздно", "Early / late"), j.early() + " / " + j.late(), j.early() + j.late() > 0 ? Theme.RED : Theme.TEXT),
-                new Kv(t("Без прыжка", "No jump"), String.valueOf(j.noAttempt())),
-                new Kv(t("Среднее успешных", "Mean of successful"), noSucc ? "—" : Fmt.num(j.meanSuccessMs(), 0) + t(" мс", " ms")),
-                new Kv(t("Медиана успешных", "Median of successful"), noSucc ? "—" : Fmt.num(j.medianSuccessMs(), 0) + t(" мс", " ms")),
-                new Kv(t("Разброс σ", "Spread σ"), none ? "—" : Fmt.num(j.sigmaMs(), 0) + t(" мс", " ms")),
-                new Kv(t("Системный сдвиг", "Systematic offset"), none ? "—" : Fmt.signed(j.biasMs(), 0) + t(" мс", " ms"))));
-        if (j.held() > 0) rows.add(new Kv(t("Зажатый прыжок (исключено)", "Held jump (excluded)"), String.valueOf(j.held())));
+                new Kv(t("Успешных", "Successful", "Erfolgreich"), j.success() + (none ? "" : " (" + Fmt.pct(j.successRatePct()) + ")"), Theme.GREEN),
+                new Kv(t("Попыток", "Attempts", "Versuche"), String.valueOf(j.attempts())),
+                new Kv(t("Рано / поздно", "Early / late", "Zu früh / zu spät"), j.early() + " / " + j.late(), j.early() + j.late() > 0 ? Theme.RED : Theme.TEXT),
+                new Kv(t("Без прыжка", "No jump", "Kein Sprung"), String.valueOf(j.noAttempt())),
+                new Kv(t("Среднее успешных", "Mean of successful", "Ø der erfolgreichen"), noSucc ? "—" : Fmt.num(j.meanSuccessMs(), 0) + t(" мс", " ms")),
+                new Kv(t("Медиана успешных", "Median of successful", "Median der erfolgreichen"), noSucc ? "—" : Fmt.num(j.medianSuccessMs(), 0) + t(" мс", " ms")),
+                new Kv(t("Разброс σ", "Spread σ", "Streuung σ"), none ? "—" : Fmt.num(j.sigmaMs(), 0) + t(" мс", " ms")),
+                new Kv(t("Системный сдвиг", "Systematic offset", "Systematischer Versatz"), none ? "—" : Fmt.signed(j.biasMs(), 0) + t(" мс", " ms"))));
+        if (j.held() > 0) rows.add(new Kv(t("Зажатый прыжок (исключено)", "Held jump (excluded)", "Gehaltener Sprung (ausgeschlossen)"), String.valueOf(j.held())));
         if (j.flyOut() > 0) {
             rows.add(new Kv("Fly out", String.valueOf(j.flyOut()), Theme.BLUE));
-            rows.add(new Kv(t("  отлёт: fly out / без прыжка", "  knockback: fly out / no jump"),
+            rows.add(new Kv(t("  отлёт: fly out / без прыжка", "  knockback: fly out / no jump", "  Rückstoß: Fly out / kein Sprung"),
                     kbText(j.flyOutKbMean()) + " / " + kbText(j.noJumpKbMean())));
         }
         return new Card("Jump reset", rows, 3);
     }
 
     private static Card comboCard(Stats.ComboStats c) {
-        return new Card(t("Комбо и размен", "Combos and trades"), List.of(
-                new Kv(t("Нанесено / получено", "Dealt / taken"), c.dealt() + " / " + c.taken(), Theme.TEXT_STRONG),
+        return new Card(t("Комбо и размен", "Combos and trades", "Combos und Trades"), List.of(
+                new Kv(t("Нанесено / получено", "Dealt / taken", "Ausgeteilt / eingesteckt"), c.dealt() + " / " + c.taken(), Theme.TEXT_STRONG),
                 new Kv(t("Размен", "Trade"), Double.isNaN(c.trade()) ? (c.dealt() > 0 ? "∞" : "—") : Fmt.num(c.trade(), 2)),
-                new Kv(t("Макс. комбо", "Max combo"), String.valueOf(c.maxCombo())),
-                new Kv(t("Нанесено ударов", "Hits dealt"), String.valueOf(c.dealt()), Theme.GREEN),
-                new Kv(t("Получено ударов", "Hits taken"), String.valueOf(c.taken()), Theme.RED),
-                new Kv(t("Среднее комбо (от 2)", "Mean combo (from 2)"), c.avgCombo() > 0 ? Fmt.num(c.avgCombo(), 1) : "—")), 3);
+                new Kv(t("Макс. комбо", "Max combo", "Max. Combo"), String.valueOf(c.maxCombo())),
+                new Kv(t("Нанесено ударов", "Hits dealt", "Ausgeteilte Treffer"), String.valueOf(c.dealt()), Theme.GREEN),
+                new Kv(t("Получено ударов", "Hits taken", "Eingesteckte Treffer"), String.valueOf(c.taken()), Theme.RED),
+                new Kv(t("Среднее комбо (от 2)", "Mean combo (from 2)", "Ø Combo (ab 2)"), c.avgCombo() > 0 ? Fmt.num(c.avgCombo(), 1) : "—")), 3);
     }
 
     private Card chargeCard(Stats.HitStats hs) {
-        return new Card(t("Заряд атаки", "Attack charge"), List.of(
-                new Kv(t("Средний заряд", "Mean charge"), hs.confirmed() == 0 ? "—" : Fmt.pct(hs.strengthMean() * 100), Theme.TEXT_STRONG),
-                new Kv(t("Без заряда (по интервалам)", "Uncharged (by intervals)"), cdSummary().n() == 0 ? "—"
+        return new Card(t("Заряд атаки", "Attack charge", "Schlagaufladung"), List.of(
+                new Kv(t("Средний заряд", "Mean charge", "Ø Aufladung"), hs.confirmed() == 0 ? "—" : Fmt.pct(hs.strengthMean() * 100), Theme.TEXT_STRONG),
+                new Kv(t("Без заряда (по интервалам)", "Uncharged (by intervals)", "Ungeladen (nach Abständen)"), cdSummary().n() == 0 ? "—"
                         : cdSummary().rushed() + " (" + Fmt.pct(cdSummary().rushedPct()) + ")"),
-                new Kv(t("Полный (выше 0.9)", "Full (above 0.9)"), hs.confirmed() == 0 ? "—" : Fmt.pct(hs.fullChargePct())),
-                new Kv(t("Лишнее ожидание после порога", "Extra wait after threshold"), Double.isNaN(cdSummary().waitMs()) ? "—"
+                new Kv(t("Полный (выше 0.9)", "Full (above 0.9)", "Voll (über 0,9)"), hs.confirmed() == 0 ? "—" : Fmt.pct(hs.fullChargePct())),
+                new Kv(t("Лишнее ожидание после порога", "Extra wait after threshold", "Zusätzliche Wartezeit nach Schwelle"), Double.isNaN(cdSummary().waitMs()) ? "—"
                         : Fmt.num(cdSummary().waitMs(), 0) + t(" мс", " ms"))), 2);
     }
 
@@ -1169,12 +1177,12 @@ final class StatsView {
             int n = h.types().getOrDefault(t, 0);
             rows.add(new Kv(typeName(t), n + (h.confirmed() == 0 ? "" : " (" + Fmt.pct(100.0 * n / h.confirmed()) + ")")));
         }
-        return new Card(t("Типы ударов", "Hit types"), rows, 3);
+        return new Card(t("Типы ударов", "Hit types", "Schlagarten"), rows, 3);
     }
 
     static String typeName(HitType t) {
         return switch (t) {
-            case WEAK -> t("Слабый", "Weak");
+            case WEAK -> t("Слабый", "Weak", "Schwach");
             case NORMAL -> t("Обычный", "Normal");
             case SWEEP -> t("Разящий", "Sweep");
             case CRIT -> t("Крит", "Crit");
@@ -1186,21 +1194,21 @@ final class StatsView {
     private int kbTab(Ui ui, int x, int y, int w) {
         Settings s = CombatDataClient.settings();
         Calibration.Result c = calib;
-        line(ui, w, t("Отлёт: насколько вас отбросило за 0,5 с после удара (по линии от атакующего). Меньше лучше.", "Knockback: how far you were pushed in 0.5 s after the hit (along the line from the attacker). Less is better."),
+        line(ui, w, t("Отлёт: насколько вас отбросило за 0,5 с после удара (по линии от атакующего). Меньше лучше.", "Knockback: how far you were pushed in 0.5 s after the hit (along the line from the attacker). Less is better.", "Rückstoß: wie weit du in 0,5 s nach dem Treffer weggedrückt wurdest (entlang der Linie vom Angreifer). Weniger ist besser."),
                 x, y, Theme.MUTED);
         y += LINE + 4;
-        if (c.samples() == 0 && rec.skipped(Features.KNOCKBACK)) return skipped(ui, w, t("Отлёт после удара", "Knockback after a hit"), x, y);
+        if (c.samples() == 0 && rec.skipped(Features.KNOCKBACK)) return skipped(ui, w, t("Отлёт после удара", "Knockback after a hit", "Rückstoß nach einem Treffer"), x, y);
         if (c.samples() == 0) {
-            line(ui, w, t("Нет данных об отлёте: нужны полученные удары в записи новой версии мода.", "No knockback data: needs hits taken in a recording from a newer mod version."), x, y, Theme.DIM);
+            line(ui, w, t("Нет данных об отлёте: нужны полученные удары в записи новой версии мода.", "No knockback data: needs hits taken in a recording from a newer mod version.", "Keine Rückstoßdaten: braucht eingesteckte Treffer in einer Aufnahme einer neueren Mod-Version."), x, y, Theme.DIM);
             return y + LINE;
         }
-        line(ui, w, t("Без прыжка: ", "No jump: ") + kbText(c.baselineKb()) + " (" + c.baselineN() + t(") · в окне ", ") · in window ") + s.jrLowerMs + "…"
-                + s.jrUpperMs + t(" мс: ", " ms: ") + kbText(c.curKb()) + " (" + c.curN() + t(") · попыток с прыжком ", ") · jump attempts ") + c.samples(),
+        line(ui, w, t("Без прыжка: ", "No jump: ", "Kein Sprung: ") + kbText(c.baselineKb()) + " (" + c.baselineN() + t(") · в окне ", ") · in window ", ") · im Fenster ") + s.jrLowerMs + "…"
+                + s.jrUpperMs + t(" мс: ", " ms: ") + kbText(c.curKb()) + " (" + c.curN() + t(") · попыток с прыжком ", ") · jump attempts ", ") · Sprungversuche ") + c.samples(),
                 x, y, Theme.TEXT);
         if (res.jump().flyOut() > 0) {
             y += LINE;
             line(ui, w, "Fly out: " + kbText(res.jump().flyOutKbMean()) + " (" + res.jump().flyOut() + ")"
-                    + t(" · не входит в калибровку", " · not used for calibration"), x, y, Theme.BLUE);
+                    + t(" · не входит в калибровку", " · not used for calibration", " · nicht für Kalibrierung genutzt"), x, y, Theme.BLUE);
         }
         y += LINE + 6;
         double max = Double.isFinite(c.baselineKb()) ? c.baselineKb() : 0;
@@ -1233,10 +1241,10 @@ final class StatsView {
         }
         int zx = x + (int) ((0 - lo) * (bw * n) / span);
         ui.g.fill(zx, by, zx + 1, by + h, Theme.BORDER);
-        String title = t("Средний отлёт по дельте прыжка (корзины по ", "Mean knockback by jump delta (bins of ") + Calibration.BIN_MS + t(" мс), пунктир: без прыжка", " ms), dashed: no jump");
+        String title = t("Средний отлёт по дельте прыжка (корзины по ", "Mean knockback by jump delta (bins of ", "Ø Rückstoß nach Sprungzeitpunkt (Schritte von ") + Calibration.BIN_MS + t(" мс), пунктир: без прыжка", " ms), dashed: no jump", " ms), gestrichelt: kein Sprung");
         if (hover >= 0) {
             Calibration.Bin b = c.bins().get(hover);
-            title = b.fromMs() + "…" + b.toMs() + t(" мс: ", " ms: ") + (b.n() == 0 ? t("нет попыток", "no attempts") : kbText(b.meanKb()) + " (" + b.n() + ")");
+            title = b.fromMs() + "…" + b.toMs() + t(" мс: ", " ms: ") + (b.n() == 0 ? t("нет попыток", "no attempts", "keine Versuche") : kbText(b.meanKb()) + " (" + b.n() + ")");
         }
         line(ui, w, title, x, y, hover >= 0 ? Theme.TEXT_STRONG : Theme.MUTED);
         ui.text(lo + t(" мс", " ms"), x, by + h + 3, Theme.DIM);
@@ -1244,27 +1252,27 @@ final class StatsView {
         ui.textRight("+" + (lo + span) + t(" мс", " ms"), x + bw * n, by + h + 3, Theme.DIM);
         y = by + h + 16;
         if (c.hasRecommendation()) {
-            String rec = t("Рекомендуемое окно: ", "Recommended window: ") + c.recLower() + "…" + c.recUpper() + t(" мс, отлёт ", " ms, knockback ") + kbText(c.recKb())
-                    + " (" + c.recN() + t(" попыток)", " attempts)");
+            String rec = t("Рекомендуемое окно: ", "Recommended window: ", "Empfohlenes Fenster: ") + c.recLower() + "…" + c.recUpper() + t(" мс, отлёт ", " ms, knockback ", " ms, Rückstoß ") + kbText(c.recKb())
+                    + " (" + c.recN() + t(" попыток)", " attempts)", " Versuche)");
             boolean same = c.recLower() == s.jrLowerMs && c.recUpper() == s.jrUpperMs;
-            String bl = t("Применить это окно", "Apply this window");
+            String bl = t("Применить это окно", "Apply this window", "Dieses Fenster übernehmen");
             int bwid = ui.buttonWidth(bl);
             line(ui, same ? w : w - bwid - 8, rec, x, Ui.textY(y, 16), Theme.AMBER);
             if (!same) ui.button(x + w - bwid, y, bwid, 16, bl, Ui.Kind.PRIMARY, true,
                     () -> menu.settingsTab.adoptJumpWindow((int) c.recLower(), (int) c.recUpper()));
-            else ui.textRight(t("уже применено", "already applied"), x + w, Ui.textY(y, 16), Theme.GREEN);
+            else ui.textRight(t("уже применено", "already applied", "schon übernommen"), x + w, Ui.textY(y, 16), Theme.GREEN);
         } else {
-            line(ui, w, t("Для рекомендации нужно не меньше ", "A recommendation needs at least ") + Calibration.MIN_SAMPLES + t(" попыток с прыжком, сейчас ", " jump attempts, now ")
+            line(ui, w, t("Для рекомендации нужно не меньше ", "A recommendation needs at least ", "Eine Empfehlung braucht mindestens ") + Calibration.MIN_SAMPLES + t(" попыток с прыжком, сейчас ", " jump attempts, now ", " Sprungversuche, jetzt ")
                     + c.samples(), x, Ui.textY(y, 16), Theme.DIM);
         }
         y += 20;
-        line(ui, w, t("Ширина окна берётся из настроек, ищется положение. По всем записям: Настройки → Дополнительно.", "Window width comes from settings, only its position is fitted. For all recordings: Settings → Advanced."),
+        line(ui, w, t("Ширина окна берётся из настроек, ищется положение. По всем записям: Настройки → Дополнительно.", "Window width comes from settings, only its position is fitted. For all recordings: Settings → Advanced.", "Die Fensterbreite kommt aus den Einstellungen, nur die Lage wird angepasst. Für alle Aufnahmen: Einstellungen → Erweitert."),
                 x, y, Theme.DIM);
         return y + LINE;
     }
 
     private static String kbText(double v) {
-        return Double.isFinite(v) ? Fmt.num(v, 2) + t(" бл.", " bl.") : "—";
+        return Double.isFinite(v) ? Fmt.num(v, 2) + t(" бл.", " bl.", " Bl.") : "—";
     }
 
 
@@ -1275,13 +1283,13 @@ final class StatsView {
         int interp = CombatDataClient.settings().interpMs;
         AimAnalysis.Result ar = aimRes;
         if (ar.total() == 0) {
-            ui.text(t("Нет ударов для расчёта (удары ближе 1 блока не учитываются)", "No swings to analyze (swings closer than 1 block are not counted)"), x, y, Theme.DIM);
+            ui.text(t("Нет ударов для расчёта (удары ближе 1 блока не учитываются)", "No swings to analyze (swings closer than 1 block are not counted)", "Keine Schläge zum Auswerten (Schläge unter 1 Block werden nicht gezählt)"), x, y, Theme.DIM);
             return y + LINE;
         }
         boolean narrow = w < 330;
         int sh = 150, cardW = narrow ? Math.min(w, 120) : 120, cardH = sh + 44;
         Draw.round(ui.g, x, y, cardW, cardH, Theme.R_CTRL, Theme.WINDOW);
-        ui.textCenter(t("Вид спереди", "Front view"), x + cardW / 2, y + 4, Theme.MUTED);
+        ui.textCenter(t("Вид спереди", "Front view", "Vorderansicht"), x + cardW / 2, y + 4, Theme.MUTED);
         double unit = sh / 32.0, hw = sh * 0.3 / 1.8;
         int ax = x + cardW / 2, top = y + 26;
         var g = ui.g;
@@ -1327,35 +1335,35 @@ final class StatsView {
 
         int rx = narrow ? x : x + cardW + 10, rw = narrow ? w : w - cardW - 10, ry = narrow ? y + cardH + 8 : y;
         int n = ar.total(), on = ar.onTarget();
-        line(ui, rw, t("Прицел на противнике: ", "Crosshair on the opponent: ") + Fmt.pct(ar.accuracyPct()) + t(" взмахов (", " of swings (")
+        line(ui, rw, t("Прицел на противнике: ", "Crosshair on the opponent: ", "Fadenkreuz auf dem Gegner: ") + Fmt.pct(ar.accuracyPct()) + t(" взмахов (", " of swings (", " der Schläge (")
                 + on + "/" + n + ")", rx, ry, Theme.TEXT_STRONG);
         ry += LINE;
-        line(ui, rw, t("Промахов прицелом ", "Aim misses ") + ar.aimMisses() + t(" · не дотянулся (прицел верный) ", " · out of range (aim was fine) ")
+        line(ui, rw, t("Промахов прицелом ", "Aim misses ", "Zielfehler ") + ar.aimMisses() + t(" · не дотянулся (прицел верный) ", " · out of range (aim was fine) ", " · zu weit weg (Ziel war richtig) ")
                 + ar.outOfRange(), rx, ry, Theme.MUTED);
         ry += LINE;
         if (ar.aimMisses() > 0) {
-            line(ui, rw, t("Промахи: левее ", "Misses: left ") + ar.sideMisses(AimAnalysis.Side.LEFT)
-                    + t(" · правее ", " · right ") + ar.sideMisses(AimAnalysis.Side.RIGHT)
-                    + t(" · выше ", " · over ") + ar.sideMisses(AimAnalysis.Side.ABOVE)
-                    + t(" · ниже ", " · under ") + ar.sideMisses(AimAnalysis.Side.BELOW), rx, ry, Theme.MUTED);
+            line(ui, rw, t("Промахи: левее ", "Misses: left ", "Fehlschläge: links ") + ar.sideMisses(AimAnalysis.Side.LEFT)
+                    + t(" · правее ", " · right ", " · rechts ") + ar.sideMisses(AimAnalysis.Side.RIGHT)
+                    + t(" · выше ", " · over ", " · drüber ") + ar.sideMisses(AimAnalysis.Side.ABOVE)
+                    + t(" · ниже ", " · under ", " · drunter ") + ar.sideMisses(AimAnalysis.Side.BELOW), rx, ry, Theme.MUTED);
             ry += LINE;
         }
         if (on > 0) {
-            line(ui, rw, t("Голова ", "Head ") + Fmt.pct(100.0 * head / on) + t(" · тело ", " · body ") + Fmt.pct(100.0 * (on - head - legs) / on)
-                    + t(" · ноги ", " · legs ") + Fmt.pct(100.0 * legs / on) + t(" · в зоне груди ", " · in the chest zone ")
+            line(ui, rw, t("Голова ", "Head ", "Kopf ") + Fmt.pct(100.0 * head / on) + t(" · тело ", " · body ", " · Körper ") + Fmt.pct(100.0 * (on - head - legs) / on)
+                    + t(" · ноги ", " · legs ", " · Beine ") + Fmt.pct(100.0 * legs / on) + t(" · в зоне груди ", " · in the chest zone ", " · im Brustbereich ")
                     + Fmt.pct(ar.inBestPct()), rx, ry, Theme.MUTED);
             ry += LINE;
         }
-        line(ui, rw, t("Зелёный крест: куда целиться · второй: ваш средний прицел · красные: промахи", "Green cross: where to aim · other cross: your average · red: misses"),
+        line(ui, rw, t("Зелёный крест: куда целиться · второй: ваш средний прицел · красные: промахи", "Green cross: where to aim · other cross: your average · red: misses", "Grünes Kreuz: wohin zielen · anderes Kreuz: dein Durchschnitt · rot: Fehlschläge"),
                 rx, ry, Theme.DIM);
         ry += LINE + 6;
 
-        ui.text(t("Что улучшить", "What to improve"), rx, ry, Theme.TEXT_STRONG);
+        ui.text(t("Что улучшить", "What to improve", "Was verbessern"), rx, ry, Theme.TEXT_STRONG);
         ry += LINE + 2;
         if (ar.tips().isEmpty()) {
             for (String l : ui.wrap(ar.total() < AimAnalysis.MIN_SWINGS
-                    ? t("Мало взмахов для советов: нужно от " + AimAnalysis.MIN_SWINGS + ".", "Too few swings for tips: needs " + AimAnalysis.MIN_SWINGS + " or more.")
-                    : t("Явных проблем с прицелом не найдено.", "No clear aim problems found."), rw)) {
+                    ? t("Мало взмахов для советов: нужно от " + AimAnalysis.MIN_SWINGS + ".", "Too few swings for tips: needs " + AimAnalysis.MIN_SWINGS + " or more.", "Zu wenige Schläge für Tipps: braucht " + AimAnalysis.MIN_SWINGS + " oder mehr.")
+                    : t("Явных проблем с прицелом не найдено.", "No clear aim problems found.", "Keine klaren Probleme beim Zielen gefunden."), rw)) {
                 ui.text(l, rx, ry, Theme.DIM);
                 ry += LINE;
             }
@@ -1379,34 +1387,34 @@ final class StatsView {
         }
         y = Math.max(y + cardH, ry) + 8;
 
-        ui.text(t("Попадание прицелом по ситуациям", "Aim by situation"), x, y, Theme.TEXT_STRONG);
+        ui.text(t("Попадание прицелом по ситуациям", "Aim by situation", "Zielen nach Situation"), x, y, Theme.TEXT_STRONG);
         y += LINE + 2;
         double[] at = {0, 0.62, 0.82};
-        cols(ui, x, y, w, at, new String[]{"", t("На цели", "On target"), t("Взмахов", "Swings")}, fill(3, Theme.DIM));
+        cols(ui, x, y, w, at, new String[]{"", t("На цели", "On target", "Auf dem Ziel"), t("Взмахов", "Swings", "Schläge")}, fill(3, Theme.DIM));
         y += ROW;
         if (ar.hasMotion()) {
-            y = splitRow(ui, x, y, w, at, t("Противник стоит / идёт прямо", "Opponent still / straight"), ar.still());
-            y = splitRow(ui, x, y, w, at, t("Противник стрейфит", "Opponent strafing"), ar.strafing());
-            y = splitRow(ui, x, y, w, at, t("Противник на земле", "Opponent on the ground"), ar.targetLevel());
-            y = splitRow(ui, x, y, w, at, t("Противник в прыжке", "Opponent jumping"), ar.targetJumping());
-            y = splitRow(ui, x, y, w, at, t("Мышь спокойно", "Mouse steady"), ar.calm());
-            y = splitRow(ui, x, y, w, at, t("Мышь резко (от " + (int) AimAnalysis.FLICK_DPS + "°/с)", "Mouse flicking (" + (int) AimAnalysis.FLICK_DPS + "°/s+)"), ar.flicking());
+            y = splitRow(ui, x, y, w, at, t("Противник стоит / идёт прямо", "Opponent still / straight", "Gegner steht / läuft gerade"), ar.still());
+            y = splitRow(ui, x, y, w, at, t("Противник стрейфит", "Opponent strafing", "Gegner strafet"), ar.strafing());
+            y = splitRow(ui, x, y, w, at, t("Противник на земле", "Opponent on the ground", "Gegner am Boden"), ar.targetLevel());
+            y = splitRow(ui, x, y, w, at, t("Противник в прыжке", "Opponent jumping", "Gegner springt"), ar.targetJumping());
+            y = splitRow(ui, x, y, w, at, t("Мышь спокойно", "Mouse steady", "Maus ruhig"), ar.calm());
+            y = splitRow(ui, x, y, w, at, t("Мышь резко (от " + (int) AimAnalysis.FLICK_DPS + "°/с)", "Mouse flicking (" + (int) AimAnalysis.FLICK_DPS + "°/s+)", "Maus schnell gedreht (" + (int) AimAnalysis.FLICK_DPS + "°/s+)"), ar.flicking());
         }
-        y = splitRow(ui, x, y, w, at, t("Вы на земле", "You on the ground"), ar.ground());
-        y = splitRow(ui, x, y, w, at, t("Вы в прыжке", "You in the air"), ar.air());
-        String[] dl = {t("1–2 блока", "1–2 blocks"), t("2–2,5 блока", "2–2.5 blocks"), t("2,5–3 блока", "2.5–3 blocks"), t("3+ блока", "3+ blocks")};
+        y = splitRow(ui, x, y, w, at, t("Вы на земле", "You on the ground", "Du am Boden"), ar.ground());
+        y = splitRow(ui, x, y, w, at, t("Вы в прыжке", "You in the air", "Du in der Luft"), ar.air());
+        String[] dl = {t("1–2 блока", "1–2 blocks", "1–2 Blöcke"), t("2–2,5 блока", "2–2.5 blocks", "2–2,5 Blöcke"), t("2,5–3 блока", "2.5–3 blocks", "2,5–3 Blöcke"), t("3+ блока", "3+ blocks", "3+ Blöcke")};
         for (int i = 0; i < dl.length; i++) y = splitRow(ui, x, y, w, at, dl[i], ar.byDistance().get(i));
         y += 4;
         if (ar.hasMotion() && Double.isFinite(ar.leadDeg())) {
             double l = ar.leadDeg();
-            String lead = Math.abs(l) < 0.3 ? t("прицел держится на нём", "the crosshair stays on them")
-                    : l < 0 ? Fmt.num(-l, 1) + t("° позади", "° behind") : Fmt.num(l, 1) + t("° впереди", "° ahead");
-            String track = Double.isFinite(ar.trackRatio()) ? t(" · мышь успевает на ", " · mouse keeps up ") + Fmt.pct(ar.trackRatio() * 100) : "";
-            line(ui, w, t("Против стрейфа: ", "Against strafes: ") + lead + track, x, y, Math.abs(l) >= 0.8 ? Theme.AMBER : Theme.MUTED);
+            String lead = Math.abs(l) < 0.3 ? t("прицел держится на нём", "the crosshair stays on them", "das Fadenkreuz bleibt auf ihm")
+                    : l < 0 ? Fmt.num(-l, 1) + t("° позади", "° behind", "° dahinter") : Fmt.num(l, 1) + t("° впереди", "° ahead", "° voraus");
+            String track = Double.isFinite(ar.trackRatio()) ? t(" · мышь успевает на ", " · mouse keeps up ", " · Maus kommt mit zu ") + Fmt.pct(ar.trackRatio() * 100) : "";
+            line(ui, w, t("Против стрейфа: ", "Against strafes: ", "Gegen Strafes: ") + lead + track, x, y, Math.abs(l) >= 0.8 ? Theme.AMBER : Theme.MUTED);
             y += LINE;
         } else if (!ar.hasMotion()) {
             for (String l : ui.wrap(t("Стрейф, прыжки противника и скорость мыши видны в новых записях (или если писались позиции).",
-                    "Strafing, opponent jumps and mouse speed show for new recordings (or when positions were recorded)."), w)) {
+                    "Strafing, opponent jumps and mouse speed show for new recordings (or when positions were recorded).", "Strafen, Sprünge des Gegners und Mausgeschwindigkeit gibt es bei neuen Aufnahmen (oder wenn Positionen aufgenommen wurden)."), w)) {
                 ui.text(l, x, y, Theme.DIM);
                 y += LINE;
             }
@@ -1416,10 +1424,10 @@ final class StatsView {
         double[] yaw = ar.samples().stream().mapToDouble(sm -> sm.a().aimYawDeg()).toArray();
         double[] pitch = ar.samples().stream().mapToDouble(sm -> sm.a().aimPitchDeg()).toArray();
         y = hist(ui, x, y, w, 34, Stats.histogram(yaw, -15, 15, 15), -15, 2, "°",
-                t("Yaw, ср. ", "Yaw, avg. ") + Fmt.signed(-ar.biasDeg(), 1) + t("°, разброс ", "°, spread ") + Fmt.num(ar.spreadDeg(), 1)
-                        + t("° (плюс: цель правее прицела)", "° (plus: target right of the crosshair)"), Theme.GREEN);
+                t("Yaw, ср. ", "Yaw, avg. ", "Yaw, Ø ") + Fmt.signed(-ar.biasDeg(), 1) + t("°, разброс ", "°, spread ", "°, Streuung ") + Fmt.num(ar.spreadDeg(), 1)
+                        + t("° (плюс: цель правее прицела)", "° (plus: target right of the crosshair)", "° (plus: Ziel rechts vom Fadenkreuz)"), Theme.GREEN);
         y = hist(ui, x, y + 4, w, 34, Stats.histogram(pitch, -15, 15, 15), -15, 2, "°",
-                t("Pitch, все взмахи (плюс: цель ниже прицела)", "Pitch, all swings (plus: target below the crosshair)"), Theme.MUTED);
+                t("Pitch, все взмахи (плюс: цель ниже прицела)", "Pitch, all swings (plus: target below the crosshair)", "Pitch, alle Schläge (plus: Ziel unter dem Fadenkreuz)"), Theme.MUTED);
         return y;
     }
 
@@ -1435,10 +1443,10 @@ final class StatsView {
     private int strikesTab(Ui ui, int x, int y, int w) {
         Stats.HitStats hs = res.hits();
         if (hs.confirmed() == 0) {
-            ui.text(t("Подтверждённых ударов нет", "No confirmed hits"), x, y, Theme.DIM);
+            ui.text(t("Подтверждённых ударов нет", "No confirmed hits", "Keine bestätigten Treffer"), x, y, Theme.DIM);
             return y + LINE;
         }
-        ui.text(t("Типы ударов", "Hit types"), x, y, Theme.TEXT_STRONG);
+        ui.text(t("Типы ударов", "Hit types", "Schlagarten"), x, y, Theme.TEXT_STRONG);
         y += LINE + 2;
         int maxT = 1;
         for (HitType t : HitType.values()) maxT = Math.max(maxT, hs.types().getOrDefault(t, 0));
@@ -1457,7 +1465,7 @@ final class StatsView {
         for (Event e : events) if (e instanceof AttackEvent a && a.outcome() == Outcome.HIT_CONFIRMED) str.add((double) a.strength());
         double[] sa = str.stream().mapToDouble(Double::doubleValue).toArray();
         y = hist(ui, x, y, w, 40, Stats.histogram(sa, 0, 1.0000001, 10), 0, 10, "%",
-                t("Заряд атаки: средний ", "Attack charge: mean ") + Fmt.pct(hs.strengthMean() * 100) + t(", полный (выше 90%) ", ", full (above 90%) ") + Fmt.pct(hs.fullChargePct()),
+                t("Заряд атаки: средний ", "Attack charge: mean ", "Schlagaufladung: Ø ") + Fmt.pct(hs.strengthMean() * 100) + t(", полный (выше 90%) ", ", full (above 90%) ", ", voll (über 90 %) ") + Fmt.pct(hs.fullChargePct()),
                 Theme.ACCENT);
         return y;
     }
@@ -1466,9 +1474,9 @@ final class StatsView {
         return switch (m) {
             case W_TAP -> "W-tap";
             case S_TAP -> "S-tap";
-            case SPRINT_KEY -> t("клавиша спринта", "sprint key");
-            case AUTO -> t("сам (спринт зажат)", "auto (sprint held)");
-            case NONE -> t("без сброса", "no reset");
+            case SPRINT_KEY -> t("клавиша спринта", "sprint key", "Sprinttaste");
+            case AUTO -> t("сам (спринт зажат)", "auto (sprint held)", "automatisch (Sprint gehalten)");
+            case NONE -> t("без сброса", "no reset", "kein Reset");
         };
     }
 
@@ -1478,48 +1486,48 @@ final class StatsView {
 
     private int wtapTab(Ui ui, int x, int y, int w) {
         WTap.Result r = wtap;
-        if (!r.hasInput() && rec.skipped(Features.INPUT)) return skipped(ui, w, t("Нажатия W, S и спринта", "W, S and sprint presses"), x, y);
+        if (!r.hasInput() && rec.skipped(Features.INPUT)) return skipped(ui, w, t("Нажатия W, S и спринта", "W, S and sprint presses", "W-, S- und Sprint-Tasten"), x, y);
         if (!r.hasInput()) {
             line(ui, w, t("Нет данных: нажатия W и спринта пишутся в записях новой версии мода.",
-                    "No data: W and sprint presses are recorded from a newer mod version."), x, y, Theme.DIM);
+                    "No data: W and sprint presses are recorded from a newer mod version.", "Keine Daten: W- und Sprint-Tasten werden erst ab einer neueren Mod-Version aufgenommen."), x, y, Theme.DIM);
             return y + LINE;
         }
-        line(ui, w, t("SPRINT-ударов в сериях ", "Sprint hits in series ") + r.sprintHits() + t(" · со сбросом спринта перед ударом ", " · with a sprint reset before ")
-                + Fmt.pct(r.afterResetPct()) + t(" · ударов без спринта ", " · hits without sprint ") + r.noSprintHits(), x, y, Theme.TEXT);
+        line(ui, w, t("SPRINT-ударов в сериях ", "Sprint hits in series ", "Sprint-Treffer in Serie ") + r.sprintHits() + t(" · со сбросом спринта перед ударом ", " · with a sprint reset before ", " · mit Sprint-Reset vor ")
+                + Fmt.pct(r.afterResetPct()) + t(" · ударов без спринта ", " · hits without sprint ", " · Treffer ohne Sprint ") + r.noSprintHits(), x, y, Theme.TEXT);
         y += LINE;
         List<String> parts = new ArrayList<>();
         for (WTap.Method m : WTap.Method.values()) {
             int n = r.methods().getOrDefault(m, 0);
             if (n > 0) parts.add(methodName(m) + " " + n);
         }
-        line(ui, w, t("Как возвращали спринт: ", "How sprint came back: ") + (parts.isEmpty() ? "—" : String.join(", ", parts)), x, y, Theme.MUTED);
+        line(ui, w, t("Как возвращали спринт: ", "How sprint came back: ", "Wie der Sprint zurückkam: ") + (parts.isEmpty() ? "—" : String.join(", ", parts)), x, y, Theme.MUTED);
         y += LINE;
-        line(ui, w, t("W отпущена в среднем через ", "W released on average ") + ms(r.releaseMeanMs()) + t(" после удара, сброс длится ", " after the hit, reset lasts ")
+        line(ui, w, t("W отпущена в среднем через ", "W released on average ", "W im Schnitt losgelassen ") + ms(r.releaseMeanMs()) + t(" после удара, сброс длится ", " after the hit, reset lasts ", " nach dem Treffer, Reset dauert ")
                 + ms(r.resetMeanMs()), x, y, Theme.MUTED);
         y += LINE;
-        line(ui, w, t("Серий, прерванных после удара без спринта: ", "Combos broken after a hit without sprint: ") + r.brokenNoSprint() + t(" из ", " of ") + r.combos(),
+        line(ui, w, t("Серий, прерванных после удара без спринта: ", "Combos broken after a hit without sprint: ", "Combos abgebrochen nach einem Treffer ohne Sprint: ") + r.brokenNoSprint() + t(" из ", " of ", " von ") + r.combos(),
                 x, y, r.combos() > 0 && r.brokenNoSprint() * 2 >= r.combos() ? Theme.RED : Theme.MUTED);
         y += LINE + 6;
         if (r.resetDurations().length > 0) {
             y = hist(ui, x, y, w, 40, Stats.histogram(r.resetDurations(), 0, 300, 15), 0, 20, t(" мс", " ms"),
-                    t("Длительность сброса (W отпущена или S нажата), 20 мс на столбец", "Reset duration (W up or S down), 20 ms per bar"), Theme.ACCENT);
+                    t("Длительность сброса (W отпущена или S нажата), 20 мс на столбец", "Reset duration (W up or S down), 20 ms per bar", "Reset-Dauer (W los oder S gedrückt), 20 ms pro Balken"), Theme.ACCENT);
             y += 4;
         }
         line(ui, w, t("После удара с нокбэком спринт сбрасывается. С зажатыми W и спринтом он вернётся через тик сам,",
-                "A knockback hit resets sprint. With W and sprint held it comes back a tick later by itself,"), x, y, Theme.DIM);
+                "A knockback hit resets sprint. With W and sprint held it comes back a tick later by itself,", "Ein Treffer mit Rückstoß setzt den Sprint zurück. Mit gehaltenem W und Sprint kommt er einen Tick später von selbst zurück,"), x, y, Theme.DIM);
         y += LINE;
         line(ui, w, t("без клавиши спринта нужен W-tap или S-tap. Сброс в любом случае замедляет вас (скорость × 0,6).",
-                "without the sprint key you need a W-tap or S-tap. Either way the hit slows you down (speed × 0.6)."), x, y, Theme.DIM);
+                "without the sprint key you need a W-tap or S-tap. Either way the hit slows you down (speed × 0.6).", "ohne Sprinttaste brauchst du einen W-Tap oder S-Tap. So oder so bremst dich der Treffer (Tempo × 0,6)."), x, y, Theme.DIM);
         return y + LINE;
     }
 
     private static Card wtapCard(WTap.Result r) {
         List<Kv> rows = new ArrayList<>(List.of(
-                new Kv(t("SPRINT-ударов со сбросом", "Sprint hits after reset"), Fmt.pct(r.afterResetPct()) + " (" + r.afterReset() + "/" + r.sprintHits() + ")", Theme.TEXT_STRONG),
-                new Kv(t("Сброс длится", "Reset lasts"), ms(r.resetMeanMs())),
-                new Kv(t("W отпущена через", "W released after"), ms(r.releaseMeanMs())),
-                new Kv(t("Ударов без спринта", "Hits without sprint"), String.valueOf(r.noSprintHits())),
-                new Kv(t("Комбо прервано без спринта", "Combos broken without sprint"), r.brokenNoSprint() + " / " + r.combos())));
+                new Kv(t("SPRINT-ударов со сбросом", "Sprint hits after reset", "Sprint-Treffer nach Reset"), Fmt.pct(r.afterResetPct()) + " (" + r.afterReset() + "/" + r.sprintHits() + ")", Theme.TEXT_STRONG),
+                new Kv(t("Сброс длится", "Reset lasts", "Reset dauert"), ms(r.resetMeanMs())),
+                new Kv(t("W отпущена через", "W released after", "W losgelassen nach"), ms(r.releaseMeanMs())),
+                new Kv(t("Ударов без спринта", "Hits without sprint", "Treffer ohne Sprint"), String.valueOf(r.noSprintHits())),
+                new Kv(t("Комбо прервано без спринта", "Combos broken without sprint", "Combos ohne Sprint abgebrochen"), r.brokenNoSprint() + " / " + r.combos())));
         for (WTap.Method m : WTap.Method.values()) {
             int n = r.methods().getOrDefault(m, 0);
             if (n > 0) rows.add(new Kv("  " + methodName(m), String.valueOf(n)));
@@ -1529,20 +1537,20 @@ final class StatsView {
 
     private int comboTab(Ui ui, int x, int y, int w) {
         Stats.ComboStats c = res.combo();
-        line(ui, w, t("Нанесено ", "Dealt ") + c.dealt() + t(" · получено ", " · taken ") + c.taken() + t(" · размен ", " · trade ")
+        line(ui, w, t("Нанесено ", "Dealt ", "Ausgeteilt ") + c.dealt() + t(" · получено ", " · taken ", " · eingesteckt ") + c.taken() + t(" · размен ", " · trade ", " · Trade ")
                 + (Double.isNaN(c.trade()) ? (c.dealt() > 0 ? "∞" : "—") : Fmt.num(c.trade(), 2)), x, y, Theme.TEXT);
         y += LINE;
-        line(ui, w, t("Макс. комбо ", "Max combo ") + c.maxCombo() + t(" · среднее (от 2) ", " · mean (from 2) ")
+        line(ui, w, t("Макс. комбо ", "Max combo ", "Max. Combo ") + c.maxCombo() + t(" · среднее (от 2) ", " · mean (from 2) ", " · Ø (ab 2) ")
                 + (c.avgCombo() > 0 ? Fmt.num(c.avgCombo(), 1) : "—"), x, y, Theme.MUTED);
         y += LINE + 6;
         if (c.dealt() == 0) {
-            ui.text(t("Подтверждённых ударов нет", "No confirmed hits"), x, y, Theme.DIM);
+            ui.text(t("Подтверждённых ударов нет", "No confirmed hits", "Keine bestätigten Treffer"), x, y, Theme.DIM);
             return y + LINE;
         }
         double[] combos = Stats.comboLengths(events).stream().mapToDouble(Integer::doubleValue).toArray();
         int[] cc = Stats.histogram(combos, 0.5, 10.5, 10);
         return hist(ui, x, y, w, 40, cc, 1, 1, "",
-                t("Длина серий ударов (до ответного удара): макс. ", "Combo length (until hit back): max ") + c.maxCombo() + t(", последний столбец 10+", ", last column 10+"),
+                t("Длина серий ударов (до ответного удара): макс. ", "Combo length (until hit back): max ", "Combo-Länge (bis zum Gegentreffer): max. ") + c.maxCombo() + t(", последний столбец 10+", ", last column 10+", ", letzte Spalte 10+"),
                 Theme.GREEN);
     }
 
@@ -1606,34 +1614,34 @@ final class StatsView {
     private int jumpTab(Ui ui, int x, int y, int w) {
         Stats.JumpStats j = res.jump();
         Settings s = CombatDataClient.settings();
-        line(ui, w, t("Попыток ", "Attempts ") + j.attempts() + t(" · успех ", " · success ") + Fmt.pct(j.successRatePct()) + t(" · среднее успешных ", " · mean of successful ")
+        line(ui, w, t("Попыток ", "Attempts ", "Versuche ") + j.attempts() + t(" · успех ", " · success ", " · Erfolg ") + Fmt.pct(j.successRatePct()) + t(" · среднее успешных ", " · mean of successful ", " · Ø der erfolgreichen ")
                 + (j.success() == 0 ? "—" : Fmt.num(j.meanSuccessMs(), 0) + t(" мс", " ms")) + " · σ "
                 + (j.attempts() == 0 ? "—" : Fmt.num(j.sigmaMs(), 0) + t(" мс", " ms")), x, y, Theme.TEXT);
         y += LINE;
-        line(ui, w, t("Окно успеха ", "Success window ") + s.jrLowerMs + "…" + s.jrUpperMs + t(" мс после удара · рано ", " ms after the hit · early ") + j.early() + t(" · поздно ", " · late ")
-                + j.late() + t(" · без прыжка ", " · no jump ") + j.noAttempt() + (j.flyOut() > 0 ? " · fly out " + j.flyOut() : ""), x, y, Theme.MUTED);
+        line(ui, w, t("Окно успеха ", "Success window ", "Erfolgsfenster ") + s.jrLowerMs + "…" + s.jrUpperMs + t(" мс после удара · рано ", " ms after the hit · early ", " ms nach dem Treffer · zu früh ") + j.early() + t(" · поздно ", " · late ", " · zu spät ")
+                + j.late() + t(" · без прыжка ", " · no jump ", " · kein Sprung ") + j.noAttempt() + (j.flyOut() > 0 ? " · fly out " + j.flyOut() : ""), x, y, Theme.MUTED);
         y += LINE + 6;
         if (attempts.isEmpty()) {
-            ui.text(t("Полученных ударов нет", "No hits taken"), x, y, Theme.DIM);
+            ui.text(t("Полученных ударов нет", "No hits taken", "Keine Treffer eingesteckt"), x, y, Theme.DIM);
             return y + LINE;
         }
         double[] at = {0, .16, .36, .50, .74};
-        y = header(ui, x, y, w, at, t("Время", "Time"), t("Результат", "Result"), t("Дельта", "Delta"), t("Кто ударил", "Hit by"), t("Состояние", "State"));
+        y = header(ui, x, y, w, at, t("Время", "Time", "Zeit"), t("Результат", "Result", "Ergebnis"), t("Дельта", "Delta"), t("Кто ударил", "Hit by", "Getroffen von"), t("Состояние", "State", "Zustand"));
         for (JumpResetEvaluator.Attempt a : attempts) {
             if (visible(y, ROW)) {
                 String result;
                 int rc;
                 switch (a.result()) {
-                    case SUCCESS -> { result = t("Успех", "Success"); rc = Theme.GREEN; }
-                    case TOO_EARLY -> { result = t("Рано", "Early"); rc = Theme.RED; }
-                    case TOO_LATE -> { result = t("Поздно", "Late"); rc = Theme.RED; }
-                    case NO_ATTEMPT -> { result = t("Без прыжка", "No jump"); rc = Theme.MUTED; }
+                    case SUCCESS -> { result = t("Успех", "Success", "Erfolg"); rc = Theme.GREEN; }
+                    case TOO_EARLY -> { result = t("Рано", "Early", "Zu früh"); rc = Theme.RED; }
+                    case TOO_LATE -> { result = t("Поздно", "Late", "Zu spät"); rc = Theme.RED; }
+                    case NO_ATTEMPT -> { result = t("Без прыжка", "No jump", "Kein Sprung"); rc = Theme.MUTED; }
                     case FLY_OUT -> { result = "Fly out"; rc = Theme.BLUE; }
-                    default -> { result = t("Не оценивается", "Not rated"); rc = Theme.DIM; }
+                    default -> { result = t("Не оценивается", "Not rated", "Nicht bewertet"); rc = Theme.DIM; }
                 }
-                if (a.held()) result += s.jrExcludeHeld ? t(" (зажат, искл.)", " (held, excl.)") : t(" (зажат)", " (held)");
+                if (a.held()) result += s.jrExcludeHeld ? t(" (зажат, искл.)", " (held, excl.)", " (gehalten, ausgeschl.)") : t(" (зажат)", " (held)", " (gehalten)");
                 IncomingHitEvent h = a.hit();
-                String state = (h.groundedAtHit() ? t("на земле", "on ground") : t("в воздухе", "in the air")) + (h.knockbackApplied() ? "" : t(", без нокбэка", ", no knockback"));
+                String state = (h.groundedAtHit() ? t("на земле", "on ground", "am Boden") : t("в воздухе", "in the air", "in der Luft")) + (h.knockbackApplied() ? "" : t(", без нокбэка", ", no knockback", ", kein Rückstoß"));
                 cols(ui, x, y, w, at, new String[]{Fmt.clockMs(h.t()), result,
                                 a.hasJump() ? Fmt.signed(a.deltaMs(), 0) + t(" мс", " ms") : "—", nz(h.attackerName()), state},
                         new int[]{Theme.MUTED, rc, Theme.TEXT, Theme.TEXT, Theme.MUTED});
@@ -1647,32 +1655,32 @@ final class StatsView {
         Stats.HitStats h = res.hits();
         Stats.ThreeBlockStats t = res.threeBlock();
         int interp = CombatDataClient.settings().interpMs;
-        line(ui, w, t("Точность ", "Accuracy ") + Fmt.pct(h.hitRatePct()) + t(" · попаданий ", " · hits ") + h.confirmed() + t(" · промахов ", " · misses ") + h.misses()
-                + t(" · средняя дистанция ", " · mean distance ") + (h.confirmed() == 0 ? "—" : Fmt.num(h.reachMean(), 2)), x, y, Theme.TEXT);
+        line(ui, w, t("Точность ", "Accuracy ", "Trefferquote ") + Fmt.pct(h.hitRatePct()) + t(" · попаданий ", " · hits ", " · Treffer ") + h.confirmed() + t(" · промахов ", " · misses ", " · Fehlschläge ") + h.misses()
+                + t(" · средняя дистанция ", " · mean distance ", " · Ø Distanz ") + (h.confirmed() == 0 ? "—" : Fmt.num(h.reachMean(), 2)), x, y, Theme.TEXT);
         y += LINE;
-        line(ui, w, "3 block hit: " + (t.classified() == 0 ? t("нет данных", "no data") : t.count() + t(" из ", " of ") + t.classified())
-                + t(" · последний столбец: дистанция на экране противника", " · last column: distance on the opponent's screen"), x, y, Theme.MUTED);
+        line(ui, w, "3 block hit: " + (t.classified() == 0 ? t("нет данных", "no data", "keine Daten") : t.count() + t(" из ", " of ", " von ") + t.classified())
+                + t(" · последний столбец: дистанция на экране противника", " · last column: distance on the opponent's screen", " · letzte Spalte: Distanz auf dem Bildschirm des Gegners"), x, y, Theme.MUTED);
         y += LINE + 6;
         List<AttackEvent> list = new ArrayList<>();
         for (Event e : events) if (e instanceof AttackEvent a) list.add(a);
         if (list.isEmpty()) {
-            ui.text(t("Атак нет", "No attacks"), x, y, Theme.DIM);
+            ui.text(t("Атак нет", "No attacks", "Keine Angriffe"), x, y, Theme.DIM);
             return y + LINE;
         }
         boolean narrow = w < 360;
         double[] at = narrow ? new double[]{0, .22, .48, .78} : new double[]{0, .14, .32, .50, .60, .73, .82, .91};
-        if (narrow) y = header(ui, x, y, w, at, t("Время", "Time"), t("Цель", "Target"), t("Исход", "Result"), t("Дист.", "Dist."));
-        else y = header(ui, x, y, w, at, t("Время", "Time"), t("Цель", "Target"), t("Исход", "Result"), t("Дист.", "Dist."), t("Тип", "Type"), t("Заряд", "Charge"), "Yaw", t("У цели", "At target"));
+        if (narrow) y = header(ui, x, y, w, at, t("Время", "Time", "Zeit"), t("Цель", "Target", "Ziel"), t("Исход", "Result", "Ergebnis"), t("Дист.", "Dist."));
+        else y = header(ui, x, y, w, at, t("Время", "Time", "Zeit"), t("Цель", "Target", "Ziel"), t("Исход", "Result", "Ergebnis"), t("Дист.", "Dist."), t("Тип", "Type", "Art"), t("Заряд", "Charge", "Aufladung"), "Yaw", t("У цели", "At target", "Am Ziel"));
         for (AttackEvent a : list) {
             if (visible(y, ROW)) {
                 boolean tb = ThreeBlockHit.is(a, interp);
                 String out;
                 int oc;
                 switch (a.outcome()) {
-                    case HIT_CONFIRMED -> { out = tb ? "3 block hit" : t("Попал", "Hit"); oc = tb ? Theme.AMBER : Theme.GREEN; }
-                    case HIT_UNCONFIRMED -> { out = t("Без подтв.", "Unconfirmed"); oc = Theme.MUTED; }
+                    case HIT_CONFIRMED -> { out = tb ? "3 block hit" : t("Попал", "Hit", "Treffer"); oc = tb ? Theme.AMBER : Theme.GREEN; }
+                    case HIT_UNCONFIRMED -> { out = t("Без подтв.", "Unconfirmed", "Unbestätigt"); oc = Theme.MUTED; }
                     default -> {
-                        out = a.outOfRangeMiss(a.rangeOr(AttackEvent.DEFAULT_RANGE)) ? t("Не дотянулся", "Out of range") : t("Мимо", "Missed");
+                        out = a.outOfRangeMiss(a.rangeOr(AttackEvent.DEFAULT_RANGE)) ? t("Не дотянулся", "Out of range", "Zu weit weg") : t("Мимо", "Missed", "Daneben");
                         oc = Theme.RED;
                     }
                 }
@@ -1692,14 +1700,14 @@ final class StatsView {
 
     private int opponentsTab(Ui ui, int x, int y, int w) {
         List<Stats.OpponentStats> list = all.opponents();
-        line(ui, w, t("Клик по строке: вся статистика только по этому противнику. Повторный клик снимает фильтр.", "Click a row: all stats for this opponent only. Click again to clear the filter."), x, y, Theme.MUTED);
+        line(ui, w, t("Клик по строке: вся статистика только по этому противнику. Повторный клик снимает фильтр.", "Click a row: all stats for this opponent only. Click again to clear the filter.", "Klick auf eine Zeile: alle Werte nur für diesen Gegner. Nochmal klicken hebt den Filter auf."), x, y, Theme.MUTED);
         y += LINE + 6;
         if (list.isEmpty()) {
-            ui.text(t("Противников нет", "No opponents"), x, y, Theme.DIM);
+            ui.text(t("Противников нет", "No opponents", "Keine Gegner"), x, y, Theme.DIM);
             return y + LINE;
         }
         double[] at = {0, .34, .48, .61, .74, .87};
-        y = header(ui, x, y, w, at, t("Игрок", "Player"), t("Нанесено", "Dealt"), t("Промахов", "Misses"), t("Получено", "Taken"), t("Точность", "Accuracy"), t("Дист.", "Dist."));
+        y = header(ui, x, y, w, at, t("Игрок", "Player", "Spieler"), t("Нанесено", "Dealt", "Ausgeteilt"), t("Промахов", "Misses", "Fehlschläge"), t("Получено", "Taken", "Eingesteckt"), t("Точность", "Accuracy", "Trefferquote"), t("Дист.", "Dist."));
         int rh = 14;
         for (Stats.OpponentStats o : list) {
             if (visible(y, rh)) {
@@ -1724,15 +1732,15 @@ final class StatsView {
             if (e instanceof SegmentEvent s) {
                 out.add(new Line(s.t(), Fmt.clockMs(s.t()), t("Сервер ", "Server ") + nz(s.server()) + ", " + nz(s.dimension()), Theme.MUTED));
             } else if (e instanceof MarkerEvent m) {
-                out.add(new Line(m.t(), Fmt.clockMs(m.t()), t("Метка: ", "Marker: ") + nz(m.label()), Theme.ACCENT));
+                out.add(new Line(m.t(), Fmt.clockMs(m.t()), t("Метка: ", "Marker: ", "Markierung: ") + nz(m.label()), Theme.ACCENT));
             }
         }
         int n = 0;
         for (Stats.Fight f : Stats.fights(events, Stats.FIGHT_GAP_MS, sf)) {
             n++;
             out.add(new Line(f.startMs(), Fmt.clock(f.startMs()) + "–" + Fmt.clock(f.endMs()),
-                    t("Бой ", "Fight ") + n + ": " + String.join(", ", f.opponents()) + t(" · атак ", " · attacks ") + f.attacks() + t(" · нанесено ", " · dealt ")
-                            + f.dealt() + t(" · получено ", " · taken ") + f.taken(), Theme.TEXT));
+                    t("Бой ", "Fight ", "Kampf ") + n + ": " + String.join(", ", f.opponents()) + t(" · атак ", " · attacks ", " · Angriffe ") + f.attacks() + t(" · нанесено ", " · dealt ", " · ausgeteilt ")
+                            + f.dealt() + t(" · получено ", " · taken ", " · eingesteckt ") + f.taken(), Theme.TEXT));
         }
         out.sort(Comparator.comparingLong(Line::t));
         return out;
@@ -1740,22 +1748,22 @@ final class StatsView {
 
     private int fightsTab(Ui ui, int x, int y, int w) {
         List<Stats.Fight> fights = Stats.fights(events, Stats.FIGHT_GAP_MS, sf);
-        line(ui, w, t("Боёв ", "Fights ") + fights.size() + t(" · новый бой после паузы больше ", " · a new fight after a pause over ")
-                + Stats.FIGHT_GAP_MS / 1000 + t(" с без ударов · клик: размены боя", " s without hits · click: trades of the fight"), x, y, Theme.MUTED);
+        line(ui, w, t("Боёв ", "Fights ", "Kämpfe ") + fights.size() + t(" · новый бой после паузы больше ", " · a new fight after a pause over ", " · neuer Kampf nach einer Pause über ")
+                + Stats.FIGHT_GAP_MS / 1000 + t(" с без ударов · клик: размены боя", " s without hits · click: trades of the fight", " s ohne Treffer · Klick: Trades des Kampfs"), x, y, Theme.MUTED);
         y += LINE;
         int small = Stats.fights(events, Stats.FIGHT_GAP_MS).size() - fights.size();
         if (sf.minFightHits() > 1) {
-            line(ui, w, t("Бои меньше ", "Fights under ") + sf.minFightHits() + t(" подтверждённых ударов не показаны", " confirmed hits are hidden")
+            line(ui, w, t("Бои меньше ", "Fights under ", "Kämpfe unter ") + sf.minFightHits() + t(" подтверждённых ударов не показаны", " confirmed hits are hidden", " bestätigte Treffer ausgeblendet")
                     + (small > 0 ? " (" + small + ")" : ""), x, y, Theme.DIM);
             y += LINE;
         }
         y += 6;
         if (fights.isEmpty()) {
-            ui.text(t("Боёв нет", "No fights"), x, y, Theme.DIM);
+            ui.text(t("Боёв нет", "No fights", "Keine Kämpfe"), x, y, Theme.DIM);
             return y + LINE;
         }
         double[] at = {0, .26, .64, .76, .88};
-        y = header(ui, x, y, w, at, t("Время", "Time"), t("Противники", "Opponents"), t("Атак", "Atk."), t("Нанес.", "Dealt"), t("Получ.", "Taken"));
+        y = header(ui, x, y, w, at, t("Время", "Time", "Zeit"), t("Противники", "Opponents", "Gegner"), t("Атак", "Atk.", "Angr."), t("Нанес.", "Dealt", "Ausgeteilt"), t("Получ.", "Taken", "Eingesteckt"));
         for (Stats.Fight f : fights) {
             if (visible(y, ROW)) {
                 if (ui.hover(x - 4, y - 2, w + 8, ROW)) Draw.round(ui.g, x - 4, y - 2, w + 8, ROW, Theme.R_CTRL, Theme.ROW_HOVER);
@@ -1777,27 +1785,27 @@ final class StatsView {
 
     private int takenTab(Ui ui, int x, int y, int w) {
         Stats.TakenStats tk = res.taken();
-        if (tk.rated() == 0 && rec.skipped(Features.TAKEN)) return skipped(ui, w, t("Дистанция ударов по вам", "Distance of hits on you"), x, y);
+        if (tk.rated() == 0 && rec.skipped(Features.TAKEN)) return skipped(ui, w, t("Дистанция ударов по вам", "Distance of hits on you", "Distanz der Treffer auf dich"), x, y);
         if (tk.rated() == 0) {
             line(ui, w, t("Нет данных: дистанция ударов по вам пишется в записях новой версии мода, только ближние удары.",
-                    "No data: distance of hits on you is recorded from a newer mod version, melee hits only."), x, y, Theme.DIM);
+                    "No data: distance of hits on you is recorded from a newer mod version, melee hits only.", "Keine Daten: Die Distanz der Treffer auf dich wird erst ab einer neueren Mod-Version aufgenommen, nur Nahkampf."), x, y, Theme.DIM);
             return y + LINE;
         }
         Stats.HitStats hs = res.hits();
         Stats.ThreeBlockStats mine = res.threeBlock();
-        line(ui, w, t("Ударов по вам ", "Hits on you ") + tk.rated() + t(" · средняя дистанция ", " · mean distance ") + Fmt.num(tk.reachMean(), 2)
-                + t(" бл. (ваша ", " bl. (yours ") + (hs.confirmed() == 0 ? "—" : Fmt.num(hs.reachMean(), 2)) + t(") · максимум ", ") · max ")
+        line(ui, w, t("Ударов по вам ", "Hits on you ", "Treffer auf dich ") + tk.rated() + t(" · средняя дистанция ", " · mean distance ", " · Ø Distanz ") + Fmt.num(tk.reachMean(), 2)
+                + t(" бл. (ваша ", " bl. (yours ", " Bl. (deine ") + (hs.confirmed() == 0 ? "—" : Fmt.num(hs.reachMean(), 2)) + t(") · максимум ", ") · max ", ") · max. ")
                 + Fmt.num(tk.reachMax(), 2), x, y, Theme.TEXT);
         y += LINE;
-        line(ui, w, t("3 block hit против вас: ", "3 block hit against you: ") + tk.caught() + " (" + Fmt.pct(tk.caughtPct()) + ")"
-                + t(" · ваших: ", " · yours: ") + (mine.classified() == 0 ? "—" : mine.count() + " (" + Fmt.pct(mine.sharePct()) + ")"),
+        line(ui, w, t("3 block hit против вас: ", "3 block hit against you: ", "3 Block Hit gegen dich: ") + tk.caught() + " (" + Fmt.pct(tk.caughtPct()) + ")"
+                + t(" · ваших: ", " · yours: ", " · deine: ") + (mine.classified() == 0 ? "—" : mine.count() + " (" + Fmt.pct(mine.sharePct()) + ")"),
                 x, y, tk.caughtPct() >= 25 ? Theme.RED : Theme.MUTED);
         y += LINE;
         line(ui, w, t("3 block hit против вас: на вашем экране противник был дальше вашей дальности атаки, ответить вы не могли.",
-                "3 block hit against you: on your screen the opponent was beyond your attack range, you could not hit back."), x, y, Theme.DIM);
+                "3 block hit against you: on your screen the opponent was beyond your attack range, you could not hit back.", "3 Block Hit gegen dich: Auf deinem Bildschirm war der Gegner außerhalb deiner Reichweite, du konntest nicht zurückschlagen."), x, y, Theme.DIM);
         y += LINE + 6;
         double[] at = {0, .40, .60, .80};
-        y = header(ui, x, y, w, at, t("Оружие противника", "Opponent weapon"), t("Ударов", "Hits"), t("Дист.", "Dist."), "3BH");
+        y = header(ui, x, y, w, at, t("Оружие противника", "Opponent weapon", "Waffe des Gegners"), t("Ударов", "Hits", "Treffer"), t("Дист.", "Dist."), "3BH");
         for (Weapon wp : Weapon.values()) {
             Stats.WeaponTaken wt = tk.byWeapon().get(wp);
             if (wt == null) continue;
@@ -1809,15 +1817,15 @@ final class StatsView {
         y += 8;
         boolean narrow = w < 360;
         at = narrow ? new double[]{0, .24, .56, .78} : new double[]{0, .14, .36, .54, .66, .78, .88};
-        if (narrow) y = header(ui, x, y, w, at, t("Время", "Time"), t("Кто", "Who"), t("Дист.", "Dist."), "3BH");
-        else y = header(ui, x, y, w, at, t("Время", "Time"), t("Кто ударил", "Hit by"), t("Оружие", "Weapon"), t("Дист.", "Dist."),
-                t("Его ск.", "Their v"), t("Ваша ск.", "Your v"), t("Пинг", "Ping"));
+        if (narrow) y = header(ui, x, y, w, at, t("Время", "Time", "Zeit"), t("Кто", "Who", "Wer"), t("Дист.", "Dist."), "3BH");
+        else y = header(ui, x, y, w, at, t("Время", "Time", "Zeit"), t("Кто ударил", "Hit by", "Getroffen von"), t("Оружие", "Weapon", "Waffe"), t("Дист.", "Dist."),
+                t("Его ск.", "Their v", "Sein v"), t("Ваша ск.", "Your v", "Dein v"), t("Пинг", "Ping"));
         for (Event e : events) {
             if (!(e instanceof IncomingHitEvent h) || !h.rated()) continue;
             if (visible(y, ROW)) {
                 int dc = h.caught() ? Theme.AMBER : Theme.TEXT;
                 String d = Fmt.num(h.reach(), 2) + (h.caught() ? " !" : "");
-                if (narrow) cols(ui, x, y, w, at, new String[]{Fmt.clockMs(h.t()), nz(h.attackerName()), d, h.caught() ? t("да", "yes") : ""},
+                if (narrow) cols(ui, x, y, w, at, new String[]{Fmt.clockMs(h.t()), nz(h.attackerName()), d, h.caught() ? t("да", "yes", "ja") : ""},
                         new int[]{Theme.MUTED, Theme.TEXT, dc, Theme.AMBER});
                 else cols(ui, x, y, w, at, new String[]{Fmt.clockMs(h.t()), nz(h.attackerName()), weaponName(h.weaponOr()), d,
                                 Fmt.signed(h.attackerTowardBps(), 1), Fmt.signed(h.selfAwayBps(), 1),
@@ -1830,38 +1838,38 @@ final class StatsView {
     }
 
     private static Card takenCard(Stats.TakenStats tk, Stats.ThreeBlockStats mine) {
-        return new Card(t("Удары по вам", "Hits on you"), List.of(
-                new Kv(t("3 block hit против вас", "3 block hit against you"), tk.caught() + " (" + Fmt.pct(tk.caughtPct()) + ")",
+        return new Card(t("Удары по вам", "Hits on you", "Treffer auf dich"), List.of(
+                new Kv(t("3 block hit против вас", "3 block hit against you", "3 Block Hit gegen dich"), tk.caught() + " (" + Fmt.pct(tk.caughtPct()) + ")",
                         tk.caughtPct() >= 25 ? Theme.RED : Theme.TEXT_STRONG),
-                new Kv(t("Средняя дистанция", "Mean distance"), Fmt.num(tk.reachMean(), 2) + t(" бл.", " bl.")),
-                new Kv(t("Ваши 3 block hit", "Your 3 block hits"), mine.classified() == 0 ? "—" : Fmt.pct(mine.sharePct())),
-                new Kv(t("Максимум", "Max"), Fmt.num(tk.reachMax(), 2) + t(" бл.", " bl.")),
-                new Kv(t("Ударов с замером", "Hits measured"), String.valueOf(tk.rated()))), 2);
+                new Kv(t("Средняя дистанция", "Mean distance", "Ø Distanz"), Fmt.num(tk.reachMean(), 2) + t(" бл.", " bl.", " Bl.")),
+                new Kv(t("Ваши 3 block hit", "Your 3 block hits", "Deine 3 Block Hits"), mine.classified() == 0 ? "—" : Fmt.pct(mine.sharePct())),
+                new Kv(t("Максимум", "Max", "Max."), Fmt.num(tk.reachMax(), 2) + t(" бл.", " bl.", " Bl.")),
+                new Kv(t("Ударов с замером", "Hits measured", "Gemessene Treffer"), String.valueOf(tk.rated()))), 2);
     }
 
     static String causeName(Trades.Cause c) {
         if (c == null) return "";
         return switch (c) {
-            case MISS -> t("промах", "miss");
-            case WEAK -> t("удар без заряда", "uncharged hit");
-            case CAUGHT -> t("3 block hit против вас", "3 block hit against you");
-            case FAILED_JR -> t("неудачный jump reset", "failed jump reset");
-            case NONE -> t("без явной причины", "no clear cause");
+            case MISS -> t("промах", "miss", "Fehlschlag");
+            case WEAK -> t("удар без заряда", "uncharged hit", "ungeladener Schlag");
+            case CAUGHT -> t("3 block hit против вас", "3 block hit against you", "3 Block Hit gegen dich");
+            case FAILED_JR -> t("неудачный jump reset", "failed jump reset", "misslungener Jump Reset");
+            case NONE -> t("без явной причины", "no clear cause", "keine klare Ursache");
         };
     }
 
     private int tradesTab(Ui ui, int x, int y, int w) {
         Trades.Summary s = res.trades();
         long gap = CombatDataClient.settings().tradeGapMs;
-        line(ui, w, t("Разменов ", "Trades ") + s.total() + t(" · первый удар ", " · first hit ") + Fmt.pct(s.firstPct())
-                + t(" · побед / поражений / ничьих ", " · won / lost / drawn ") + s.wins() + " / " + s.losses() + " / " + s.draws(), x, y, Theme.TEXT);
+        line(ui, w, t("Разменов ", "Trades ") + s.total() + t(" · первый удар ", " · first hit ", " · erster Treffer ") + Fmt.pct(s.firstPct())
+                + t(" · побед / поражений / ничьих ", " · won / lost / drawn ", " · gewonnen / verloren / unentschieden ") + s.wins() + " / " + s.losses() + " / " + s.draws(), x, y, Theme.TEXT);
         y += LINE;
-        line(ui, w, t("Счёт: удары (вес). Вес: крит 1,5, ваш слабый удар по заряду; победитель ", "Score: hits (weight). Weight: crit 1.5, your weak hit by charge; winner ")
-                + (CombatDataClient.settings().tradeByWeight ? t("по весу", "by weight") : t("по числу ударов", "by hit count"))
-                + t(" (Настройки → Дополнительно)", " (Settings → Advanced)"), x, y, Theme.DIM);
+        line(ui, w, t("Счёт: удары (вес). Вес: крит 1,5, ваш слабый удар по заряду; победитель ", "Score: hits (weight). Weight: crit 1.5, your weak hit by charge; winner ", "Punktestand: Treffer (Gewicht). Gewicht: Crit 1,5, dein schwacher Schlag nach Aufladung; Sieger ")
+                + (CombatDataClient.settings().tradeByWeight ? t("по весу", "by weight", "nach Gewicht") : t("по числу ударов", "by hit count", "nach Trefferzahl"))
+                + t(" (Настройки → Дополнительно)", " (Settings → Advanced)", " (Einstellungen → Erweitert)"), x, y, Theme.DIM);
         y += LINE;
-        line(ui, w, t("Побед, когда били первым: ", "Won when hitting first: ") + Fmt.pct(s.winFirstPct()) + " (" + s.winsFirst() + "/" + s.countFirst() + ")"
-                + t(" · вторым: ", " · second: ") + Fmt.pct(s.winSecondPct()) + " (" + s.winsSecond() + "/" + s.countSecond() + ")", x, y, Theme.MUTED);
+        line(ui, w, t("Побед, когда били первым: ", "Won when hitting first: ", "Gewonnen, wenn zuerst getroffen: ") + Fmt.pct(s.winFirstPct()) + " (" + s.winsFirst() + "/" + s.countFirst() + ")"
+                + t(" · вторым: ", " · second: ", " · als Zweiter: ") + Fmt.pct(s.winSecondPct()) + " (" + s.winsSecond() + "/" + s.countSecond() + ")", x, y, Theme.MUTED);
         y += LINE;
         if (s.losses() > 0) {
             List<String> parts = new ArrayList<>();
@@ -1869,31 +1877,31 @@ final class StatsView {
                 int n = s.lossCauses().getOrDefault(c, 0);
                 if (n > 0) parts.add(causeName(c) + " " + n);
             }
-            line(ui, w, t("Проигрыши начинались с: ", "Losses started with: ") + String.join(", ", parts), x, y, Theme.MUTED);
+            line(ui, w, t("Проигрыши начинались с: ", "Losses started with: ", "Niederlagen begannen mit: ") + String.join(", ", parts), x, y, Theme.MUTED);
             y += LINE;
         }
-        line(ui, w, t("Новый размен после паузы больше ", "A new trade after a pause over ") + Fmt.num(gap / 1000.0, 1)
-                + t(" с (Настройки → Дополнительно)", " s (Settings → Advanced)"), x, y, Theme.DIM);
+        line(ui, w, t("Новый размен после паузы больше ", "A new trade after a pause over ", "Neuer Trade nach einer Pause über ") + Fmt.num(gap / 1000.0, 1)
+                + t(" с (Настройки → Дополнительно)", " s (Settings → Advanced)", " s (Einstellungen → Erweitert)"), x, y, Theme.DIM);
         y += LINE + 6;
         if (trades.isEmpty()) {
-            ui.text(t("Разменов нет", "No trades"), x, y, Theme.DIM);
+            ui.text(t("Разменов нет", "No trades", "Keine Trades"), x, y, Theme.DIM);
             return y + LINE;
         }
         boolean narrow = w < 360;
         double[] at = narrow ? new double[]{0, .20, .46, .76} : new double[]{0, .13, .33, .42, .60, .72};
-        if (narrow) y = header(ui, x, y, w, at, t("Время", "Time"), t("Противник", "Opponent"), t("Счёт", "Score"), t("Итог", "Result"));
-        else y = header(ui, x, y, w, at, t("Время", "Time"), t("Противник", "Opponent"), t("Первый", "First"), t("Счёт", "Score"),
-                t("Итог", "Result"), t("Причина", "Cause"));
+        if (narrow) y = header(ui, x, y, w, at, t("Время", "Time", "Zeit"), t("Противник", "Opponent", "Gegner"), t("Счёт", "Score", "Punktestand"), t("Итог", "Result", "Ergebnis"));
+        else y = header(ui, x, y, w, at, t("Время", "Time", "Zeit"), t("Противник", "Opponent", "Gegner"), t("Первый", "First", "Zuerst"), t("Счёт", "Score", "Punktestand"),
+                t("Итог", "Result", "Ergebnis"), t("Причина", "Cause", "Ursache"));
         for (Trades.Trade tr : trades) {
             if (visible(y, ROW)) {
                 String res;
                 int rc;
                 switch (tr.result()) {
-                    case WIN -> { res = t("победа", "won"); rc = Theme.GREEN; }
-                    case LOSS -> { res = t("поражение", "lost"); rc = Theme.RED; }
-                    default -> { res = t("ничья", "draw"); rc = Theme.MUTED; }
+                    case WIN -> { res = t("победа", "won", "gewonnen"); rc = Theme.GREEN; }
+                    case LOSS -> { res = t("поражение", "lost", "verloren"); rc = Theme.RED; }
+                    default -> { res = t("ничья", "draw", "unentschieden"); rc = Theme.MUTED; }
                 }
-                String first = tr.first() == Trades.Side.ME ? t("вы", "you") : t("он", "they");
+                String first = tr.first() == Trades.Side.ME ? t("вы", "you", "du") : t("он", "they", "er");
                 String score = tr.mine() + ":" + tr.theirs() + " (" + Fmt.num(tr.mineWeight(), 1) + ":" + Fmt.num(tr.theirsWeight(), 1) + ")";
                 if (narrow) cols(ui, x, y, w, at, new String[]{Fmt.clock(tr.startMs()), nz(tr.name()), score + " · " + first, res},
                         new int[]{Theme.MUTED, Theme.TEXT, Theme.TEXT, rc});
@@ -1906,26 +1914,26 @@ final class StatsView {
     }
 
     private static Card tradesCard(Trades.Summary s) {
-        if (s.total() == 0) return new Card(t("Размены", "Trades"), List.of(new Kv(t("Разменов нет", "No trades"), "")), 1);
+        if (s.total() == 0) return new Card(t("Размены", "Trades"), List.of(new Kv(t("Разменов нет", "No trades", "Keine Trades"), "")), 1);
         List<Kv> rows = new ArrayList<>(List.of(
-                new Kv(t("Первый удар", "First hit"), Fmt.pct(s.firstPct()) + " (" + s.first() + "/" + s.total() + ")", Theme.TEXT_STRONG),
-                new Kv(t("Победы / поражения / ничьи", "Won / lost / drawn"), s.wins() + " / " + s.losses() + " / " + s.draws()),
-                new Kv(t("Вес ударов: ваших / его", "Hit weight: yours / theirs"), Fmt.num(s.weightMine(), 1) + " / " + Fmt.num(s.weightTheirs(), 1)),
-                new Kv(t("Побед, когда вторым", "Won when second"), Fmt.pct(s.winSecondPct()), s.countSecond() > 0 && s.winSecondPct() < 30 ? Theme.RED : Theme.TEXT),
-                new Kv(t("Побед, когда первым", "Won when first"), Fmt.pct(s.winFirstPct()))));
+                new Kv(t("Первый удар", "First hit", "Erster Treffer"), Fmt.pct(s.firstPct()) + " (" + s.first() + "/" + s.total() + ")", Theme.TEXT_STRONG),
+                new Kv(t("Победы / поражения / ничьи", "Won / lost / drawn", "Gewonnen / verloren / unentschieden"), s.wins() + " / " + s.losses() + " / " + s.draws()),
+                new Kv(t("Вес ударов: ваших / его", "Hit weight: yours / theirs", "Treffergewicht: deins / seins"), Fmt.num(s.weightMine(), 1) + " / " + Fmt.num(s.weightTheirs(), 1)),
+                new Kv(t("Побед, когда вторым", "Won when second", "Gewonnen als Zweiter"), Fmt.pct(s.winSecondPct()), s.countSecond() > 0 && s.winSecondPct() < 30 ? Theme.RED : Theme.TEXT),
+                new Kv(t("Побед, когда первым", "Won when first", "Gewonnen als Erster"), Fmt.pct(s.winFirstPct()))));
         for (Trades.Cause c : Trades.Cause.values()) {
             int n = s.lossCauses().getOrDefault(c, 0);
-            if (n > 0) rows.add(new Kv(t("  проигрыш: ", "  lost: ") + causeName(c), String.valueOf(n)));
+            if (n > 0) rows.add(new Kv(t("  проигрыш: ", "  lost: ", "  verloren: ") + causeName(c), String.valueOf(n)));
         }
         return new Card(t("Размены", "Trades"), rows, 3);
     }
 
     private int timelineTab(Ui ui, int x, int y, int w) {
-        line(ui, w, t("Бои (пауза больше ", "Fights (a pause over ") + Stats.FIGHT_GAP_MS / 1000 + t(" с начинает новый), метки и смены сервера.", " s starts a new one), markers and server changes."),
+        line(ui, w, t("Бои (пауза больше ", "Fights (a pause over ", "Kämpfe (eine Pause über ") + Stats.FIGHT_GAP_MS / 1000 + t(" с начинает новый), метки и смены сервера.", " s starts a new one), markers and server changes.", " s beginnt einen neuen), Markierungen und Serverwechsel."),
                 x, y, Theme.MUTED);
         y += LINE + 6;
         if (timeline.isEmpty()) {
-            ui.text(t("Событий нет", "No events"), x, y, Theme.DIM);
+            ui.text(t("Событий нет", "No events", "Keine Ereignisse"), x, y, Theme.DIM);
             return y + LINE;
         }
         double[] at = {0, .2};
@@ -1938,7 +1946,7 @@ final class StatsView {
 
     private static int skipped(Ui ui, int w, String what, int x, int y) {
         String s = t("Не записывалось: «" + what + "» было выключено для этой записи (лёгкая запись). Включить для новых записей: Настройки → Основные → Что записывать.",
-                "Not recorded: \"" + what + "\" was off for this recording (lite recording). Turn it on for new recordings: Settings → General → What to record.");
+                "Not recorded: \"" + what + "\" was off for this recording (lite recording). Turn it on for new recordings: Settings → General → What to record.", "Nicht aufgenommen: „" + what + "“ war für diese Aufnahme aus (leichte Aufnahme). Für neue Aufnahmen einschalten: Einstellungen → Allgemein → Was aufnehmen.");
         for (String l : ui.wrap(s, w)) {
             ui.text(l, x, y, Theme.MUTED);
             y += LINE;

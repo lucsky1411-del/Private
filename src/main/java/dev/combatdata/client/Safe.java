@@ -42,7 +42,7 @@ public final class Safe {
                 mc.execute(() -> {
                     if (mc.player != null) mc.player.displayClientMessage(Component.literal("[Combat Data] "
                             + t("Внутренняя ошибка, подробности в latest.log. Игра продолжает работать, запись может быть неполной.",
-                            "Internal error, see latest.log. The game keeps running, the recording may be incomplete.")), false);
+                            "Internal error, see latest.log. The game keeps running, the recording may be incomplete.", "Interner Fehler, siehe latest.log. Das Spiel läuft weiter, die Aufnahme ist eventuell unvollständig.")), false);
                 });
             } catch (Exception | LinkageError ignored) {
             }

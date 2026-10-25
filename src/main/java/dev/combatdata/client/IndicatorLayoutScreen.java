@@ -25,7 +25,7 @@ public final class IndicatorLayoutScreen extends Screen {
     private boolean snapX, snapY;
 
     public IndicatorLayoutScreen(Screen parent) {
-        super(Component.literal(t("Расстановка индикаторов", "Indicator layout")));
+        super(Component.literal(t("Расстановка индикаторов", "Indicator layout", "Indikator-Anordnung")));
         this.parent = parent;
     }
 
@@ -35,9 +35,9 @@ public final class IndicatorLayoutScreen extends Screen {
 
     @Override
     protected void init() {
-        addRenderableWidget(Button.builder(Component.literal(t("Готово", "Done")), b -> onClose())
+        addRenderableWidget(Button.builder(Component.literal(t("Готово", "Done", "Fertig")), b -> onClose())
                 .bounds(width / 2 - 104, height - 28, 100, 20).build());
-        addRenderableWidget(Button.builder(Component.literal(t("Всё по умолчанию", "Reset all")), b -> {
+        addRenderableWidget(Button.builder(Component.literal(t("Всё по умолчанию", "Reset all", "Alles zurücksetzen")), b -> {
             for (Kind k : Kind.values()) cfg().get(k).placeFrom(IndicatorConfig.defaultElement(k));
         }).bounds(width / 2 + 4, height - 28, 100, 20).build());
     }
@@ -69,8 +69,8 @@ public final class IndicatorLayoutScreen extends Screen {
             any = true;
             IndicatorHud.drawSample(g, font, k, cfg(), IndicatorHud.sampleBox(font, k, cfg(), width, height), k == hover);
         }
-        String hint = any ? t("Тяните мышью · колесо: размер · ПКМ: на место", "Drag to move · wheel: size · right click: default")
-                : t("Включите индикаторы во вкладке «Индикаторы»", "Turn indicators on in the Indicators tab");
+        String hint = any ? t("Тяните мышью · колесо: размер · ПКМ: на место", "Drag to move · wheel: size · right click: default", "Ziehen: verschieben · Mausrad: Größe · Rechtsklick: Standard")
+                : t("Включите индикаторы во вкладке «Индикаторы»", "Turn indicators on in the Indicators tab", "Schalte Indikatoren im Tab „Indikatoren“ ein");
         g.drawString(font, hint, (width - font.width(hint)) / 2, 12, 0xFFFFFFFF, true);
         if (hover != null) {
             String sc = String.format(java.util.Locale.ROOT, "%.2fx", cfg().get(hover).scale);

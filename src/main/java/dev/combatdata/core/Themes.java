@@ -53,12 +53,12 @@ public final class Themes {
 
     public static String displayName(ThemeSpec s) {
         return switch (s.id()) {
-            case "terracotta" -> t("Терракота", "Terracotta");
+            case "terracotta" -> t("Терракота", "Terracotta", "Terrakotta");
             case "obsidian" -> t("Обсидиан", "Obsidian");
-            case "prismarine" -> t("Призмарин", "Prismarine");
-            case "deepslate" -> t("Глубинный сланец", "Deepslate");
+            case "prismarine" -> t("Призмарин", "Prismarine", "Prismarin");
+            case "deepslate" -> t("Глубинный сланец", "Deepslate", "Tiefenschiefer");
             case "nether" -> t("Незер", "Nether");
-            case "quartz" -> t("Кварц (светлая)", "Quartz (light)");
+            case "quartz" -> t("Кварц (светлая)", "Quartz (light)", "Quarz (hell)");
             default -> s.name();
         };
     }
@@ -74,7 +74,7 @@ public final class Themes {
 
     public static String uniqueName(String wanted, List<ThemeSpec> custom, String exceptId) {
         String base = cleanName(wanted);
-        if (base.isEmpty()) base = t("Своя тема", "My theme");
+        if (base.isEmpty()) base = t("Своя тема", "My theme", "Mein Theme");
         String name = base;
         for (int n = 2; taken(name, custom, exceptId); n++) {
             String suffix = " " + n;

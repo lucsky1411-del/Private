@@ -16,7 +16,7 @@ public final class Commands {
                         .executes(c -> {
                             c.getSource().sendFeedback(Component.literal(t(
                                     "Combat Data: /combatdata open меню, save сохранить, marker метка, reset сбросить буфер",
-                                    "Combat Data: /combatdata open menu, save to save, marker to mark, reset to reset the buffer")));
+                                    "Combat Data: /combatdata open menu, save to save, marker to mark, reset to reset the buffer", "Combat Data: /combatdata open öffnet das Menü, save speichert, marker setzt eine Markierung, reset leert den Puffer")));
                             return 1;
                         })
                         .then(ClientCommandManager.literal("open").executes(c -> {
@@ -32,7 +32,7 @@ public final class Commands {
                                 .executes(c -> {
                                     c.getSource().sendFeedback(Component.literal(t(
                                             "[Combat Data] Буфер будет удалён без сохранения. Чтобы сбросить, введите /combatdata reset confirm",
-                                            "[Combat Data] The buffer will be discarded without saving. To reset, type /combatdata reset confirm")));
+                                            "[Combat Data] The buffer will be discarded without saving. To reset, type /combatdata reset confirm", "[Combat Data] Der Puffer wird ohne Speichern verworfen. Zum Leeren tippe /combatdata reset confirm")));
                                     return 1;
                                 })
                                 .then(ClientCommandManager.literal("confirm").executes(c -> {

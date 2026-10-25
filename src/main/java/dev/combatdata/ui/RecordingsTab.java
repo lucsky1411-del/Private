@@ -19,12 +19,16 @@ final class RecordingsTab implements Tab {
     private static final int ROW = 24;
     private static final RecordingQuery.Sort[] SORTS = RecordingQuery.Sort.values();
     private static String[] sortNames() {
+        if (dev.combatdata.core.Lang.german())
+            return new String[]{"Neueste zuerst", "Älteste zuerst", "Längste", "Meiste Treffer", "Trefferquote", "Nach Name", "Nach Größe"};
         return dev.combatdata.core.Lang.english()
                 ? new String[]{"Newest first", "Oldest first", "Longest", "Most hits", "Accuracy", "By name", "By size"}
                 : new String[]{"Сначала новые", "Сначала старые", "Самые длинные", "Больше попаданий", "Точность", "По имени", "По размеру"};
     }
 
     private static String[] sortShort() {
+        if (dev.combatdata.core.Lang.german())
+            return new String[]{"Neueste", "Älteste", "Längste", "Treffer", "Quote", "Name", "Größe"};
         return dev.combatdata.core.Lang.english()
                 ? new String[]{"Newest", "Oldest", "Longest", "Hits", "Accuracy", "Name", "Size"}
                 : new String[]{"Новые", "Старые", "Длинные", "Попадания", "Точность", "Имя", "Размер"};
@@ -106,11 +110,11 @@ final class RecordingsTab implements Tab {
         if (Recorder.savedCount() != seenSaved) refresh();
         boolean narrow = w < 420;
         int bx = x + w;
-        String refreshL = narrow ? "↻" : t("Обновить", "Refresh");
+        String refreshL = narrow ? "↻" : t("Обновить", "Refresh", "Aktualisieren");
         int bw = narrow ? 18 : ui.buttonWidth(refreshL);
         bx -= bw;
         ui.button(bx, y, bw, 16, refreshL, Ui.Kind.GHOST, true, this::refresh);
-        String folderL = narrow ? t("Папка", "Folder") : t("Открыть папку", "Open folder");
+        String folderL = narrow ? t("Папка", "Folder", "Ordner") : t("Открыть папку", "Open folder", "Ordner öffnen");
         bw = ui.buttonWidth(folderL);
         bx -= bw + 4;
         ui.button(bx, y, bw, 16, folderL, Ui.Kind.GHOST, true, this::openFolder);
@@ -126,7 +130,7 @@ final class RecordingsTab implements Tab {
             scroll = 0;
             rebuild();
         });
-        String hint = ui.hover(bx, y, bw, 16) ? (favoritesOnly ? t("Показать все записи", "Show all recordings") : t("Показать только избранные", "Show favorites only")) : null;
+        String hint = ui.hover(bx, y, bw, 16) ? (favoritesOnly ? t("Показать все записи", "Show all recordings", "Alle Aufnahmen anzeigen") : t("Показать только избранные", "Show favorites only", "Nur Favoriten anzeigen")) : null;
         menu.placeSearch(x, y, bx - 6 - x, 16);
 
         int ly = y + 22, lh = h - 22 - 24;
@@ -138,14 +142,14 @@ final class RecordingsTab implements Tab {
         listW = w - 2;
         listH = lh - 3 - ROW;
         if (entries.isEmpty() && loading) {
-            ui.textCenter(t("Загрузка…", "Loading…"), x + w / 2, ly + lh / 2 - 4, Theme.MUTED);
+            ui.textCenter(t("Загрузка…", "Loading…", "Lädt…"), x + w / 2, ly + lh / 2 - 4, Theme.MUTED);
         } else if (entries.isEmpty()) {
-            ui.textCenter(t("Записей пока нет", "No recordings yet"), x + w / 2, ly + lh / 2 - 10, Theme.MUTED);
-            ui.textCenter(t("Бои сохраняются сами, F9 сохраняет буфер вручную", "Fights are saved automatically, F9 saves the buffer manually"), x + w / 2, ly + lh / 2 + 2, Theme.DIM);
+            ui.textCenter(t("Записей пока нет", "No recordings yet", "Noch keine Aufnahmen"), x + w / 2, ly + lh / 2 - 10, Theme.MUTED);
+            ui.textCenter(t("Бои сохраняются сами, F9 сохраняет буфер вручную", "Fights are saved automatically, F9 saves the buffer manually", "Kämpfe werden automatisch gespeichert, F9 speichert den Puffer manuell"), x + w / 2, ly + lh / 2 + 2, Theme.DIM);
         } else if (shown.isEmpty()) {
-            ui.textCenter(favoritesOnly && query.isBlank() ? t("Избранных записей нет", "No favorite recordings") : t("Ничего не найдено", "Nothing found"), x + w / 2, ly + lh / 2 - 10, Theme.MUTED);
-            ui.textCenter(favoritesOnly ? t("Отметьте запись звёздочкой ☆ в строке", "Mark a recording with the ☆ star in its row")
-                            : t("Поиск по имени, серверу, противнику и дате", "Search by name, server, opponent and date"),
+            ui.textCenter(favoritesOnly && query.isBlank() ? t("Избранных записей нет", "No favorite recordings", "Keine Favoriten") : t("Ничего не найдено", "Nothing found", "Nichts gefunden"), x + w / 2, ly + lh / 2 - 10, Theme.MUTED);
+            ui.textCenter(favoritesOnly ? t("Отметьте запись звёздочкой ☆ в строке", "Mark a recording with the ☆ star in its row", "Markier eine Aufnahme mit dem ☆-Stern in ihrer Zeile")
+                            : t("Поиск по имени, серверу, противнику и дате", "Search by name, server, opponent and date", "Suche nach Name, Server, Gegner und Datum"),
                     x + w / 2, ly + lh / 2 + 2, Theme.DIM);
         }
         int content = shown.size() * ROW;
@@ -164,7 +168,7 @@ final class RecordingsTab implements Tab {
             ui.text(Draw.ellipsize(ui.font, Fmt.title(e), listW - 44 - whenW), listX + 20, ry + 4,
                     e.header() == null ? Theme.RED : Theme.TEXT_STRONG);
             ui.textRight(when, listX + listW - 12, ry + 4, Theme.MUTED);
-            String lite = e.header() != null && e.header().notRecorded() != 0 ? t("лёгкая", "lite") : null;
+            String lite = e.header() != null && e.header().notRecorded() != 0 ? t("лёгкая", "lite", "leicht") : null;
             int liteW = lite == null ? 0 : ui.font.width(lite) + 8;
             ui.text(Draw.ellipsize(ui.font, Fmt.meta(e), listW - 40 - sizeW - liteW), listX + 20, ry + 14, Theme.MUTED);
             if (lite != null) ui.textRight(lite, listX + listW - 12 - sizeW - 8, ry + 14, Theme.ACCENT);
@@ -189,8 +193,8 @@ final class RecordingsTab implements Tab {
         int fy = y + h - 16;
         Recordings.Entry sel = selectedEntry();
         bx = x + w;
-        String openL = t("Открыть", "Open"), renameL = t("Переименовать", "Rename"),
-                deleteL = liveSelected ? t("Сбросить", "Reset") : t("Удалить", "Delete");
+        String openL = t("Открыть", "Open", "Öffnen"), renameL = t("Переименовать", "Rename", "Umbenennen"),
+                deleteL = liveSelected ? t("Сбросить", "Reset", "Zurücksetzen") : t("Удалить", "Delete", "Löschen");
         bw = ui.buttonWidth(openL);
         bx -= bw;
         ui.button(bx, fy, bw, 16, openL, Ui.Kind.PRIMARY, liveSelected || (sel != null && sel.header() != null), this::open);
@@ -205,8 +209,8 @@ final class RecordingsTab implements Tab {
         int leftColor = hint != null ? Theme.TEXT : statusColor;
         if (left == null) {
             String total = Fmt.size(Recordings.totalBytes(entries));
-            left = shown.size() == entries.size() ? t("Записей: ", "Recordings: ") + entries.size() + " · " + total
-                    : t("Найдено ", "Found ") + shown.size() + t(" из ", " of ") + entries.size();
+            left = shown.size() == entries.size() ? t("Записей: ", "Recordings: ", "Aufnahmen: ") + entries.size() + " · " + total
+                    : t("Найдено ", "Found ", "Gefunden: ") + shown.size() + t(" из ", " of ", " von ") + entries.size();
             leftColor = Theme.MUTED;
         }
         ui.text(Draw.ellipsize(ui.font, left, bx - x - 8), x, Ui.textY(fy, 16), leftColor);
@@ -258,15 +262,15 @@ final class RecordingsTab implements Tab {
         else if (hov) Draw.round(ui.g, x + 2, y + 1, w - 8, ROW - 2, Theme.R_CTRL, Theme.ROW_HOVER);
         boolean on = Recorder.active();
         Draw.circle(ui.g, x + 6, y + 5, 7, on ? 0xFFE5584B : Theme.MUTED);
-        String state = on ? (Recorder.full() ? t("Идёт запись, буфер полон", "Recording, buffer full") : t("Идёт запись", "Recording"))
-                : t("Запись на паузе", "Recording paused");
+        String state = on ? (Recorder.full() ? t("Идёт запись, буфер полон", "Recording, buffer full", "Aufnahme läuft, Puffer voll") : t("Идёт запись", "Recording", "Aufnahme"))
+                : t("Запись на паузе", "Recording paused", "Aufnahme pausiert");
         String time = Fmt.clock(Recorder.shownMs()) + " / " + Fmt.clock(Recorder.capacityMs());
         int tw = ui.font.width(time);
-        ui.text(Draw.ellipsize(ui.font, t("Текущий буфер · ", "Live buffer · ") + state, w - 44 - tw), x + 20, y + 4, Theme.TEXT_STRONG);
+        ui.text(Draw.ellipsize(ui.font, t("Текущий буфер · ", "Live buffer · ", "Live-Puffer · ") + state, w - 44 - tw), x + 20, y + 4, Theme.TEXT_STRONG);
         ui.textRight(time, x + w - 12, y + 4, on ? 0xFFE5584B : Theme.MUTED);
         String server = Recorder.currentServer();
-        String meta = (server.isEmpty() ? t("вне сервера", "not on a server") : server) + t(" · событий: ", " · events: ") + Recorder.bufferSize()
-                + (Recorder.hasCombatEvents() ? "" : t(" · боевых нет", " · no combat yet"));
+        String meta = (server.isEmpty() ? t("вне сервера", "not on a server", "nicht auf einem Server") : server) + t(" · событий: ", " · events: ", " · Ereignisse: ") + Recorder.bufferSize()
+                + (Recorder.hasCombatEvents() ? "" : t(" · боевых нет", " · no combat yet", " · noch kein Kampf"));
         ui.text(Draw.ellipsize(ui.font, meta, w - 32), x + 20, y + 14, Theme.MUTED);
         ui.click(x, y, w, ROW, () -> {
             boolean open = menu.lastDoubleClick() && liveSelected;
@@ -285,7 +289,7 @@ final class RecordingsTab implements Tab {
         Recordings.Entry e = selectedEntry();
         if (e == null) return;
         int token = ++openToken;
-        setStatus(t("Открываю запись…", "Opening the recording…"), Theme.MUTED);
+        setStatus(t("Открываю запись…", "Opening the recording…", "Öffne die Aufnahme…"), Theme.MUTED);
         Recordings.readAsync(e.file(), rec -> {
             if (token != openToken) return;
             setStatus(null, Theme.MUTED);
@@ -293,7 +297,7 @@ final class RecordingsTab implements Tab {
         }, ex -> {
             if (token != openToken) return;
             CombatDataClient.LOG.error("[CD] не удалось открыть запись", ex);
-            setStatus(t("Не удалось открыть: ", "Could not open: ") + ex.getMessage(), Theme.RED);
+            setStatus(t("Не удалось открыть: ", "Could not open: ", "Konnte nicht öffnen: ") + ex.getMessage(), Theme.RED);
         });
     }
 
@@ -301,16 +305,16 @@ final class RecordingsTab implements Tab {
         Recordings.Entry e = selectedEntry();
         if (e == null) return;
         Modal[] self = new Modal[1];
-        self[0] = new Modal(t("Переименовать запись", "Rename recording"),
-                List.of(t("Новое имя файла (без расширения):", "New file name (without extension):")), e.stem(), List.of(
-                new Modal.Btn(t("Отмена", "Cancel"), Ui.Kind.SECONDARY, s -> menu.closeModal()),
-                new Modal.Btn(t("Переименовать", "Rename"), Ui.Kind.PRIMARY, s -> {
+        self[0] = new Modal(t("Переименовать запись", "Rename recording", "Aufnahme umbenennen"),
+                List.of(t("Новое имя файла (без расширения):", "New file name (without extension):", "Neuer Dateiname (ohne Endung):")), e.stem(), List.of(
+                new Modal.Btn(t("Отмена", "Cancel", "Abbrechen"), Ui.Kind.SECONDARY, s -> menu.closeModal()),
+                new Modal.Btn(t("Переименовать", "Rename", "Umbenennen"), Ui.Kind.PRIMARY, s -> {
                     try {
                         Path np = Recordings.rename(e.file(), s == null ? "" : s);
                         menu.closeModal();
                         selected = np;
                         refresh();
-                        setStatus(t("Запись переименована", "Recording renamed"), Theme.GREEN);
+                        setStatus(t("Запись переименована", "Recording renamed", "Aufnahme umbenannt"), Theme.GREEN);
                     } catch (IOException ex) {
                         self[0].error = ex.getMessage();
                     }
@@ -322,17 +326,17 @@ final class RecordingsTab implements Tab {
         Recordings.Entry e = selectedEntry();
         if (e == null) return;
         List<String> lines = new ArrayList<>(List.of(t("«", "\"") + Fmt.title(e) + t("», ", "\", ") + Fmt.when(e),
-                t("Файл будет удалён без возможности восстановления.", "The file will be deleted permanently.")));
-        if (Recordings.favorite(e)) lines.add(t("Запись в избранном.", "This recording is a favorite."));
-        menu.openModal(new Modal(t("Удалить запись?", "Delete recording?"), lines, null, List.of(
-                new Modal.Btn(t("Отмена", "Cancel"), Ui.Kind.SECONDARY, s -> menu.closeModal()),
-                new Modal.Btn(t("Удалить", "Delete"), Ui.Kind.DANGER, s -> {
+                t("Файл будет удалён без возможности восстановления.", "The file will be deleted permanently.", "Die Datei wird endgültig gelöscht.")));
+        if (Recordings.favorite(e)) lines.add(t("Запись в избранном.", "This recording is a favorite.", "Diese Aufnahme ist ein Favorit."));
+        menu.openModal(new Modal(t("Удалить запись?", "Delete recording?", "Aufnahme löschen?"), lines, null, List.of(
+                new Modal.Btn(t("Отмена", "Cancel", "Abbrechen"), Ui.Kind.SECONDARY, s -> menu.closeModal()),
+                new Modal.Btn(t("Удалить", "Delete", "Löschen"), Ui.Kind.DANGER, s -> {
                     try {
                         Recordings.delete(e.file());
                         menu.view.forget(e.file());
-                        setStatus(t("Запись удалена", "Recording deleted"), Theme.MUTED);
+                        setStatus(t("Запись удалена", "Recording deleted", "Aufnahme gelöscht"), Theme.MUTED);
                     } catch (IOException ex) {
-                        setStatus(t("Не удалось удалить: ", "Could not delete: ") + ex.getMessage(), Theme.RED);
+                        setStatus(t("Не удалось удалить: ", "Could not delete: ", "Konnte nicht löschen: ") + ex.getMessage(), Theme.RED);
                     }
                     menu.closeModal();
                     refresh();
@@ -345,7 +349,7 @@ final class RecordingsTab implements Tab {
             Files.createDirectories(dir);
             Util.getPlatform().openUri(dir.toUri());
         } catch (Exception ex) {
-            setStatus(t("Не удалось открыть папку: ", "Could not open the folder: ") + ex.getMessage(), Theme.RED);
+            setStatus(t("Не удалось открыть папку: ", "Could not open the folder: ", "Konnte den Ordner nicht öffnen: ") + ex.getMessage(), Theme.RED);
         }
     }
 }

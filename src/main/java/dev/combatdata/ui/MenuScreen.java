@@ -17,18 +17,20 @@ import java.util.List;
 import org.lwjgl.glfw.GLFW;
 
 public final class MenuScreen extends Screen {
-    enum TabId {
-        RECORDINGS("Записи", "Recordings"), VIEW("Просмотр", "View"), PROGRESS("Прогресс", "Progress"),
-        INDICATORS("Индикаторы", "Indicators"), SETTINGS("Настройки", "Settings");
-        private final String ru, en;
+    public enum TabId {
+        RECORDINGS("Записи", "Recordings", "Aufnahmen"), VIEW("Просмотр", "View", "Ansicht"),
+        PROGRESS("Прогресс", "Progress", "Fortschritt"), INDICATORS("Индикаторы", "Indicators", "Indikatoren"),
+        SETTINGS("Настройки", "Settings", "Einstellungen");
+        private final String ru, en, de;
 
-        TabId(String ru, String en) {
+        TabId(String ru, String en, String de) {
             this.ru = ru;
             this.en = en;
+            this.de = de;
         }
 
         String label() {
-            return t(ru, en);
+            return t(ru, en, de);
         }
     }
 
@@ -61,29 +63,42 @@ public final class MenuScreen extends Screen {
     private List<Find.Result> findResults = List.of();
     private int findX, findY, findW, findH;
 
+    /** Screen to return to on close (Mod Menu); null closes to the game. */
+    private final net.minecraft.client.gui.screens.Screen parent;
+
     public MenuScreen() {
+        this(null, null);
+    }
+
+    public MenuScreen(net.minecraft.client.gui.screens.Screen parent, TabId start) {
         super(Component.literal("Combat Data"));
+        this.parent = parent;
+        if (start != null) tab = start;
         CombatDataClient.applyLanguage(net.minecraft.client.Minecraft.getInstance());
+    }
+
+    private void leave() {
+        minecraft.setScreen(parent);
     }
 
     @Override
     protected void init() {
-        searchBox = new EditBox(font, 0, 0, 120, 16, searchBox, Component.literal(t("Поиск", "Search")));
+        searchBox = new EditBox(font, 0, 0, 120, 16, searchBox, Component.literal(t("Поиск", "Search", "Suchen")));
         searchBox.setMaxLength(64);
-        searchBox.setHint(Component.literal(t("Поиск…", "Search…")).withStyle(EditBox.SEARCH_HINT_STYLE));
+        searchBox.setHint(Component.literal(t("Поиск…", "Search…", "Suchen…")).withStyle(EditBox.SEARCH_HINT_STYLE));
         if (searchBox.getValue().isEmpty()) searchBox.setValue(RecordingsTab.query);
         searchBox.setResponder(recordings::setQuery);
         searchBox.visible = false;
         addWidget(searchBox);
-        oppSearch = new EditBox(font, 0, 0, 120, 14, oppSearch, Component.literal(t("Противник", "Opponent")));
+        oppSearch = new EditBox(font, 0, 0, 120, 14, oppSearch, Component.literal(t("Противник", "Opponent", "Gegner")));
         oppSearch.setMaxLength(32);
         oppSearch.setHint(Component.literal(t("Ник…", "Name…")).withStyle(EditBox.SEARCH_HINT_STYLE));
         oppSearch.setResponder(progress::setOppQuery);
         oppSearch.visible = false;
         addWidget(oppSearch);
-        findBox = new EditBox(font, 0, 0, 140, 14, findBox, Component.literal(t("Поиск по меню", "Search the menu")));
+        findBox = new EditBox(font, 0, 0, 140, 14, findBox, Component.literal(t("Поиск по меню", "Search the menu", "Menü durchsuchen")));
         findBox.setMaxLength(48);
-        findBox.setHint(Component.literal(t("Что найти?", "What to find?")).withStyle(EditBox.SEARCH_HINT_STYLE));
+        findBox.setHint(Component.literal(t("Что найти?", "What to find?", "Was suchst du?")).withStyle(EditBox.SEARCH_HINT_STYLE));
         findBox.setResponder(q -> findSel = 0);
         findBox.visible = false;
         addWidget(findBox);
@@ -181,12 +196,12 @@ public final class MenuScreen extends Screen {
     }
 
     void confirmReset(Runnable after) {
-        openModal(new Modal(t("Сбросить буфер?", "Reset the buffer?"), List.of(
-                t("Всё записанное с ", "Everything recorded since ") + Fmt.clock(dev.combatdata.client.Recorder.shownMs())
-                        + t(" назад будет удалено без сохранения.", " ago will be discarded without saving."),
-                t("Также: Shift+F9 дважды или /combatdata reset confirm.", "Also: Shift+F9 twice or /combatdata reset confirm.")), null, List.of(
-                new Modal.Btn(t("Отмена", "Cancel"), Ui.Kind.SECONDARY, s -> closeModal()),
-                new Modal.Btn(t("Сбросить", "Reset"), Ui.Kind.DANGER, s -> {
+        openModal(new Modal(t("Сбросить буфер?", "Reset the buffer?", "Puffer leeren?"), List.of(
+                t("Всё записанное с ", "Everything recorded since ", "Alles, was aufgenommen wurde seit ") + Fmt.clock(dev.combatdata.client.Recorder.shownMs())
+                        + t(" назад будет удалено без сохранения.", " ago will be discarded without saving.", " werden ohne Speichern verworfen."),
+                t("Также: Shift+F9 дважды или /combatdata reset confirm.", "Also: Shift+F9 twice or /combatdata reset confirm.", "Oder: zweimal Shift+F9 oder /combatdata reset confirm.")), null, List.of(
+                new Modal.Btn(t("Отмена", "Cancel", "Abbrechen"), Ui.Kind.SECONDARY, s -> closeModal()),
+                new Modal.Btn(t("Сбросить", "Reset", "Zurücksetzen"), Ui.Kind.DANGER, s -> {
                     dev.combatdata.client.Recorder.reset(minecraft);
                     closeModal();
                     recordings.refresh();
@@ -262,7 +277,7 @@ public final class MenuScreen extends Screen {
      * only the chip stays; Ctrl+F works either way.
      */
     private void findButton(Ui ui, int leftLimit, int closeX, int y) {
-        String label = t("Поиск", "Search"), key = "Ctrl+F";
+        String label = t("Поиск", "Search", "Suchen"), key = "Ctrl+F";
         int kw = font.width(key) + 10, lw = font.width(label), right = closeX - 6;
         boolean withLabel = right - kw - 6 - lw - 6 >= leftLimit + 8;
         int w = kw + (withLabel ? lw + 12 : 4), x = right - w;
@@ -318,11 +333,11 @@ public final class MenuScreen extends Screen {
         field(findBox, px + 6, py + 6, pw - 12, fieldH);
         int y = py + head;
         if (blank) {
-            ui.text(Draw.ellipsize(font, t("Настройки, индикаторы и страницы статистики", "Settings, indicators and stats pages"), pw - 20), px + 10, y + 4, Theme.MUTED);
-            ui.text(Draw.ellipsize(font, t("Например: фон, звук, reach, w-tap", "For example: background, sound, reach, w-tap"), pw - 20), px + 10, y + 16, Theme.DIM);
+            ui.text(Draw.ellipsize(font, t("Настройки, индикаторы и страницы статистики", "Settings, indicators and stats pages", "Einstellungen, Indikatoren und Statistikseiten"), pw - 20), px + 10, y + 4, Theme.MUTED);
+            ui.text(Draw.ellipsize(font, t("Например: фон, звук, reach, w-tap", "For example: background, sound, reach, w-tap", "Zum Beispiel: Hintergrund, Sound, Reichweite, W-Tap"), pw - 20), px + 10, y + 16, Theme.DIM);
         } else if (n == 0) {
-            ui.text(t("Ничего не найдено", "Nothing found"), px + 10, y + 4, Theme.MUTED);
-            ui.text(Draw.ellipsize(font, t("Попробуйте другое слово или английское название", "Try another word or the Russian name"), pw - 20), px + 10, y + 16, Theme.DIM);
+            ui.text(t("Ничего не найдено", "Nothing found", "Nichts gefunden"), px + 10, y + 4, Theme.MUTED);
+            ui.text(Draw.ellipsize(font, t("Попробуйте другое слово или английское название", "Try another word or the German name", "Versuch ein anderes Wort oder den englischen Namen"), pw - 20), px + 10, y + 16, Theme.DIM);
         }
         for (int i = 0; i < n; i++) {
             Find.Entry e = findResults.get(i).entry();
@@ -336,10 +351,10 @@ public final class MenuScreen extends Screen {
             ui.text(Draw.ellipsize(font, findPath(e), pw - 22), px + 11, ry + 12, Theme.MUTED);
             ui.click(px + 4, ry, pw - 8, FIND_ROW, () -> go(e));
         }
-        if (more > 0) ui.text(Draw.ellipsize(font, t("Ещё ", "") + (total - n) + t(": уточните запрос", " more: refine the search"), pw - 20),
+        if (more > 0) ui.text(Draw.ellipsize(font, t("Ещё ", "") + (total - n) + t(": уточните запрос", " more: refine the search", " weitere: Suche verfeinern"), pw - 20),
                 px + 11, y + n * FIND_ROW + 3, Theme.DIM);
         g.fill(px + 6, py + ph - foot, px + pw - 6, py + ph - foot + 1, Theme.BORDER);
-        ui.text(Draw.ellipsize(font, t("↑↓ выбрать · Enter открыть · Esc закрыть", "↑↓ select · Enter open · Esc close"), pw - 20),
+        ui.text(Draw.ellipsize(font, t("↑↓ выбрать · Enter открыть · Esc закрыть", "↑↓ select · Enter open · Esc close", "↑↓ auswählen · Enter öffnen · Esc schließen"), pw - 20),
                 px + 10, py + ph - foot + 4, Theme.DIM);
     }
 
@@ -388,18 +403,19 @@ public final class MenuScreen extends Screen {
      * call on the render thread.
      */
     private void buildIndex(GuiGraphics g) {
-        boolean en = dev.combatdata.core.Lang.english();
+        int lang = dev.combatdata.core.Lang.current();
+        int second = lang == dev.combatdata.core.Lang.EN ? dev.combatdata.core.Lang.DE : dev.combatdata.core.Lang.EN;
         try {
-            List<Find.Entry> cur = collect(g, en), other = collect(g, !en);
-            dev.combatdata.core.Lang.setEnglish(en);
+            List<Find.Entry> cur = collect(g, lang), other = collect(g, second);
+            dev.combatdata.core.Lang.set(lang);
             find.setIndex(cur, other);
         } finally {
-            dev.combatdata.core.Lang.setEnglish(en);
+            dev.combatdata.core.Lang.set(lang);
         }
     }
 
-    private List<Find.Entry> collect(GuiGraphics g, boolean english) {
-        dev.combatdata.core.Lang.setEnglish(english);
+    private List<Find.Entry> collect(GuiGraphics g, int lang) {
+        dev.combatdata.core.Lang.set(lang);
         find.startCollect();
         Ui ui = new Ui(g, font, Integer.MIN_VALUE / 2, Integer.MIN_VALUE / 2, new ArrayList<>(), 0);
         ui.find = find;
@@ -579,23 +595,23 @@ public final class MenuScreen extends Screen {
             return;
         }
         if (settingsTab.dirty()) {
-            openModal(new Modal(t("Настройки не применены", "Settings not applied"),
-                    List.of(t("Есть изменения, которые не применены.", "There are changes that have not been applied.")), null, List.of(
-                    new Modal.Btn(t("Назад", "Back"), Ui.Kind.SECONDARY, s -> closeModal()),
-                    new Modal.Btn(t("Не сохранять", "Discard"), Ui.Kind.DANGER, s -> {
+            openModal(new Modal(t("Настройки не применены", "Settings not applied", "Einstellungen nicht übernommen"),
+                    List.of(t("Есть изменения, которые не применены.", "There are changes that have not been applied.", "Es gibt Änderungen, die noch nicht übernommen wurden.")), null, List.of(
+                    new Modal.Btn(t("Назад", "Back", "Zurück"), Ui.Kind.SECONDARY, s -> closeModal()),
+                    new Modal.Btn(t("Не сохранять", "Discard", "Verwerfen"), Ui.Kind.DANGER, s -> {
                         settingsTab.cancel();
                         closeModal();
-                        minecraft.setScreen(null);
+                        leave();
                     }),
-                    new Modal.Btn(t("Применить", "Apply"), Ui.Kind.PRIMARY, s -> {
+                    new Modal.Btn(t("Применить", "Apply", "Übernehmen"), Ui.Kind.PRIMARY, s -> {
                         settingsTab.apply();
                         closeModal();
-                        minecraft.setScreen(null);
+                        leave();
                     }))));
             return;
         }
         CombatDataClient.saveSettings();
-        minecraft.setScreen(null);
+        leave();
     }
 
     @Override

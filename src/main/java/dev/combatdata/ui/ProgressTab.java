@@ -44,21 +44,28 @@ final class ProgressTab implements Tab {
 
     static String metricName(Progress.Metric m, boolean narrow) {
         return switch (m) {
-            case HIT_RATE -> narrow ? t("Попад.", "Hits") : t("Попадания", "Hit rate");
+            case HIT_RATE -> narrow ? t("Попад.", "Hits", "Treffer") : t("Попадания", "Hit rate", "Trefferquote");
             case JR_SUCCESS -> narrow ? "JR" : "Jump reset";
-            case REACH -> narrow ? t("Дист.", "Dist.") : t("Дистанция", "Distance");
+            case REACH -> narrow ? t("Дист.", "Dist.") : t("Дистанция", "Distance", "Distanz");
             case THREE_BLOCK -> narrow ? "3BH" : "3 block hit";
-            case CHARGE -> t("Заряд", "Charge");
-            case FIRST_HIT -> narrow ? t("1-й уд.", "1st") : t("Первый удар", "First hit");
+            case CHARGE -> t("Заряд", "Charge", "Aufladung");
+            case FIRST_HIT -> narrow ? t("1-й уд.", "1st", "1.") : t("Первый удар", "First hit", "Erster Treffer");
         };
     }
 
     static String value(Progress.Metric m, double v) {
-        return m.percent ? Fmt.pct(v) : Fmt.num(v, 2) + t(" бл.", " bl.");
+        return m.percent ? Fmt.pct(v) : Fmt.num(v, 2) + t(" бл.", " bl.", " Bl.");
     }
 
     private static String samplesName(Progress.Metric m, int n) {
         boolean en = Lang.english();
+        if (Lang.german()) return switch (m) {
+            case HIT_RATE -> " Angriffe";
+            case JR_SUCCESS -> " Versuche";
+            case THREE_BLOCK -> " Treffer bewertet";
+            case FIRST_HIT -> " Trades";
+            default -> " Treffer";
+        };
         return switch (m) {
             case HIT_RATE -> en ? " attacks" : " " + Lang.plural(n, "атака", "атаки", "атак");
             case JR_SUCCESS -> en ? " attempts" : " " + Lang.plural(n, "попытка", "попытки", "попыток");
@@ -202,18 +209,18 @@ final class ProgressTab implements Tab {
         ui.clip(popX + 2, ly, popW - 4, lh);
         int ry = ly - (int) popScroll;
         Object cur = p == Pick.SERVER ? server : opp;
-        row(ui, ry, p == Pick.SERVER ? t("Все серверы", "All servers") : t("Все противники", "All opponents"), null, cur == null,
+        row(ui, ry, p == Pick.SERVER ? t("Все серверы", "All servers", "Alle Server") : t("Все противники", "All opponents", "Alle Gegner"), null, cur == null,
                 () -> select(p, null));
         ry += ROW;
         for (Item it : list) {
             if (ry + ROW >= ly && ry <= ly + lh) {
-                String meta = it.recordings + (Lang.english() ? (it.recordings == 1 ? " rec." : " recs.")
+                String meta = it.recordings + (Lang.german() ? " Aufn." : Lang.english() ? (it.recordings == 1 ? " rec." : " recs.")
                         : " " + Lang.plural(it.recordings, "запись", "записи", "записей"));
                 row(ui, ry, it.label, meta, it.key.equals(cur), () -> select(p, it));
             }
             ry += ROW;
         }
-        if (list.isEmpty()) ui.text(t("Ничего не найдено", "Nothing found"), popX + 8, ry + 2, Theme.DIM);
+        if (list.isEmpty()) ui.text(t("Ничего не найдено", "Nothing found", "Nichts gefunden"), popX + 8, ry + 2, Theme.DIM);
         ui.unclip();
         g.disableScissor();
         if (popMax > 0) ui.scrollbar(popX + popW - 5, ly, lh, popScroll, lh, content);
@@ -247,21 +254,21 @@ final class ProgressTab implements Tab {
         if (snap == null) {
             Draw.roundBordered(ui.g, x, top, w, ph, Theme.R_PANEL, Theme.BORDER, Theme.PANEL);
             String st = ProgressData.status();
-            ui.textCenter(t("Считаю прогресс по записям…", "Computing progress across recordings…"), x + w / 2, top + ph / 2 - 6, Theme.MUTED);
+            ui.textCenter(t("Считаю прогресс по записям…", "Computing progress across recordings…", "Berechne Fortschritt über alle Aufnahmen…"), x + w / 2, top + ph / 2 - 6, Theme.MUTED);
             if (st != null) ui.textCenter(st, x + w / 2, top + ph / 2 + 6, Theme.DIM);
             return;
         }
         String head = summaryLine(snap);
         String st = ProgressData.status();
-        if (st != null) head = t("Пересчёт ", "Updating ") + st + " · " + head;
+        if (st != null) head = t("Пересчёт ", "Updating ", "Aktualisiere ") + st + " · " + head;
         if (error != null) head = error;
         ui.text(Draw.ellipsize(ui.font, head, w), x, top, error != null ? Theme.RED : Theme.MUTED);
         top += 12;
         ph = y + h - top;
         if (points.isEmpty()) {
             Draw.roundBordered(ui.g, x, top, w, ph, Theme.R_PANEL, Theme.BORDER, Theme.PANEL);
-            String msg = snap.summaries().isEmpty() ? t("Сохранённых записей нет", "No saved recordings")
-                    : t("Нет данных: в точке нужно не меньше ", "No data: a point needs at least ") + metric.minSamples
+            String msg = snap.summaries().isEmpty() ? t("Сохранённых записей нет", "No saved recordings", "Keine gespeicherten Aufnahmen")
+                    : t("Нет данных: в точке нужно не меньше ", "No data: a point needs at least ", "Keine Daten: ein Punkt braucht mindestens ") + metric.minSamples
                     + samplesName(metric, metric.minSamples);
             ui.textCenter(Draw.ellipsize(ui.font, msg, w - 16), x + w / 2, top + ph / 2 - 4, Theme.DIM);
             return;
@@ -270,10 +277,10 @@ final class ProgressTab implements Tab {
     }
 
     private String summaryLine(ProgressData.Snapshot snap) {
-        if (points.isEmpty()) return t("Записей ", "Recordings ") + snap.summaries().size();
+        if (points.isEmpty()) return t("Записей ", "Recordings ", "Aufnahmen ") + snap.summaries().size();
         double sum = 0;
         for (Progress.Point p : points) sum += p.value();
-        String s = t("Точек ", "Points ") + points.size() + t(" · среднее ", " · mean ") + value(metric, sum / points.size());
+        String s = t("Точек ", "Points ", "Punkte ") + points.size() + t(" · среднее ", " · mean ", " · Ø ") + value(metric, sum / points.size());
         int k = Math.min(3, points.size() / 2);
         if (k > 0) {
             double a = 0, b = 0;
@@ -281,7 +288,7 @@ final class ProgressTab implements Tab {
                 a += points.get(i).value();
                 b += points.get(points.size() - 1 - i).value();
             }
-            s += t(" · первые ", " · first ") + k + t(" → последние ", " → last ") + k + ": " + value(metric, a / k) + " → " + value(metric, b / k);
+            s += t(" · первые ", " · first ", " · zuerst ") + k + t(" → последние ", " → last ", " → letzte ") + k + ": " + value(metric, a / k) + " → " + value(metric, b / k);
         }
         return s;
     }
@@ -294,12 +301,12 @@ final class ProgressTab implements Tab {
         if (ui.segmentedWidth(names) > w) for (int i = 0; i < ms.length; i++) names[i] = metricName(ms[i], true);
         int[] p = f.place(ui.segmentedWidth(names), false);
         ui.segmented(p[0], p[1], names, metric.ordinal(), i -> metric = ms[i]);
-        String[] gl = w < 360 ? new String[]{t("Запись", "Rec."), t("День", "Day")} : new String[]{t("По записи", "Per recording"), t("По дню", "Per day")};
+        String[] gl = w < 360 ? new String[]{t("Запись", "Rec.", "Aufn."), t("День", "Day", "Tag")} : new String[]{t("По записи", "Per recording", "Pro Aufnahme"), t("По дню", "Per day", "Pro Tag")};
         p = f.place(ui.segmentedWidth(gl), false);
         ui.segmented(p[0], p[1], gl, group.ordinal(), i -> group = Progress.Group.values()[i]);
-        pickChip(ui, f, Pick.SERVER, t("Сервер: ", "Server: ") + (server == null ? t("все", "all") : Draw.ellipsize(ui.font, server, w / 3)),
+        pickChip(ui, f, Pick.SERVER, t("Сервер: ", "Server: ") + (server == null ? t("все", "all", "alle") : Draw.ellipsize(ui.font, server, w / 3)),
                 server != null);
-        pickChip(ui, f, Pick.OPPONENT, t("Противник: ", "Opponent: ") + (opp == null ? t("все", "all") : Draw.ellipsize(ui.font, oppName, w / 3)),
+        pickChip(ui, f, Pick.OPPONENT, t("Противник: ", "Opponent: ", "Gegner: ") + (opp == null ? t("все", "all", "alle") : Draw.ellipsize(ui.font, oppName, w / 3)),
                 opp != null);
         int[] ip = f.place(Ui.INFO, false);
         ui.info(ip[0], ip[1] + 4, Help.progress());
@@ -349,7 +356,7 @@ final class ProgressTab implements Tab {
         int my = (int) ChartMath.valueToPx(sum / n, min, max, gy, gh);
         Draw.dashH(g, gx, gx + gw, my, 3, 2, Theme.MUTED);
         int every = n <= 1 ? 1 : Math.max(1, (int) Math.ceil(44.0 * (n - 1) / gw));
-        boolean en = Lang.english();
+        boolean en = Lang.current() == Lang.EN;
         for (int i = 0; i < n; i += every) {
             String d = (en ? DAY_EN : DAY).format(Instant.ofEpochMilli(points.get(i).t()).atZone(ZoneId.systemDefault()));
             g.fill(px[i], gy + gh, px[i] + 1, gy + gh + 2, Theme.BORDER);
@@ -384,28 +391,28 @@ final class ProgressTab implements Tab {
     }
 
     private String tip(Progress.Point p) {
-        boolean en = Lang.english();
+        boolean en = Lang.current() == Lang.EN;
         var at = Instant.ofEpochMilli(p.t()).atZone(ZoneId.systemDefault());
         String when = group == Progress.Group.DAY ? (en ? DATE_EN : DATE).format(at) : (en ? FULL_EN : FULL).format(at);
         String s = when + " · " + value(metric, p.value()) + " · " + p.samples() + samplesName(metric, p.samples());
         if (group == Progress.Group.DAY) {
             int k = p.sources().size();
-            s += " · " + k + (en ? (k == 1 ? " recording" : " recordings") : " " + Lang.plural(k, "запись", "записи", "записей"));
+            s += " · " + k + (Lang.german() ? (k == 1 ? " Aufnahme" : " Aufnahmen") : en ? (k == 1 ? " recording" : " recordings") : " " + Lang.plural(k, "запись", "записи", "записей"));
         } else if (!p.sources().get(0).servers().isEmpty()) s += " · " + String.join(", ", p.sources().get(0).servers());
-        return s + t(" · клик: открыть", " · click: open");
+        return s + t(" · клик: открыть", " · click: open", " · Klick: öffnen");
     }
 
     private void open(ProgressData.Snapshot snap, Progress.Point p) {
         Progress.Summary s = p.sources().get(p.sources().size() - 1);
         Recordings.Entry e = snap.entries().get(s.file());
         if (e == null) {
-            error = t("Запись не найдена: ", "Recording not found: ") + s.file();
+            error = t("Запись не найдена: ", "Recording not found: ", "Aufnahme nicht gefunden: ") + s.file();
             return;
         }
         error = null;
         Recordings.readAsync(e.file(), rec -> menu.openRecording(e, rec), ex -> {
             CombatDataClient.LOG.error("[CD] не удалось открыть запись", ex);
-            error = t("Не удалось открыть: ", "Could not open: ") + ex.getMessage();
+            error = t("Не удалось открыть: ", "Could not open: ", "Konnte nicht öffnen: ") + ex.getMessage();
         });
     }
 }

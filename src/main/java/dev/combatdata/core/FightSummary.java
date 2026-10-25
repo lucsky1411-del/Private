@@ -61,21 +61,21 @@ public final class FightSummary {
         List<Part> out = new ArrayList<>();
         if (st.hits() && r.swings() > 0) {
             double rate = (double) r.hits() / r.swings();
-            out.add(new Part("", r.hits() + "/" + r.swings(), t(" попаданий", " hits"), rate >= 0.7 ? GOOD : rate >= 0.5 ? MID : BAD));
+            out.add(new Part("", r.hits() + "/" + r.swings(), t(" попаданий", " hits", " Treffer"), rate >= 0.7 ? GOOD : rate >= 0.5 ? MID : BAD));
         }
         if (st.jr() && r.jrAttempts() > 0) {
             double rate = (double) r.jrSuccess() / r.jrAttempts();
             out.add(new Part("JR ", r.jrSuccess() + "/" + r.jrAttempts(), "", rate >= 0.6 ? GOOD : rate >= 0.35 ? MID : BAD));
         }
-        if (st.combo() && r.maxCombo() >= 2) out.add(new Part(t("комбо ", "combo "), String.valueOf(r.maxCombo()), "", r.maxCombo() >= 4 ? GOOD : NEUTRAL));
+        if (st.combo() && r.maxCombo() >= 2) out.add(new Part(t("комбо ", "combo ", "Combo "), String.valueOf(r.maxCombo()), "", r.maxCombo() >= 4 ? GOOD : NEUTRAL));
         if (st.trades() && r.tradesWon() + r.tradesLost() > 0) {
             int q = r.tradesWon() > r.tradesLost() ? GOOD : r.tradesWon() == r.tradesLost() ? MID : BAD;
-            out.add(new Part(t("размены ", "trades "), r.tradesWon() + ":" + r.tradesLost(), "", q));
+            out.add(new Part(t("размены ", "trades ", "Trades "), r.tradesWon() + ":" + r.tradesLost(), "", q));
         }
         if (st.reach() && Double.isFinite(r.reachMean()))
-            out.add(new Part(t("дист. ", "reach "), String.format(java.util.Locale.ROOT, "%.2f", r.reachMean()), "", NEUTRAL));
+            out.add(new Part(t("дист. ", "reach ", "Reichweite "), String.format(java.util.Locale.ROOT, "%.2f", r.reachMean()), "", NEUTRAL));
         if (st.threeBlock() && r.threeBlock() > 0) out.add(new Part("3BH ", String.valueOf(r.threeBlock()), "", GOOD));
-        if (st.taken()) out.add(new Part(t("получено ", "taken "), String.valueOf(r.taken()), "", NEUTRAL));
+        if (st.taken()) out.add(new Part(t("получено ", "taken ", "eingesteckt "), String.valueOf(r.taken()), "", NEUTRAL));
         return out;
     }
 
@@ -95,7 +95,7 @@ public final class FightSummary {
     public static String title(Result r) {
         long s = Math.max(0, (r.endMs() - r.startMs()) / 1000);
         String time = s / 60 + ":" + String.format(java.util.Locale.ROOT, "%02d", s % 60);
-        return (r.opponent() != null ? t("Бой с ", "Fight vs ") + r.opponent() : t("Бой", "Fight")) + " · " + time;
+        return (r.opponent() != null ? t("Бой с ", "Fight vs ", "Kampf gegen ") + r.opponent() : t("Бой", "Fight", "Kampf")) + " · " + time;
     }
 
     public static Result sample() {

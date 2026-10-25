@@ -40,23 +40,23 @@ final class Fmt {
     }
 
     static String date(long epochMs) {
-        return (dev.combatdata.core.Lang.english() ? DATE_EN : DATE).format(Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()));
+        return (dev.combatdata.core.Lang.current() == dev.combatdata.core.Lang.EN ? DATE_EN : DATE).format(Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()));
     }
 
     static String title(Recordings.Entry e) {
-        if (e.header() == null) return e.stem() + t(" (не читается)", " (unreadable)");
+        if (e.header() == null) return e.stem() + t(" (не читается)", " (unreadable)", " (nicht lesbar)");
         if (e.defaultName()) {
-            String server = e.header().servers().isEmpty() ? t("сервер неизвестен", "unknown server") : String.join(", ", e.header().servers());
+            String server = e.header().servers().isEmpty() ? t("сервер неизвестен", "unknown server", "unbekannter Server") : String.join(", ", e.header().servers());
             return server;
         }
         return e.stem();
     }
 
     static String meta(Recordings.Entry e) {
-        if (e.header() == null) return t("Файл повреждён или создан другой версией", "File is damaged or made by another version");
+        if (e.header() == null) return t("Файл повреждён или создан другой версией", "File is damaged or made by another version", "Datei ist beschädigt oder stammt von einer anderen Version");
         var h = e.header();
         StringBuilder sb = new StringBuilder(clock(h.durationMs()));
-        sb.append(t(" · ударов ", " · hits ")).append(h.hitsConfirmed()).append(t(" из ", " of ")).append(h.attacks());
+        sb.append(t(" · ударов ", " · hits ", " · Treffer ")).append(h.hitsConfirmed()).append(t(" из ", " of ", " von ")).append(h.attacks());
         if (!e.defaultName() && !h.servers().isEmpty()) sb.append(" · ").append(String.join(", ", h.servers()));
         if (!h.opponents().isEmpty()) sb.append(" · ").append(String.join(", ", h.opponents()));
         return sb.toString();

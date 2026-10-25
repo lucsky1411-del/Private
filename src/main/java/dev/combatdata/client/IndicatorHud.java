@@ -132,7 +132,7 @@ public final class IndicatorHud {
         long old = Long.MIN_VALUE / 2;
         return switch (k) {
             case HEALTH -> health(c, 17.35f, 4f, 20f);
-            case REACH -> view(labeled(c, t("Дистанция", "Reach"), fmt(2.874, c.reachDecimals), c.colors ? GOOD : TEXT), 1f, old);
+            case REACH -> view(labeled(c, t("Дистанция", "Reach", "Reichweite"), fmt(2.874, c.reachDecimals), c.colors ? GOOD : TEXT), 1f, old);
             case COMBO -> view(labeled(c, t("Комбо", "Combo"), "4", c.colors ? GOOD : TEXT), 1f, old);
             case PING -> ping(c, 42);
             case CHARGE -> chargeView(c, 0.72f, 1f);
@@ -181,7 +181,7 @@ public final class IndicatorHud {
     }
 
     private static View reach(IndicatorConfig c, double reach, long age, long at) {
-        String label = t("Дистанция", "Reach");
+        String label = t("Дистанция", "Reach", "Reichweite");
         if (!Double.isFinite(reach)) return view(labeled(c, label, "—", LABEL), 1f, at);
         float alpha = c.reachHideSec > 0 ? fade(age, c.reachHideSec * 1000L) : 1f;
         if (alpha <= 0) return null;
@@ -227,7 +227,7 @@ public final class IndicatorHud {
         boolean charged = Cooldown.charged(s);
         int color = charged && c.colors ? GOOD : TEXT;
         if (c.chargeStyle == IndicatorConfig.CHARGE_BAR) return new View(List.of(), NONE, 0, Math.min(1, s), color, alpha, Long.MIN_VALUE / 2);
-        return view(labeled(c, t("Заряд", "Charge"), (int) Math.floor(Math.min(1, s) * 100) + "%", color), alpha, Long.MIN_VALUE / 2);
+        return view(labeled(c, t("Заряд", "Charge", "Aufladung"), (int) Math.floor(Math.min(1, s) * 100) + "%", color), alpha, Long.MIN_VALUE / 2);
     }
 
     private static View jumpReset(IndicatorConfig c, LiveCombat.JrVerdict v, long now) {
@@ -247,11 +247,11 @@ public final class IndicatorHud {
             }
             case EARLY -> {
                 color = MID;
-                value = t("рано на ", "early by ") + v.offMs() + ms;
+                value = t("рано на ", "early by ", "zu früh um ") + v.offMs() + ms;
             }
             default -> {
                 color = BAD;
-                value = t("поздно на ", "late by ") + v.offMs() + ms;
+                value = t("поздно на ", "late by ", "zu spät um ") + v.offMs() + ms;
             }
         }
         if (!c.colors) color = TEXT;
@@ -276,7 +276,7 @@ public final class IndicatorHud {
 
     static View session(IndicatorConfig c, double acc, int hits, int swings, double jr, int best, int tb) {
         List<Seg> s = new ArrayList<>();
-        if (c.labels) s.add(new Seg(t("Сессия", "Session") + " ", LABEL));
+        if (c.labels) s.add(new Seg(t("Сессия", "Session", "Sitzung") + " ", LABEL));
         int start = s.size();
         if (c.sesAccuracy) {
             int color = !Double.isFinite(acc) ? LABEL : !c.colors ? TEXT : acc >= 60 ? GOOD : acc >= 40 ? MID : BAD;
@@ -287,7 +287,7 @@ public final class IndicatorHud {
             int color = !Double.isFinite(jr) ? LABEL : !c.colors ? TEXT : jr >= 60 ? GOOD : jr >= 35 ? MID : BAD;
             part(s, start, "JR ", Double.isFinite(jr) ? Math.round(jr) + "%" : "—", color);
         }
-        if (c.sesCombo) part(s, start, t("комбо ", "combo "), String.valueOf(best), TEXT);
+        if (c.sesCombo) part(s, start, t("комбо ", "combo ", "Combo "), String.valueOf(best), TEXT);
         if (c.sesThreeBlock) part(s, start, "3BH ", String.valueOf(tb), TEXT);
         if (s.size() == start) s.add(new Seg("—", LABEL));
         return view(s, 1f, Long.MIN_VALUE / 2);

@@ -48,6 +48,10 @@ public final class Settings {
     public boolean recordInput = true, recordKnockback = true, recordTaken = true;
     public static final int REC_FULL = 0, REC_LITE = 1, REC_CUSTOM = 2;
     public boolean fightSummary = true;
+    /** Simple view hides detail numbers and charts; expert shows everything. */
+    public boolean expertMode = false;
+    /** The first-start setup has been shown. */
+    public boolean setupDone = false;
     public boolean fsTitle = true, fsHits = true, fsJr = true, fsCombo = true, fsTrades = true, fsReach = false,
             fsThreeBlock = false, fsTaken = false, fsColors = true;
     public int fsLayout = FightSummary.LAYOUT_TWO_LINES, fsBgOpacity = 63, fsDelaySec = 10, fsShowSec = 5;
@@ -114,7 +118,7 @@ public final class Settings {
         storageLimitMb = Math.max(0, Math.min(100_000, storageLimitMb));
         autoDeleteDays = Math.max(0, Math.min(3650, autoDeleteDays));
         soundVolume = Math.max(0, Math.min(100, soundVolume));
-        language = language >= Lang.AUTO && language <= Lang.EN ? language : Lang.AUTO;
+        language = language >= Lang.AUTO && language <= Lang.DE ? language : Lang.AUTO;
         statPingLimitMs = Math.max(MIN_PING_LIMIT, Math.min(MAX_PING_LIMIT, statPingLimitMs));
         statMinFightHits = Math.max(1, Math.min(MAX_FIGHT_HITS, statMinFightHits));
         tradeGapMs = Math.max(500, Math.min(5000, tradeGapMs));
@@ -197,6 +201,8 @@ public final class Settings {
         recordKnockback = c.recordKnockback;
         recordTaken = c.recordTaken;
         fightSummary = c.fightSummary;
+        expertMode = c.expertMode;
+        setupDone = c.setupDone;
         fsTitle = c.fsTitle;
         fsHits = c.fsHits;
         fsJr = c.fsJr;
@@ -278,6 +284,8 @@ public final class Settings {
         m.put("recordKnockback", recordKnockback);
         m.put("recordTaken", recordTaken);
         m.put("fightSummary", fightSummary);
+        m.put("expertMode", expertMode);
+        m.put("setupDone", setupDone);
         m.put("fsTitle", fsTitle);
         m.put("fsHits", fsHits);
         m.put("fsJr", fsJr);
@@ -346,6 +354,8 @@ public final class Settings {
         if (m.get("recordKnockback") instanceof Boolean b) s.recordKnockback = b;
         if (m.get("recordTaken") instanceof Boolean b) s.recordTaken = b;
         if (m.get("fightSummary") instanceof Boolean b) s.fightSummary = b;
+        if (m.get("expertMode") instanceof Boolean b) s.expertMode = b;
+        if (m.get("setupDone") instanceof Boolean b) s.setupDone = b;
         if (m.get("fsTitle") instanceof Boolean b) s.fsTitle = b;
         if (m.get("fsHits") instanceof Boolean b) s.fsHits = b;
         if (m.get("fsJr") instanceof Boolean b) s.fsJr = b;

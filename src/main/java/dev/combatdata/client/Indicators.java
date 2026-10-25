@@ -107,21 +107,21 @@ public final class Indicators {
 
     public static String instrumentName(String id) {
         return switch (id) {
-            case "bell" -> t("Колокол", "Bell");
-            case "chime" -> t("Колокольчик", "Chime");
-            case "xylophone" -> t("Ксилофон", "Xylophone");
-            case "iron_xylophone" -> t("Вибрафон", "Vibraphone");
-            case "harp" -> t("Арфа", "Harp");
+            case "bell" -> t("Колокол", "Bell", "Glocke");
+            case "chime" -> t("Колокольчик", "Chime", "Glockenspiel");
+            case "xylophone" -> t("Ксилофон", "Xylophone", "Xylophon");
+            case "iron_xylophone" -> t("Вибрафон", "Vibraphone", "Vibraphon");
+            case "harp" -> t("Арфа", "Harp", "Harfe");
             case "bit" -> t("8-бит", "Bit");
-            case "flute" -> t("Флейта", "Flute");
-            case "guitar" -> t("Гитара", "Guitar");
+            case "flute" -> t("Флейта", "Flute", "Flöte");
+            case "guitar" -> t("Гитара", "Guitar", "Gitarre");
             case "banjo" -> t("Банджо", "Banjo");
-            case "cow_bell" -> t("Бубенец", "Cow bell");
+            case "cow_bell" -> t("Бубенец", "Cow bell", "Kuhglocke");
             case "didgeridoo" -> t("Диджериду", "Didgeridoo");
             case "bass" -> t("Бас", "Bass");
-            case "basedrum" -> t("Бочка", "Bass drum");
+            case "basedrum" -> t("Бочка", "Bass drum", "Basstrommel");
             case "snare" -> t("Малый барабан", "Snare");
-            case "hat" -> t("Хай-хэт", "Hi-hat");
+            case "hat" -> t("Хай-хэт", "Hi-hat", "Hi-Hat");
             default -> t("Пианино", "Pling");
         };
     }
@@ -131,6 +131,6 @@ public final class Indicators {
         c.enabled = !c.enabled;
         CombatDataClient.saveSettings();
         if (mc.player != null) mc.player.displayClientMessage(Component.literal(c.enabled
-                ? t("Индикаторы включены", "Indicators on") : t("Индикаторы скрыты", "Indicators hidden")), true);
+                ? t("Индикаторы включены", "Indicators on", "Indikatoren an") : t("Индикаторы скрыты", "Indicators hidden", "Indikatoren ausgeblendet")), true);
     }
 }

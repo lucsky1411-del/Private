@@ -22,7 +22,7 @@ public final class HudPositionScreen extends Screen {
     }
 
     public HudPositionScreen(Screen parent, boolean fight, Settings draft) {
-        super(Component.literal(fight ? t("Положение итога боя", "Fight summary position") : t("Положение надписи", "Label position")));
+        super(Component.literal(fight ? t("Положение итога боя", "Fight summary position", "Position der Kampfzusammenfassung") : t("Положение надписи", "Label position", "Position der Anzeige")));
         this.parent = parent;
         this.fight = fight;
         this.draft = draft;
@@ -41,9 +41,9 @@ public final class HudPositionScreen extends Screen {
     @Override
     protected void init() {
         Settings s = CombatDataClient.settings();
-        addRenderableWidget(Button.builder(Component.literal(t("Готово", "Done")), b -> onClose())
+        addRenderableWidget(Button.builder(Component.literal(t("Готово", "Done", "Fertig")), b -> onClose())
                 .bounds(width / 2 - 104, height - 28, 100, 20).build());
-        addRenderableWidget(Button.builder(Component.literal(t("По умолчанию", "Default")), b -> {
+        addRenderableWidget(Button.builder(Component.literal(t("По умолчанию", "Default", "Standard")), b -> {
             if (fight) {
                 s.fsX = new Settings().fsX;
                 s.fsY = new Settings().fsY;
@@ -71,8 +71,8 @@ public final class HudPositionScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
         super.render(g, mouseX, mouseY, delta);
-        String hint = fight ? t("Перетащите итог боя мышью", "Drag the fight summary with the mouse")
-                : t("Перетащите надпись мышью", "Drag the label with the mouse");
+        String hint = fight ? t("Перетащите итог боя мышью", "Drag the fight summary with the mouse", "Zieh die Kampfzusammenfassung mit der Maus")
+                : t("Перетащите надпись мышью", "Drag the label with the mouse", "Zieh die Anzeige mit der Maus");
         g.drawString(font, hint, (width - font.width(hint)) / 2, 12, 0xFFFFFFFF, true);
         Settings s = style();
         int[] b = box();

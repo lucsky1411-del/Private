@@ -9,6 +9,8 @@ group = project.maven_group
 base { archivesName = project.archives_base_name }
 
 repositories {
+    // Mod Menu (optional at runtime: only its API is compiled against)
+    maven { url = 'https://maven.terraformersmc.com/releases' }
 }
 
 dependencies {
@@ -16,6 +18,7 @@ dependencies {
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modCompileOnly("com.terraformersmc:modmenu:${project.modmenu_version}") { transitive = false }
 }
 
 processResources {

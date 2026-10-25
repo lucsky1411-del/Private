@@ -41,9 +41,9 @@ final class IndicatorsTab implements Tab {
             c.enabled = v;
             changed();
         });
-        String head = c.enabled ? t("Индикаторы включены", "Indicators on") : t("Индикаторы скрыты", "Indicators hidden");
+        String head = c.enabled ? t("Индикаторы включены", "Indicators on", "Indikatoren an") : t("Индикаторы скрыты", "Indicators hidden", "Indikatoren ausgeblendet");
         ui.text(head, x + 26, Ui.textY(y, 16), c.enabled ? Theme.TEXT_STRONG : Theme.MUTED);
-        String place = t("Расставить на экране", "Place on screen");
+        String place = t("Расставить на экране", "Place on screen", "Position auf dem Bildschirm");
         int bw = ui.buttonWidth(place);
         ui.button(x + w - bw, y, bw, 16, place, Ui.Kind.PRIMARY, c.anyOn(),
                 () -> Minecraft.getInstance().setScreen(new IndicatorLayoutScreen(menu)));
@@ -67,7 +67,7 @@ final class IndicatorsTab implements Tab {
         ui.g.disableScissor();
         ui.scrollbar(panelX + panelW - 5, iy + 2, ih - 4, scroll, ih, content);
         ui.text(Draw.ellipsize(ui.font, t("Только ваши данные о том, что уже случилось. Меняется сразу.",
-                "Only your own data about what already happened. Applies at once."), w), x, footerY, Theme.DIM);
+                "Only your own data about what already happened. Applies at once.", "Nur deine eigenen Daten über bereits Geschehenes. Wirkt sofort."), w), x, footerY, Theme.DIM);
     }
 
     private int content(Ui ui, int x, int y, int w) {
@@ -95,27 +95,27 @@ final class IndicatorsTab implements Tab {
 
     private static String name(Kind k) {
         return switch (k) {
-            case HEALTH -> t("Здоровье", "Health");
-            case REACH -> t("Дистанция удара", "Reach");
+            case HEALTH -> t("Здоровье", "Health", "Leben");
+            case REACH -> t("Дистанция удара", "Reach", "Reichweite");
             case COMBO -> t("Комбо", "Combo");
             case PING -> t("Пинг", "Ping");
-            case CHARGE -> t("Заряд атаки", "Attack charge");
+            case CHARGE -> t("Заряд атаки", "Attack charge", "Schlagaufladung");
             case JUMP_RESET -> "Jump reset";
             case THREE_BLOCK -> "3 block hit";
-            case SESSION -> t("Сессия", "Session");
+            case SESSION -> t("Сессия", "Session", "Sitzung");
         };
     }
 
     private static String hint(Kind k) {
         return switch (k) {
-            case HEALTH -> t("Точное ХП, по умолчанию над полоской голода", "Exact HP, above the hunger bar by default");
-            case REACH -> t("Дистанция последнего попадания", "Distance of your last hit");
-            case COMBO -> t("Попадания подряд, пока вас не ударили", "Hits in a row until you get hit");
-            case PING -> t("Ваш пинг из списка игроков", "Your ping from the player list");
-            case CHARGE -> t("Сколько набрался удар, у прицела", "How charged the hit is, by the crosshair");
-            case JUMP_RESET -> t("Вовремя ли прыжок после удара по вам", "Whether you jumped in time after a hit");
-            case THREE_BLOCK -> t("Ваш удар, когда он не мог достать вас", "Your hit while they could not reach you");
-            case SESSION -> t("Итоги с входа на сервер", "Totals since joining the server");
+            case HEALTH -> t("Точное ХП, по умолчанию над полоской голода", "Exact HP, above the hunger bar by default", "Genaue HP, standardmäßig über der Hungerleiste");
+            case REACH -> t("Дистанция последнего попадания", "Distance of your last hit", "Distanz deines letzten Treffers");
+            case COMBO -> t("Попадания подряд, пока вас не ударили", "Hits in a row until you get hit", "Treffer in Folge, bis du getroffen wirst");
+            case PING -> t("Ваш пинг из списка игроков", "Your ping from the player list", "Dein Ping aus der Spielerliste");
+            case CHARGE -> t("Сколько набрался удар, у прицела", "How charged the hit is, by the crosshair", "Wie aufgeladen der Schlag ist, am Fadenkreuz");
+            case JUMP_RESET -> t("Вовремя ли прыжок после удара по вам", "Whether you jumped in time after a hit", "Ob du nach einem Treffer rechtzeitig gesprungen bist");
+            case THREE_BLOCK -> t("Ваш удар, когда он не мог достать вас", "Your hit while they could not reach you", "Dein Treffer, während er dich nicht erreichen konnte");
+            case SESSION -> t("Итоги с входа на сервер", "Totals since joining the server", "Summen seit Betreten des Servers");
         };
     }
 
@@ -152,63 +152,63 @@ final class IndicatorsTab implements Tab {
     private int options(Ui ui, int x, int y, int w, Kind k, IndicatorConfig c, IndicatorConfig.Element e) {
         switch (k) {
             case HEALTH -> {
-                y = choice(ui, x, y, w, t("Точность", "Precision"), new String[]{"20", "20.0", "20.00", "20.000"}, c.hpDecimals,
+                y = choice(ui, x, y, w, t("Точность", "Precision", "Genauigkeit"), new String[]{"20", "20.0", "20.00", "20.000"}, c.hpDecimals,
                         v -> c.hpDecimals = v);
-                y = choice(ui, x, y, w, t("Цвет", "Color"), new String[]{t("Красный", "Red"), t("Белый", "White"),
-                        t("Золотой", "Gold"), t("По ХП", "By HP")}, c.hpColor, v -> c.hpColor = v);
-                y = choice(ui, x, y, w, t("Единицы", "Units"), new String[]{t("ХП", "HP"), t("Сердца", "Hearts")},
+                y = choice(ui, x, y, w, t("Цвет", "Color", "Farbe"), new String[]{t("Красный", "Red", "Rot"), t("Белый", "White", "Weiß"),
+                        t("Золотой", "Gold"), t("По ХП", "By HP", "Nach HP")}, c.hpColor, v -> c.hpColor = v);
+                y = choice(ui, x, y, w, t("Единицы", "Units", "Einheiten"), new String[]{t("ХП", "HP"), t("Сердца", "Hearts", "Herzen")},
                         c.hpHearts ? 1 : 0, v -> c.hpHearts = v == 1);
-                y = flag(ui, x, y, w, t("Поглощение", "Absorption"), t("Золотые сердца: «+4.00» после числа", "Golden hearts: \"+4.00\" after the number"),
+                y = flag(ui, x, y, w, t("Поглощение", "Absorption"), t("Золотые сердца: «+4.00» после числа", "Golden hearts: \"+4.00\" after the number", "Goldene Herzen: „+4.00“ hinter der Zahl"),
                         c.hpAbsorption, v -> c.hpAbsorption = v);
-                y = flag(ui, x, y, w, t("Значок сердца", "Heart icon"), null, c.hpIcon, v -> c.hpIcon = v);
+                y = flag(ui, x, y, w, t("Значок сердца", "Heart icon", "Herzsymbol"), null, c.hpIcon, v -> c.hpIcon = v);
             }
             case REACH -> {
-                y = choice(ui, x, y, w, t("Точность", "Precision"), new String[]{"2.9", "2.87", "2.874"}, c.reachDecimals - 1,
+                y = choice(ui, x, y, w, t("Точность", "Precision", "Genauigkeit"), new String[]{"2.9", "2.87", "2.874"}, c.reachDecimals - 1,
                         v -> c.reachDecimals = v + 1);
-                y = stepRow(ui, x, y, w, t("Скрывать через", "Hide after"), t("Иначе через 3 с значение сереет", "Otherwise it greys out after 3 s"),
-                        c.reachHideSec == 0 ? t("никогда", "never") : c.reachHideSec + t(" с", " s"),
+                y = stepRow(ui, x, y, w, t("Скрывать через", "Hide after", "Ausblenden nach"), t("Иначе через 3 с значение сереет", "Otherwise it greys out after 3 s", "Sonst wird es nach 3 s grau"),
+                        c.reachHideSec == 0 ? t("никогда", "never", "nie") : c.reachHideSec + t(" с", " s"),
                         () -> c.reachHideSec = Math.max(0, c.reachHideSec - (c.reachHideSec > 10 ? 5 : 1)),
                         () -> c.reachHideSec += c.reachHideSec >= 10 ? 5 : 1);
             }
-            case COMBO -> y = flag(ui, x, y, w, t("Только от 2 ударов", "Only from 2 hits"), t("Иначе виден всегда, даже 0", "Otherwise always shown, even 0"),
+            case COMBO -> y = flag(ui, x, y, w, t("Только от 2 ударов", "Only from 2 hits", "Erst ab 2 Treffern"), t("Иначе виден всегда, даже 0", "Otherwise always shown, even 0", "Sonst immer angezeigt, auch 0"),
                     c.comboHideZero, v -> c.comboHideZero = v);
             case CHARGE -> {
-                y = choice(ui, x, y, w, t("Вид", "Style"), new String[]{t("Полоска", "Bar"), t("Проценты", "Percent")}, c.chargeStyle,
+                y = choice(ui, x, y, w, t("Вид", "Style", "Stil"), new String[]{t("Полоска", "Bar", "Balken"), t("Проценты", "Percent", "Prozent")}, c.chargeStyle,
                         v -> c.chargeStyle = v);
-                y = flag(ui, x, y, w, t("Скрывать при полном заряде", "Hide when fully charged"), t("Виден только пока удар набирается", "Shown only while charging"),
+                y = flag(ui, x, y, w, t("Скрывать при полном заряде", "Hide when fully charged", "Ausblenden, wenn voll aufgeladen"), t("Виден только пока удар набирается", "Shown only while charging", "Nur beim Aufladen angezeigt"),
                         c.chargeHideFull, v -> c.chargeHideFull = v);
             }
             case JUMP_RESET -> {
-                y = stepRow(ui, x, y, w, t("Показывать", "Show for"), null, c.jrShowSec + t(" с", " s"),
+                y = stepRow(ui, x, y, w, t("Показывать", "Show for", "Anzeigen für"), null, c.jrShowSec + t(" с", " s"),
                         () -> c.jrShowSec--, () -> c.jrShowSec++);
-                y = sound(ui, x, y, w, t("Звук: вовремя", "Sound: in time"), c.jrSoundOk, s -> c.jrSoundOk = s);
-                y = sound(ui, x, y, w, t("Звук: рано или поздно", "Sound: early or late"), c.jrSoundBad, s -> c.jrSoundBad = s);
+                y = sound(ui, x, y, w, t("Звук: вовремя", "Sound: in time", "Sound: rechtzeitig"), c.jrSoundOk, s -> c.jrSoundOk = s);
+                y = sound(ui, x, y, w, t("Звук: рано или поздно", "Sound: early or late", "Sound: zu früh oder zu spät"), c.jrSoundBad, s -> c.jrSoundBad = s);
                 var p = CombatDataClient.settings().jumpParams();
                 ui.text(Draw.ellipsize(ui.font, t("Окно " + p.lowerMs() + "–" + p.upperMs() + " мс после удара: Настройки → Дополнительно",
-                        "Window " + p.lowerMs() + "–" + p.upperMs() + " ms after the hit: Settings → Advanced"), w - 20 - INDENT * 2),
+                        "Window " + p.lowerMs() + "–" + p.upperMs() + " ms after the hit: Settings → Advanced", "Fenster " + p.lowerMs() + "–" + p.upperMs() + " ms nach dem Treffer: Einstellungen → Erweitert"), w - 20 - INDENT * 2),
                         x + 10 + INDENT * 2, y + 6, Theme.DIM);
                 y += 18;
             }
             case THREE_BLOCK -> {
-                y = flag(ui, x, y, w, t("Дистанция у противника", "Distance on their screen"), t("Насколько вы были дальше его досягаемости", "How far beyond their reach you were"),
+                y = flag(ui, x, y, w, t("Дистанция у противника", "Distance on their screen", "Distanz auf seinem Bildschirm"), t("Насколько вы были дальше его досягаемости", "How far beyond their reach you were", "Wie weit du außerhalb seiner Reichweite warst"),
                         c.tbDistance, v -> c.tbDistance = v);
-                y = stepRow(ui, x, y, w, t("Показывать", "Show for"), null, c.tbShowSec + t(" с", " s"),
+                y = stepRow(ui, x, y, w, t("Показывать", "Show for", "Anzeigen für"), null, c.tbShowSec + t(" с", " s"),
                         () -> c.tbShowSec--, () -> c.tbShowSec++);
                 y = sound(ui, x, y, w, t("Звук", "Sound"), c.tbSound, s -> c.tbSound = s);
             }
             case SESSION -> {
-                String pl = t("Что показывать", "What to show");
+                String pl = t("Что показывать", "What to show", "Was anzeigen");
                 ui.text(pl, x + 10 + INDENT * 2, y + 8, Theme.TEXT);
                 Flow fl = new Flow(x + 10 + INDENT * 2, y + 22, w - 20 - INDENT * 2);
-                chip(ui, fl, t("Точность", "Accuracy"), c.sesAccuracy, v -> c.sesAccuracy = v);
-                chip(ui, fl, t("Попадания", "Hits"), c.sesHits, v -> c.sesHits = v);
+                chip(ui, fl, t("Точность", "Accuracy", "Trefferquote"), c.sesAccuracy, v -> c.sesAccuracy = v);
+                chip(ui, fl, t("Попадания", "Hits", "Treffer"), c.sesHits, v -> c.sesHits = v);
                 chip(ui, fl, "Jump reset", c.sesJr, v -> c.sesJr = v);
-                chip(ui, fl, t("Лучшее комбо", "Best combo"), c.sesCombo, v -> c.sesCombo = v);
+                chip(ui, fl, t("Лучшее комбо", "Best combo", "Beste Combo"), c.sesCombo, v -> c.sesCombo = v);
                 chip(ui, fl, "3 block hit", c.sesThreeBlock, v -> c.sesThreeBlock = v);
                 y = fl.bottom() + 2;
                 ui.g.fill(x + 8 + INDENT * 2, y - 1, x + w - 8, y, Theme.BORDER);
-                row(ui, x, y, w, 30, INDENT * 2, t("Начать заново", "Start over"), t("Само сбрасывается при входе на сервер", "Resets by itself when you join a server"), Theme.TEXT);
-                String rs = t("Сбросить", "Reset");
+                row(ui, x, y, w, 30, INDENT * 2, t("Начать заново", "Start over", "Neu anfangen"), t("Само сбрасывается при входе на сервер", "Resets by itself when you join a server", "Setzt sich beim Betreten eines Servers selbst zurück"), Theme.TEXT);
+                String rs = t("Сбросить", "Reset", "Zurücksetzen");
                 int bw = ui.buttonWidth(rs);
                 ui.button(x + w - 10 - bw, y + 7, bw, 16, rs, Ui.Kind.SECONDARY, true, Indicators::newSession);
                 y += 30;
@@ -217,28 +217,28 @@ final class IndicatorsTab implements Tab {
             }
         }
         boolean bar = k == Kind.CHARGE && c.chargeStyle == IndicatorConfig.CHARGE_BAR;
-        if (!bar) y = flag(ui, x, y, w, t("Фон", "Background"), null, e.bg, v -> e.bg = v);
+        if (!bar) y = flag(ui, x, y, w, t("Фон", "Background", "Hintergrund"), null, e.bg, v -> e.bg = v);
         return y;
     }
 
     private int common(Ui ui, int x, int y, int w) {
         IndicatorConfig c = cfg();
-        y = SettingsTab.heading(ui, x, y, w, t("Общий вид", "Common style"));
-        y = flagAt(ui, x, y, w, 0, t("Подписи", "Captions"), t("«Пинг», «Комбо» перед числом", "\"Ping\", \"Combo\" before the number"), c.labels, v -> c.labels = v);
-        y = flagAt(ui, x, y, w, 0, t("Цветные значения", "Colored values"), t("Зелёный хорошо, жёлтый средне, красный плохо", "Green good, yellow fair, red bad"),
+        y = SettingsTab.heading(ui, x, y, w, t("Общий вид", "Common style", "Gemeinsamer Stil"));
+        y = flagAt(ui, x, y, w, 0, t("Подписи", "Captions", "Beschriftungen"), t("«Пинг», «Комбо» перед числом", "\"Ping\", \"Combo\" before the number", "„Ping“, „Combo“ vor der Zahl"), c.labels, v -> c.labels = v);
+        y = flagAt(ui, x, y, w, 0, t("Цветные значения", "Colored values", "Farbige Werte"), t("Зелёный хорошо, жёлтый средне, красный плохо", "Green good, yellow fair, red bad", "Grün gut, gelb okay, rot schlecht"),
                 c.colors, v -> c.colors = v);
-        y = flagAt(ui, x, y, w, 0, t("Тень у текста", "Text shadow"), null, c.shadow, v -> c.shadow = v);
-        y = stepAt(ui, x, y, w, 0, t("Непрозрачность фона", "Background opacity"), null, c.bgOpacity + "%",
+        y = flagAt(ui, x, y, w, 0, t("Тень у текста", "Text shadow", "Textschatten"), null, c.shadow, v -> c.shadow = v);
+        y = stepAt(ui, x, y, w, 0, t("Непрозрачность фона", "Background opacity", "Hintergrund-Deckkraft"), null, c.bgOpacity + "%",
                 () -> c.bgOpacity -= 10, () -> c.bgOpacity += 10);
-        y = stepAt(ui, x, y, w, 0, t("Громкость звуков", "Sound volume"), null, c.soundVolume + "%",
+        y = stepAt(ui, x, y, w, 0, t("Громкость звуков", "Sound volume", "Lautstärke"), null, c.soundVolume + "%",
                 () -> c.soundVolume -= 10, () -> c.soundVolume += 10);
-        row(ui, x, y, w, 26, 0, t("Показать или скрыть индикаторы", "Show or hide indicators"), null, Theme.TEXT);
+        row(ui, x, y, w, 26, 0, t("Показать или скрыть индикаторы", "Show or hide indicators", "Indikatoren ein-/ausblenden"), null, Theme.TEXT);
         SettingsTab.keyChip(ui, x + w - 10, y + 5, CombatDataClient.INDICATORS);
         y += 26;
-        ui.text(Draw.ellipsize(ui.font, t("Изменить: Настройки → Управление → Combat Data", "Change in: Options → Controls → Combat Data"), w - 20), x + 10, y + 8, Theme.DIM);
+        ui.text(Draw.ellipsize(ui.font, t("Изменить: Настройки → Управление → Combat Data", "Change in: Options → Controls → Combat Data", "Ändern unter: Optionen → Steuerung → Combat Data"), w - 20), x + 10, y + 8, Theme.DIM);
         y += 24;
-        row(ui, x, y, w, 30, 0, t("Всё по умолчанию", "Reset everything"), t("Вид, звуки и места; включённые остаются", "Style, sounds and places; what is on stays on"), Theme.TEXT);
-        String rs = t("Сбросить", "Reset");
+        row(ui, x, y, w, 30, 0, t("Всё по умолчанию", "Reset everything", "Alles zurücksetzen"), t("Вид, звуки и места; включённые остаются", "Style, sounds and places; what is on stays on", "Stil, Sounds und Positionen; was an ist, bleibt an"), Theme.TEXT);
+        String rs = t("Сбросить", "Reset", "Zurücksetzen");
         int bw = ui.buttonWidth(rs);
         ui.button(x + w - 10 - bw, y + 7, bw, 16, rs, Ui.Kind.DANGER, true, () -> {
             IndicatorConfig d = new IndicatorConfig();
@@ -305,7 +305,7 @@ final class IndicatorsTab implements Tab {
         y = flag(ui, x, y, w, label, null, s.on(), v -> set.accept(s.withOn(v)));
         if (!s.on()) return y;
         int right = x + w - 10, h = 26;
-        String test = t("Проба", "Test");
+        String test = t("Проба", "Test", "Testen");
         int tw = ui.buttonWidth(test), nw = 56, iw = Math.min(110, Math.max(70, w - 20 - INDENT * 2 - tw - nw - 8 - 60));
         int bx = right - tw;
         ui.button(bx, y + 5, tw, 16, test, Ui.Kind.GHOST, cfg().soundVolume > 0,

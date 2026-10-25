@@ -88,7 +88,7 @@ final class ReplayView {
         var g = ui.g;
         Draw.roundBordered(g, x, y, w, h, Theme.R_PANEL, Theme.BORDER, Theme.INSET);
         if (frames.isEmpty()) {
-            ui.textCenter(t("Нет позиций для повтора", "No positions to replay"), x + w / 2, y + h / 2 - 4, Theme.DIM);
+            ui.textCenter(t("Нет позиций для повтора", "No positions to replay", "Keine Positionen für die Wiederholung"), x + w / 2, y + h / 2 - 4, Theme.DIM);
             return;
         }
         long now = System.nanoTime();
@@ -122,7 +122,7 @@ final class ReplayView {
         int i = Replay.indexAt(frames, time);
         PositionEvent f = i >= 0 ? frames.get(i) : null;
         if (f == null || time - f.t() > Replay.SKIP_GAP_MS / 2) {
-            ui.textCenter(t("В этот момент позиций нет", "No positions at this moment"), x + w / 2, y + h / 2 - 4, Theme.DIM);
+            ui.textCenter(t("В этот момент позиций нет", "No positions at this moment", "Keine Positionen in diesem Moment"), x + w / 2, y + h / 2 - 4, Theme.DIM);
             return;
         }
         PositionEvent.Other o = f.find(opp);
@@ -167,13 +167,13 @@ final class ReplayView {
             player(g, v, o.x(), o.z(), o.yaw(), oppLift, body, Theme.RED);
             int ox = v.x(o.x()), oz = v.y(o.z()) - raise(oppLift, v);
             if (oppName != null) ui.textCenter(Draw.ellipsize(ui.font, oppName, 90), ox, oz - body / 2 - 11, Theme.MUTED);
-            ui.textCenter(Fmt.num(f.distanceTo(o), 2) + t(" бл.", " bl."), (ox + mx) / 2, (oz + mz) / 2 - 10, Theme.TEXT);
+            ui.textCenter(Fmt.num(f.distanceTo(o), 2) + t(" бл.", " bl.", " Bl."), (ox + mx) / 2, (oz + mz) / 2 - 10, Theme.TEXT);
         }
         player(g, v, f.x(), f.z(), f.yaw(), myLift, body, Theme.GREEN);
         jumpTag(ui, mx, mz - raise(myLift, v) - body / 2 - 11);
         g.disableScissor();
-        ui.text(t("клетка: ", "cell: ") + cell + t(cell == 1 ? " блок" : " блоков", cell == 1 ? " block" : " blocks")
-                + t(" · колесо: масштаб", " · wheel: zoom"), x + 4, y + 3, Theme.DIM);
+        ui.text(t("клетка: ", "cell: ", "Zelle: ") + cell + t(cell == 1 ? " блок" : " блоков", cell == 1 ? " block" : " blocks", cell == 1 ? " Block" : " Blöcke")
+                + t(" · колесо: масштаб", " · wheel: zoom", " · Mausrad: Zoom"), x + 4, y + 3, Theme.DIM);
     }
 
     private static int grid(GuiGraphics g, View v, int x, int y, int w, int h) {
@@ -229,10 +229,10 @@ final class ReplayView {
         int color;
         switch (best.result()) {
             case SUCCESS -> { text = "JR ✔ " + ms; color = Theme.GREEN; }
-            case TOO_EARLY -> { text = t("JR рано ", "JR early ") + ms; color = Theme.RED; }
-            case TOO_LATE -> { text = t("JR поздно ", "JR late ") + ms; color = Theme.RED; }
+            case TOO_EARLY -> { text = t("JR рано ", "JR early ", "JR zu früh ") + ms; color = Theme.RED; }
+            case TOO_LATE -> { text = t("JR поздно ", "JR late ", "JR zu spät ") + ms; color = Theme.RED; }
             case FLY_OUT -> { text = "fly out " + ms; color = Theme.BLUE; }
-            case NO_ATTEMPT -> { text = t("без прыжка", "no jump"); color = Theme.MUTED; }
+            case NO_ATTEMPT -> { text = t("без прыжка", "no jump", "kein Sprung"); color = Theme.MUTED; }
             default -> { return; }
         }
         int tw = ui.font.width(text) + 6;

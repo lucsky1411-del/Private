@@ -134,7 +134,7 @@ public final class FightHud {
             }
             if (!line.isEmpty()) lines.add(line);
         }
-        if (lines.isEmpty()) lines.add(List.of(new Seg(dev.combatdata.core.Lang.t("Бой окончен", "Fight over"), TEXT)));
+        if (lines.isEmpty()) lines.add(List.of(new Seg(dev.combatdata.core.Lang.t("Бой окончен", "Fight over", "Kampf vorbei"), TEXT)));
         int w = 0;
         for (List<Seg> l : lines) {
             int lw = 0;

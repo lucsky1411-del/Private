@@ -11,6 +11,9 @@
   "entrypoints": {
     "client": [
       "dev.combatdata.CombatDataClient"
+    ],
+    "modmenu": [
+      "dev.combatdata.compat.ModMenuIntegration"
     ]
   },
   "depends": {
@@ -18,6 +21,9 @@
     "minecraft": "~1.21.11",
     "java": ">=21",
     "fabric-api": "*"
+  },
+  "suggests": {
+    "modmenu": "*"
   },
   "mixins": [
     "combatdata.mixins.json"

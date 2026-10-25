@@ -68,9 +68,9 @@ final class ViewTab implements Tab {
             return;
         }
         if (rec == null) {
-            ui.textCenter(t("Запись не выбрана", "No recording selected"), x + w / 2, y + h / 2 - 22, Theme.MUTED);
-            ui.textCenter(t("Откройте запись во вкладке «Записи»", "Open a recording on the Recordings tab"), x + w / 2, y + h / 2 - 10, Theme.DIM);
-            String back = t("К записям", "To recordings");
+            ui.textCenter(t("Запись не выбрана", "No recording selected", "Keine Aufnahme ausgewählt"), x + w / 2, y + h / 2 - 22, Theme.MUTED);
+            ui.textCenter(t("Откройте запись во вкладке «Записи»", "Open a recording on the Recordings tab", "Öffne eine Aufnahme im Tab „Aufnahmen“"), x + w / 2, y + h / 2 - 10, Theme.DIM);
+            String back = t("К записям", "To recordings", "Zu den Aufnahmen");
             int bw = ui.buttonWidth(back);
             ui.button(x + (w - bw) / 2, y + h / 2 + 6, bw, 16, back, Ui.Kind.SECONDARY, true,
                     () -> menu.switchTab(MenuScreen.TabId.RECORDINGS));
@@ -103,9 +103,9 @@ final class ViewTab implements Tab {
             stats.set(Recorder.liveCopy(), true);
         }
         String server = Recorder.currentServer();
-        stats.setNote(t("Текущий буфер ", "Live buffer ") + Fmt.clock(Recorder.shownMs()) + " / " + Fmt.clock(Recorder.capacityMs())
-                + t(" · сервер: ", " · server: ") + (server.isEmpty() ? t("нет", "none") : server)
-                + t(" · событий: ", " · events: ") + Recorder.bufferSize());
+        stats.setNote(t("Текущий буфер ", "Live buffer ", "Live-Puffer ") + Fmt.clock(Recorder.shownMs()) + " / " + Fmt.clock(Recorder.capacityMs())
+                + t(" · сервер: ", " · server: ", " · Server: ") + (server.isEmpty() ? t("нет", "none", "keine") : server)
+                + t(" · событий: ", " · events: ", " · Ereignisse: ") + Recorder.bufferSize());
         if (combat) {
             stats.render(ui, x, y, w, h, this::liveHeader);
             return;
@@ -113,19 +113,19 @@ final class ViewTab implements Tab {
         liveHeader(ui, x, y, w);
         Draw.roundBordered(ui.g, x, y + 24, w, h - 24, Theme.R_PANEL, Theme.BORDER, Theme.PANEL);
         int cy = y + 24 + (h - 24) / 2;
-        ui.textCenter(t("В буфере пока нет боевых событий", "No combat events in the buffer yet"), x + w / 2, cy - 12, Theme.MUTED);
-        ui.textCenter(t("Статистика появится после первого удара", "Stats will appear after the first hit"), x + w / 2, cy, Theme.DIM);
+        ui.textCenter(t("В буфере пока нет боевых событий", "No combat events in the buffer yet", "Noch keine Kampfereignisse im Puffer"), x + w / 2, cy - 12, Theme.MUTED);
+        ui.textCenter(t("Статистика появится после первого удара", "Stats will appear after the first hit", "Werte erscheinen nach dem ersten Treffer"), x + w / 2, cy, Theme.DIM);
     }
 
     private void liveHeader(Ui ui, int x, int y, int w) {
-        String full = t("Сохранить сейчас", "Save now"), shortL = t("Сохранить", "Save");
+        String full = t("Сохранить сейчас", "Save now", "Jetzt speichern"), shortL = t("Сохранить", "Save", "Speichern");
         String label = ui.buttonWidth(full) + 90 <= w ? full : shortL;
         int bw = ui.buttonWidth(label), bx = x + w - bw;
         ui.button(bx, y + 1, bw, 16, label, Ui.Kind.PRIMARY, Recorder.hasCombatEvents(), () -> {
             Recorder.save(net.minecraft.client.Minecraft.getInstance());
             lastRefresh = 0;
         });
-        String rl = t("Сбросить", "Reset");
+        String rl = t("Сбросить", "Reset", "Zurücksetzen");
         int rw = ui.buttonWidth(rl);
         if (bx - rw - 4 - x >= 60) {
             bx -= rw + 4;
@@ -134,7 +134,7 @@ final class ViewTab implements Tab {
         boolean on = Recorder.active();
         int color = on ? 0xFFE5584B : Theme.MUTED;
         String time = "REC " + Fmt.clock(Recorder.shownMs()) + " / " + Fmt.clock(Recorder.capacityMs());
-        String state = on ? (Recorder.full() ? t("перезапись", "overwriting") : t("идёт запись", "recording")) : t("пауза", "paused");
+        String state = on ? (Recorder.full() ? t("перезапись", "overwriting", "wird überschrieben") : t("идёт запись", "recording", "Aufnahme")) : t("пауза", "paused", "pausiert");
         int room = bx - x - 8, ty = Ui.textY(y, 18);
         String text = ui.font.width(time + " · " + state) + 12 <= room ? time + " · " + state : time;
         if (ui.font.width(text) + 12 > room) return;

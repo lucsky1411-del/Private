@@ -16,9 +16,9 @@ public final class Insights {
 
     public enum Tone { BAD, TIP, GOOD }
 
-    public record Insight(String id, double importance, Tone tone, String ru, String en, Page page) {
+    public record Insight(String id, double importance, Tone tone, String ru, String en, String de, Page page) {
         public String text() {
-            return Lang.t(ru, en);
+            return Lang.t(ru, en, de);
         }
     }
 
@@ -57,11 +57,11 @@ public final class Insights {
             if (off < 0) {
                 return new Insight(id(), imp, Tone.BAD,
                         "Jump reset в среднем раньше окна на " + ms + " мс: прыгайте чуть позже",
-                        "Jump reset is on average " + ms + " ms before the window: jump a bit later", Page.DEFENSE_JUMP);
+                        "Jump reset is on average " + ms + " ms before the window: jump a bit later", "Jump Reset liegt im Schnitt " + ms + " ms vor dem Fenster: spring etwas später", Page.DEFENSE_JUMP);
             }
             return new Insight(id(), imp, Tone.BAD,
                     "Jump reset в среднем позже окна на " + ms + " мс: прыгайте чуть раньше",
-                    "Jump reset is on average " + ms + " ms after the window: jump a bit earlier", Page.DEFENSE_JUMP);
+                    "Jump reset is on average " + ms + " ms after the window: jump a bit earlier", "Jump Reset liegt im Schnitt " + ms + " ms nach dem Fenster: spring etwas früher", Page.DEFENSE_JUMP);
         }
     }
 
@@ -75,7 +75,7 @@ public final class Insights {
             double imp = weight * Math.max(1, (threshold - h.strengthMean()) / 0.05);
             return new Insight(id(), imp, Tone.BAD,
                     "Средний заряд атаки " + pct + "%: бьёте раньше перезарядки",
-                    "Mean attack charge " + pct + "%: you hit before the cooldown ends", Page.ATTACK_STRIKES);
+                    "Mean attack charge " + pct + "%: you hit before the cooldown ends", "Ø Schlagaufladung " + pct + "%: du schlägst, bevor der Cooldown vorbei ist", Page.ATTACK_STRIKES);
         }
     }
 
@@ -91,7 +91,7 @@ public final class Insights {
             double imp = weight * Math.max(1, pct / thresholdPct);
             return new Insight(id(), imp, Tone.TIP,
                     n + " промахов «не дотянулся» (" + Math.round(pct) + "% атак): бейте ближе",
-                    n + " out-of-range misses (" + Math.round(pct) + "% of attacks): swing closer", Page.ATTACK_HITS);
+                    n + " out-of-range misses (" + Math.round(pct) + "% of attacks): swing closer", n + " Fehlschläge „zu weit weg“ (" + Math.round(pct) + "% der Angriffe): schlag näher dran", Page.ATTACK_HITS);
         }
     }
 
@@ -109,7 +109,7 @@ public final class Insights {
             if (in.topAimTip() != null) return null;
             return new Insight(id(), imp, Tone.TIP,
                     n + " промахов прицелом (" + Math.round(pct) + "% атак): смотрите на прицел",
-                    n + " aim misses (" + Math.round(pct) + "% of attacks): check your aim", Page.ATTACK_AIM);
+                    n + " aim misses (" + Math.round(pct) + "% of attacks): check your aim", n + " Zielfehler (" + Math.round(pct) + "% der Angriffe): achte auf dein Zielen", Page.ATTACK_AIM);
         }
     }
 
@@ -121,7 +121,7 @@ public final class Insights {
             AimAnalysis.Tip t = in.topAimTip();
             if (t == null) return null;
             return new Insight(id() + ":" + t.id(), weight * Math.max(1, t.importance()),
-                    t.tone() == AimAnalysis.Tone.BAD ? Tone.BAD : Tone.TIP, t.ru(), t.en(), Page.ATTACK_AIM);
+                    t.tone() == AimAnalysis.Tone.BAD ? Tone.BAD : Tone.TIP, t.ru(), t.en(), t.de(), Page.ATTACK_AIM);
         }
     }
 
@@ -135,7 +135,7 @@ public final class Insights {
             double imp = weight * Math.max(1, (thresholdPct - t.firstPct()) / 10);
             return new Insight(id(), imp, Tone.TIP,
                     "Первый удар только в " + pct + "% разменов: начинайте размен раньше противника",
-                    "First hit in only " + pct + "% of trades: start trades before your opponent", Page.FIGHTS_TRADES);
+                    "First hit in only " + pct + "% of trades: start trades before your opponent", "Erster Treffer nur in " + pct + "% der Trades: fang Trades vor deinem Gegner an", Page.FIGHTS_TRADES);
         }
     }
 
@@ -149,7 +149,7 @@ public final class Insights {
             double imp = weight * Math.max(1, (thresholdPct - t.winSecondPct()) / 10);
             return new Insight(id(), imp, Tone.BAD,
                     "Когда противник бьёт первым, вы выигрываете " + pct + "% разменов",
-                    "When the opponent hits first, you win " + pct + "% of trades", Page.FIGHTS_TRADES);
+                    "When the opponent hits first, you win " + pct + "% of trades", "Wenn der Gegner zuerst trifft, gewinnst du " + pct + "% der Trades", Page.FIGHTS_TRADES);
         }
     }
 
@@ -175,16 +175,16 @@ public final class Insights {
             return switch (top) {
                 case MISS -> new Insight(id(), imp, Tone.BAD,
                         p + "% проигранных разменов начались после вашего промаха",
-                        p + "% of lost trades started after your miss", Page.ATTACK_HITS);
+                        p + "% of lost trades started after your miss", p + "% der verlorenen Trades begannen nach deinem Fehlschlag", Page.ATTACK_HITS);
                 case WEAK -> new Insight(id(), imp, Tone.BAD,
                         p + "% проигранных разменов начались после удара без заряда",
-                        p + "% of lost trades started after an uncharged hit", Page.ATTACK_STRIKES);
+                        p + "% of lost trades started after an uncharged hit", p + "% der verlorenen Trades begannen nach einem ungeladenen Schlag", Page.ATTACK_STRIKES);
                 case CAUGHT -> new Insight(id(), imp, Tone.BAD,
                         p + "% проигранных разменов начались с 3 block hit против вас",
-                        p + "% of lost trades started with a 3 block hit against you", Page.DEFENSE_TAKEN);
+                        p + "% of lost trades started with a 3 block hit against you", p + "% der verlorenen Trades begannen mit einem 3 Block Hit gegen dich", Page.DEFENSE_TAKEN);
                 default -> new Insight(id(), imp, Tone.BAD,
                         p + "% проигранных разменов: неудачный jump reset",
-                        p + "% of lost trades: a failed jump reset", Page.DEFENSE_JUMP);
+                        p + "% of lost trades: a failed jump reset", p + "% der verlorenen Trades: ein misslungener Jump Reset", Page.DEFENSE_JUMP);
             };
         }
     }
@@ -199,7 +199,7 @@ public final class Insights {
             double imp = weight * Math.max(1, t.caughtPct() / thresholdPct);
             return new Insight(id(), imp, Tone.BAD,
                     pct + "% ударов противника были 3 block hit против вас: он бил, пока был дальше вашей дальности",
-                    pct + "% of opponent hits were 3 block hits against you: they hit from beyond your reach", Page.DEFENSE_TAKEN);
+                    pct + "% of opponent hits were 3 block hits against you: they hit from beyond your reach", pct + "% der gegnerischen Treffer waren 3 Block Hits gegen dich: er traf von außerhalb deiner Reichweite", Page.DEFENSE_TAKEN);
         }
     }
 
@@ -212,7 +212,7 @@ public final class Insights {
             long pct = Math.round(j.successRatePct());
             return new Insight(id(), weight * Math.max(1, j.successRatePct() / thresholdPct), Tone.GOOD,
                     "Jump reset удаётся в " + pct + "% попыток",
-                    "Jump reset succeeds in " + pct + "% of attempts", Page.DEFENSE_JUMP);
+                    "Jump reset succeeds in " + pct + "% of attempts", "Jump Reset gelingt in " + pct + "% der Versuche", Page.DEFENSE_JUMP);
         }
     }
 
@@ -225,7 +225,7 @@ public final class Insights {
             long pct = Math.round(h.hitRatePct());
             return new Insight(id(), weight * Math.max(1, h.hitRatePct() / thresholdPct), Tone.GOOD,
                     "Точность " + pct + "%: почти каждый удар попадает",
-                    "Accuracy " + pct + "%: almost every swing lands", Page.ATTACK_HITS);
+                    "Accuracy " + pct + "%: almost every swing lands", "Trefferquote " + pct + "%: fast jeder Schlag trifft", Page.ATTACK_HITS);
         }
     }
 
@@ -238,7 +238,7 @@ public final class Insights {
             long pct = Math.round(t.firstPct());
             return new Insight(id(), weight * Math.max(1, t.firstPct() / thresholdPct), Tone.GOOD,
                     "Вы бьёте первым в " + pct + "% разменов",
-                    "You hit first in " + pct + "% of trades", Page.FIGHTS_TRADES);
+                    "You hit first in " + pct + "% of trades", "Du triffst zuerst in " + pct + "% der Trades", Page.FIGHTS_TRADES);
         }
     }
 

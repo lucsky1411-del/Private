@@ -203,7 +203,7 @@ public final class Recorder {
         resetAskedAt = -RESET_CONFIRM_MS;
         if (connected) BUFFER.add(new SegmentEvent(0, server, dimension, System.currentTimeMillis()));
         CombatDataClient.LOG.info("[CD] буфер сброшен");
-        chat(mc, t("Буфер сброшен, запись идёт с 0:00.", "Buffer reset, recording from 0:00."));
+        chat(mc, t("Буфер сброшен, запись идёт с 0:00.", "Buffer reset, recording from 0:00.", "Puffer zurückgesetzt, Aufnahme ab 0:00."));
     }
 
     static void requestReset(Minecraft mc) {
@@ -214,16 +214,16 @@ public final class Recorder {
         }
         resetAskedAt = wall;
         chat(mc, t("Нажмите ещё раз в течение 3 с, чтобы сбросить буфер без сохранения.",
-                "Press again within 3 s to reset the buffer without saving."));
+                "Press again within 3 s to reset the buffer without saving.", "Innerhalb von 3 s nochmal drücken, um den Puffer ohne Speichern zu leeren."));
     }
 
     static void addMarker(Minecraft mc) {
         if (!active()) {
-            chat(mc, t("Запись на паузе, метку поставить нельзя.", "Recording is paused, cannot set a marker."));
+            chat(mc, t("Запись на паузе, метку поставить нельзя.", "Recording is paused, cannot set a marker.", "Aufnahme ist pausiert, keine Markierung möglich."));
             return;
         }
-        add(new MarkerEvent(now(), t("Метка ", "Marker ") + (++markers)));
-        chat(mc, t("Метка ", "Marker ") + markers + t(" поставлена на ", " set at ") + EventLog.formatTime(now()));
+        add(new MarkerEvent(now(), t("Метка ", "Marker ", "Markierung ") + (++markers)));
+        chat(mc, t("Метка ", "Marker ", "Markierung ") + markers + t(" поставлена на ", " set at ", " eingestellt auf ") + EventLog.formatTime(now()));
     }
 
     /** Opened on the next tick: a command runs from the chat screen, which closes right after it. */
@@ -268,12 +268,12 @@ public final class Recorder {
         if (saveQueued) return;
         long wall = System.currentTimeMillis();
         if (wall - lastSaveWall < SAVE_COOLDOWN_MS) {
-            chat(mc, t("Подождите пару секунд перед следующим сохранением.", "Wait a couple of seconds before saving again."));
+            chat(mc, t("Подождите пару секунд перед следующим сохранением.", "Wait a couple of seconds before saving again.", "Warte ein paar Sekunden, bevor du wieder speicherst."));
             Sounds.failed(mc);
             return;
         }
         if (!BUFFER.hasCombatEvents() && !AttackCapture.hasPending() && !IncomingCapture.hasPending()) {
-            chat(mc, t("В буфере нет боевых событий, сохранять нечего.", "No combat events in the buffer, nothing to save."));
+            chat(mc, t("В буфере нет боевых событий, сохранять нечего.", "No combat events in the buffer, nothing to save.", "Keine Kampfereignisse im Puffer, nichts zu speichern."));
             Sounds.failed(mc);
             return;
         }
@@ -288,7 +288,7 @@ public final class Recorder {
         long wall = System.currentTimeMillis();
         if (!BUFFER.hasCombatEvents()) {
             if (!auto) {
-                chat(mc, t("В буфере нет боевых событий, сохранять нечего.", "No combat events in the buffer, nothing to save."));
+                chat(mc, t("В буфере нет боевых событий, сохранять нечего.", "No combat events in the buffer, nothing to save.", "Keine Kampfereignisse im Puffer, nichts zu speichern."));
                 Sounds.failed(mc);
             }
             return;
@@ -327,7 +327,7 @@ public final class Recorder {
                 mc.execute(() -> {
                     // An autosave is shown only by the HUD label, so chat is not spammed after every fight.
                     if (!auto) {
-                        chat(mc, t("Запись сохранена: ", "Recording saved: ") + file.getFileName());
+                        chat(mc, t("Запись сохранена: ", "Recording saved: ", "Aufnahme gespeichert: ") + file.getFileName());
                         Sounds.saved(mc);
                     }
                     reportCleanup(mc, c);
@@ -335,7 +335,7 @@ public final class Recorder {
             } catch (Exception ex) {
                 CombatDataClient.LOG.error("[CD] не удалось сохранить запись", ex);
                 mc.execute(() -> {
-                    chat(mc, t("Не удалось сохранить запись: ", "Could not save the recording: ") + ex.getMessage());
+                    chat(mc, t("Не удалось сохранить запись: ", "Could not save the recording: ", "Konnte die Aufnahme nicht speichern: ") + ex.getMessage());
                     Sounds.failed(mc);
                 });
             }
@@ -358,7 +358,7 @@ public final class Recorder {
 
     private static void reportCleanup(Minecraft mc, Recordings.Cleanup c) {
         if (c.deleted() == 0) return;
-        String text = t("Автоудаление: удалено записей ", "Auto-delete: recordings removed: ") + c.deleted() + " ("
+        String text = t("Автоудаление: удалено записей ", "Auto-delete: recordings removed: ", "Automatisch gelöscht: entfernte Aufnahmen: ") + c.deleted() + " ("
                 + String.format(java.util.Locale.ROOT, t("%.1f МБ", "%.1f MB"), c.bytes() / 1048576.0) + ")";
         CombatDataClient.LOG.info("[CD] {}", text);
         chat(mc, text);

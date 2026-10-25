@@ -132,10 +132,10 @@ public final class Recordings {
     public static Path rename(Path file, String newName) throws IOException {
         String clean = newName.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "_").trim();
         if (clean.length() > 64) clean = clean.substring(0, 64).trim();
-        if (clean.isEmpty() || clean.startsWith(".")) throw new IOException(t("Недопустимое имя", "Invalid name"));
+        if (clean.isEmpty() || clean.startsWith(".")) throw new IOException(t("Недопустимое имя", "Invalid name", "Ungültiger Name"));
         Path target = file.resolveSibling(clean + Cdrec.EXT);
         if (target.equals(file)) return file;
-        if (Files.exists(target)) throw new IOException(t("Запись с таким именем уже есть", "A recording with this name already exists"));
+        if (Files.exists(target)) throw new IOException(t("Запись с таким именем уже есть", "A recording with this name already exists", "Eine Aufnahme mit diesem Namen gibt es schon"));
         Path moved = Files.move(file, target);
         ProgressData.invalidate();
         synchronized (Recordings.class) {
