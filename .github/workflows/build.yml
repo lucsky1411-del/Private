@@ -49,6 +49,9 @@ jobs:
           done
           list=$(echo "$cands" | head -15 | tr '\n' ' ')
           echo "::warning title=mixin targets::jar=$JAR%0A${out}%0Acandidates: $list"
+          CJ=$(echo "$cands" | grep -E 'fabric-loom/1.21.11/minecraft-client.jar' | head -1)
+          spr=$(unzip -l "$CJ" 2>/dev/null | grep -oE 'sprites/widget/(button|checkbox|scroller|text_field|slider)[a-z_]*\.png' | sort -u | tr '\n' ' ')
+          echo "::warning title=sprites::$spr"
       - name: Upload jar
         uses: actions/upload-artifact@v4
         with:
