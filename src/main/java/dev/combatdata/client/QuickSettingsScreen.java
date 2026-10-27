@@ -94,6 +94,14 @@ public final class QuickSettingsScreen extends Screen {
                     while (i < st.length && st[i] != s().reportStep) i++;
                     s().reportStep = st[(i + 1) % st.length];
                 }));
+        rows.add(new Row(() -> t("Тренировка jump reset", "Jump reset training", "Jump-Reset-Training") + ": " + onOff(s().jrTraining),
+                () -> t("Счётчик серии вверху экрана и звук на каждый прыжок. Также: /combatdata training",
+                        "Streak counter at the top of the screen and a sound on every jump. Also: /combatdata training",
+                        "Serienzähler oben im Bild und ein Ton bei jedem Sprung. Auch: /combatdata training"),
+                () -> {
+                    s().jrTraining = !s().jrTraining;
+                    Indicators.TRAINING.reset();
+                }));
         rows.add(new Row(() -> t("Надпись REC", "REC label", "REC-Anzeige") + ": " + onOff(s().hudVisible),
                 () -> t("Показывает, что идёт запись", "Shows that recording is running", "Zeigt, dass die Aufnahme läuft"),
                 () -> s().hudVisible = !s().hudVisible));

@@ -42,6 +42,7 @@ public final class CoreTests {
         coachAndLanguage();
         reports();
         coachExtras();
+        tipsAndTraining();
         // Check names are ASCII: the Windows console (CP866) garbles Cyrillic.
         System.out.println("CoreTests: " + checks + " checks, " + failures + " failed");
         if (failures > 0) System.exit(1);
@@ -1868,6 +1869,30 @@ public final class CoreTests {
         st.announced = "init;b:combo-5";
         Settings sb = Settings.fromMap(st.toMap());
         check("settings: goals and announced saved", sb.goals.equals("AIM:90") && sb.announced.equals("init;b:combo-5"));
+        Lang.setEnglish(false);
+    }
+
+    static void tipsAndTraining() {
+        Lang.set(Lang.DE);
+        int[] c = new int[Detail.COUNT];
+        c[Detail.AIM_N] = 11; c[Detail.AIM_ON] = 10; c[Detail.JR_OK] = 1; c[Detail.JR_LATE] = 4;
+        String tip = Report.shortTip(new Progress.Metrics(11, 8, 5, 1, 0, 0, 0, 8 * 0.95, 4, 3), Detail.ofCounts(c));
+        check("tip: jump later/earlier from details", tip != null && tip.equals("Tipp: spring früher, direkt beim Treffer"));
+        check("tip: sample has a tip", FightSummary.sample().tip() != null && FightSummary.sample().tip().startsWith("Tipp:"));
+        check("tip: none when nothing is weak", Report.shortTip(new Progress.Metrics(20, 19, 0, 0, 0, 0, 0, 19 * 0.97, 0, 0),
+                Detail.ofCounts(20, 19)) == null);
+        JrTraining tr = new JrTraining();
+        tr.hit(); tr.verdict(LiveCombat.Jr.SUCCESS, 0, 1);
+        tr.hit(); tr.verdict(LiveCombat.Jr.SUCCESS, 0, 2);
+        tr.hit(); // no jump
+        tr.hit(); tr.verdict(LiveCombat.Jr.LATE, 40, 3);
+        tr.hit(); tr.verdict(LiveCombat.Jr.SUCCESS, 0, 4);
+        check("training: streaks and rate", tr.best() == 2 && tr.streak() == 1 && tr.hits() == 5 && tr.success() == 3
+                && Math.abs(tr.ratePct() - 60) < 1e-9);
+        tr.verdict(LiveCombat.Jr.LATE, 40, 5);
+        check("training: last text", tr.lastText().equals("zu spät um 40 ms"));
+        tr.reset();
+        check("training: reset", tr.hits() == 0 && tr.best() == 0 && tr.last() == null);
         Lang.setEnglish(false);
     }
 }

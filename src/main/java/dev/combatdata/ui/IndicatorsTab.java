@@ -188,6 +188,14 @@ final class IndicatorsTab implements Tab {
                             t("0% выключает звук", "0% mutes them", "0 % schaltet sie stumm"), c.jrVolume + "%",
                             () -> c.jrVolume = Math.max(0, c.jrVolume - 10), () -> c.jrVolume = Math.min(100, c.jrVolume + 10));
                 }
+                y = flag(ui, x, y, w, t("Тренировка jump reset", "Jump reset training", "Jump-Reset-Training"),
+                        t("Серия и доля вверху экрана, звук всегда. Также /combatdata training", "Streak and rate at the top, sound always. Also /combatdata training",
+                                "Serie und Quote oben im Bild, Ton immer. Auch /combatdata training"),
+                        CombatDataClient.settings().jrTraining, v -> {
+                            CombatDataClient.settings().jrTraining = v;
+                            dev.combatdata.client.Indicators.TRAINING.reset();
+                            CombatDataClient.saveSettings();
+                        });
                 var p = CombatDataClient.settings().jumpParams();
                 ui.text(Draw.ellipsize(ui.font, t("Окно " + p.lowerMs() + "–" + p.upperMs() + " мс после удара: Настройки → Дополнительно",
                         "Window " + p.lowerMs() + "–" + p.upperMs() + " ms after the hit: Settings → Advanced", "Fenster " + p.lowerMs() + "–" + p.upperMs() + " ms nach dem Treffer: Einstellungen → Erweitert"), w - 20 - INDENT * 2),

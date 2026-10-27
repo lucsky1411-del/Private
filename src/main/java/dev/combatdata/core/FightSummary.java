@@ -11,8 +11,21 @@ public final class FightSummary {
     public static final int LAYOUT_TWO_LINES = 0, LAYOUT_ONE_LINE = 1, LAYOUT_COLUMN = 2;
     public static final int NEUTRAL = 0, GOOD = 1, MID = 2, BAD = 3;
 
+    /** metrics / detail: the fight's numbers for the coach tip (null in old callers). */
     public record Result(long startMs, long endMs, String opponent, int hits, int swings, int jrSuccess, int jrAttempts,
-                         int maxCombo, int tradesWon, int tradesLost, double reachMean, int threeBlock, int taken) {
+                         int maxCombo, int tradesWon, int tradesLost, double reachMean, int threeBlock, int taken,
+                         Progress.Metrics metrics, Detail detail) {
+        public Result(long startMs, long endMs, String opponent, int hits, int swings, int jrSuccess, int jrAttempts,
+                      int maxCombo, int tradesWon, int tradesLost, double reachMean, int threeBlock, int taken) {
+            this(startMs, endMs, opponent, hits, swings, jrSuccess, jrAttempts, maxCombo, tradesWon, tradesLost, reachMean,
+                    threeBlock, taken, null, null);
+        }
+
+        /** The single most useful thing to change after this fight, short enough for the HUD; null if nothing stands out. */
+        public String tip() {
+            return metrics == null || detail == null ? null : Report.shortTip(metrics, detail);
+        }
+
         public Result(long startMs, long endMs, String opponent, int hits, int swings, int jrSuccess, int jrAttempts,
                       int maxCombo, int tradesWon, int tradesLost) {
             this(startMs, endMs, opponent, hits, swings, jrSuccess, jrAttempts, maxCombo, tradesWon, tradesLost, Double.NaN, 0, 0);
@@ -52,9 +65,12 @@ public final class FightSummary {
             }
         }
         Stats.HitStats h = s.hits();
+        List<Event> ev = sf.apply(Stats.events(r, range)).kept();
+        Detail d = Detail.of(s, AimAnalysis.analyze(ev, AttackEvent.DEFAULT_RANGE), JumpResetEvaluator.evaluate(ev, p));
         return new Result(f.startMs(), f.endMs(), opp, h.confirmed(), h.confirmed() + h.unconfirmed() + h.misses(),
                 s.jump().success(), s.jump().attempts(), s.combo().maxCombo(), s.trades().wins(), s.trades().losses(),
-                h.confirmed() > 0 ? h.reachMean() : Double.NaN, s.threeBlock().count(), s.combo().taken());
+                h.confirmed() > 0 ? h.reachMean() : Double.NaN, s.threeBlock().count(), s.combo().taken(),
+                Progress.Metrics.of(s), d);
     }
 
     public static List<Part> parts(Result r, Style st) {
@@ -99,6 +115,13 @@ public final class FightSummary {
     }
 
     public static Result sample() {
-        return new Result(0, 42_000, "Steve", 8, 11, 3, 5, 4, 3, 1, 2.84, 2, 6);
+        // Jump resets mostly late, so the preview shows a tip line too.
+        int[] c = new int[Detail.COUNT];
+        c[Detail.AIM_N] = 11;
+        c[Detail.AIM_ON] = 10;
+        c[Detail.JR_OK] = 1;
+        c[Detail.JR_LATE] = 4;
+        return new Result(0, 42_000, "Steve", 8, 11, 3, 5, 4, 3, 1, 2.84, 2, 6,
+                new Progress.Metrics(11, 8, 5, 1, 8 * 2.84, 0, 0, 8 * 0.95, 4, 3), Detail.ofCounts(c));
     }
 }

@@ -1,5 +1,7 @@
 package dev.combatdata.client;
 
+import dev.combatdata.core.JrTraining;
+
 import dev.combatdata.CombatDataClient;
 import dev.combatdata.core.AttackEvent;
 import dev.combatdata.core.IndicatorConfig;
@@ -49,8 +51,12 @@ public final class Indicators {
         LIVE.miss(clock());
     }
 
+    /** Jump reset training state (only counts while training is on). */
+    public static final JrTraining TRAINING = new JrTraining();
+
     static void onTaken(boolean held) {
         LIVE.setParams(CombatDataClient.settings().jumpParams());
+        if (CombatDataClient.settings().jrTraining) TRAINING.hit();
         verdict(LIVE.taken(clock(), held));
     }
 
@@ -69,7 +75,14 @@ public final class Indicators {
     private static void verdict(LiveCombat.JrVerdict v) {
         if (v == null) return;
         IndicatorConfig c = cfg();
-        play(IndicatorConfig.Kind.JUMP_RESET, v.result() == LiveCombat.Jr.SUCCESS ? c.jrSoundOk : c.jrSoundBad, c.jrVolume);
+        IndicatorConfig.Sound snd = v.result() == LiveCombat.Jr.SUCCESS ? c.jrSoundOk : c.jrSoundBad;
+        if (CombatDataClient.settings().jrTraining) {
+            TRAINING.verdict(v.result(), v.offMs(), System.currentTimeMillis());
+            // Training always gives sound feedback, even with the indicator off.
+            playNow(Minecraft.getInstance(), snd.withOn(true), c.jrVolume, false);
+            return;
+        }
+        play(IndicatorConfig.Kind.JUMP_RESET, snd, c.jrVolume);
     }
 
     /** A sound belongs to its indicator: it plays only while that indicator is on. */

@@ -135,6 +135,8 @@ public final class FightHud {
             if (!line.isEmpty()) lines.add(line);
         }
         if (lines.isEmpty()) lines.add(List.of(new Seg(dev.combatdata.core.Lang.t("Бой окончен", "Fight over", "Kampf vorbei"), TEXT)));
+        String tip = s.fsTip ? r.tip() : null;
+        if (tip != null) lines.add(List.of(new Seg(tip, MID)));
         int w = 0;
         for (List<Seg> l : lines) {
             int lw = 0;

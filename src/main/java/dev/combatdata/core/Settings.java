@@ -48,6 +48,10 @@ public final class Settings {
     public boolean recordInput = true, recordKnockback = true, recordTaken = true;
     public static final int REC_FULL = 0, REC_LITE = 1, REC_CUSTOM = 2;
     public boolean fightSummary = true;
+    /** The fight summary also shows the one most useful tip. */
+    public boolean fsTip = true;
+    /** Jump reset training: counter on screen and sound on every jump. */
+    public boolean jrTraining = false;
     /** Simple view hides detail numbers and charts; expert shows everything. */
     public boolean expertMode = false;
     /** Menu style: Themes.STYLE_CLASSIC, STYLE_JAVA or STYLE_NORISK. */
@@ -263,6 +267,8 @@ public final class Settings {
         fsReach = c.fsReach;
         fsThreeBlock = c.fsThreeBlock;
         fsTaken = c.fsTaken;
+        fsTip = c.fsTip;
+        jrTraining = c.jrTraining;
         fsColors = c.fsColors;
         fsLayout = c.fsLayout;
         fsBgOpacity = c.fsBgOpacity;
@@ -355,6 +361,8 @@ public final class Settings {
         m.put("fsReach", fsReach);
         m.put("fsThreeBlock", fsThreeBlock);
         m.put("fsTaken", fsTaken);
+        m.put("fsTip", fsTip);
+        m.put("jrTraining", jrTraining);
         m.put("fsColors", fsColors);
         m.put("fsLayout", fsLayout);
         m.put("fsBgOpacity", fsBgOpacity);
@@ -431,6 +439,8 @@ public final class Settings {
         if (m.get("fsReach") instanceof Boolean b) s.fsReach = b;
         if (m.get("fsThreeBlock") instanceof Boolean b) s.fsThreeBlock = b;
         if (m.get("fsTaken") instanceof Boolean b) s.fsTaken = b;
+        if (m.get("fsTip") instanceof Boolean b) s.fsTip = b;
+        if (m.get("jrTraining") instanceof Boolean b) s.jrTraining = b;
         if (m.get("fsColors") instanceof Boolean b) s.fsColors = b;
         if (m.get("fsLayout") instanceof Number n) s.fsLayout = n.intValue();
         if (m.get("fsBgOpacity") instanceof Number n) s.fsBgOpacity = n.intValue();

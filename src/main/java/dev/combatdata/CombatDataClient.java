@@ -77,6 +77,8 @@ public final class CombatDataClient implements ClientModInitializer {
                 (g, delta) -> Safe.run("итог боя", () -> dev.combatdata.client.FightHud.extract(g, delta)));
         HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.fromNamespaceAndPath(MOD_ID, "indicators"),
                 (g, delta) -> Safe.run("индикаторы", () -> dev.combatdata.client.IndicatorHud.extract(g, delta)));
+        HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT, Identifier.fromNamespaceAndPath(MOD_ID, "training"),
+                (g, delta) -> Safe.run("тренировка", () -> dev.combatdata.client.TrainingHud.extract(g, delta)));
         LOG.info("Combat Data загружен");
     }
 }
