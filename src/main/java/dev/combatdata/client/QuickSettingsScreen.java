@@ -64,11 +64,13 @@ public final class QuickSettingsScreen extends Screen {
         }));
         rows.add(new Row(() -> t("Стиль меню", "Menu style", "Menü-Stil") + ": " + dev.combatdata.core.Themes.styleName(s().uiStyle),
                 () -> t("Классический, Java или как NoRisk. Цвета меняются в полном меню: Настройки → Оформление.",
-                        "Classic, Java or NoRisk-like. Colors can be changed in the full menu: Settings → Appearance.",
-                        "Klassisch, Java oder wie NoRisk. Die Farben änderst du im ganzen Menü: Einstellungen → Aussehen."),
+                        "Classic, Java, NoRisk-like or Custom. Colors and the custom design: full menu, Settings → Appearance.",
+                        "Klassisch, Java, wie NoRisk oder Eigener. Farben und eigenes Design: ganzes Menü, Einstellungen → Aussehen."),
                 () -> {
-                    s().uiStyle = (s().uiStyle + 1) % 3;
-                    s().theme = dev.combatdata.core.Themes.themeForStyle(s().uiStyle);
+                    int prev = s().uiStyle;
+                    s().uiStyle = (s().uiStyle + 1) % dev.combatdata.core.Themes.STYLE_COUNT;
+                    if (s().uiStyle == dev.combatdata.core.Themes.STYLE_CUSTOM) s().designFrom(prev);
+                    else s().theme = dev.combatdata.core.Themes.themeForStyle(s().uiStyle);
                 }));
         rows.add(new Row(() -> t("Вид статистики", "Stats view", "Statistik-Ansicht") + ": "
                 + (s().expertMode ? t("эксперт", "expert", "Experte") : t("простой", "simple", "einfach")),

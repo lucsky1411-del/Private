@@ -43,6 +43,7 @@ public final class CoreTests {
         reports();
         coachExtras();
         tipsAndTraining();
+        designs();
         // Check names are ASCII: the Windows console (CP866) garbles Cyrillic.
         System.out.println("CoreTests: " + checks + " checks, " + failures + " failed");
         if (failures > 0) System.exit(1);
@@ -1887,5 +1888,27 @@ public final class CoreTests {
         tr.reset();
         check("training: reset", tr.hits() == 0 && tr.best() == 0 && tr.last() == null);
         Lang.setEnglish(false);
+    }
+
+    static void designs() {
+        Settings a = new Settings();
+        a.uiStyle = Themes.STYLE_CUSTOM;
+        a.designFrom(Themes.STYLE_NORISK);
+        a.dsRadius = 5;
+        a.dsLabels = false;
+        a.theme = "obsidian";
+        String code = a.designCode();
+        check("design: code format", code.startsWith("cddesign1;5;70;55;2;1110;cdtheme1;"));
+        Settings b = new Settings();
+        ThemeSpec t = b.applyDesignCode(code);
+        check("design: code round trip", t != null && b.uiStyle == Themes.STYLE_CUSTOM && b.dsRadius == 5 && b.dsWindowAlpha == 70
+                && b.dsWidgets == Themes.WIDGETS_FLAT && b.dsCaps && !b.dsLabels && t.color(ThemeSpec.ACCENT) == Themes.builtin("obsidian").color(ThemeSpec.ACCENT));
+        check("design: bad code ignored", new Settings().applyDesignCode("nope") == null && new Settings().applyDesignCode("cddesign1;x") == null);
+        Settings c = Settings.fromMap(a.toMap());
+        check("design: saved with settings", c.dsRadius == 5 && !c.dsLabels && c.dsWidgets == Themes.WIDGETS_FLAT && c.uiStyle == Themes.STYLE_CUSTOM);
+        a.dsRadius = 40;
+        a.dsWindowAlpha = 0;
+        a.clamp();
+        check("design: clamped", a.dsRadius == 8 && a.dsWindowAlpha == 10);
     }
 }

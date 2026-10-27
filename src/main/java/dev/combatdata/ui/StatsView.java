@@ -1241,7 +1241,7 @@ final class StatsView {
 
     /** Card background: a soft block in Classic, an outlined panel in Java and NoRisk (like their module cards). */
     private static void box(Ui ui, int x, int y, int w, int h, boolean hov) {
-        if (Theme.style == Themes.STYLE_CLASSIC) Draw.round(ui.g, x, y, w, h, Theme.R_CTRL, hov ? Theme.ROW_HOVER : Theme.WINDOW);
+        if (!Theme.outlined()) Draw.round(ui.g, x, y, w, h, Theme.R_CTRL, hov ? Theme.ROW_HOVER : Theme.WINDOW);
         else Draw.roundBordered(ui.g, x, y, w, h, 0, hov ? Theme.TEXT : Theme.BORDER, hov ? Theme.ROW_HOVER : Theme.PANEL);
     }
 

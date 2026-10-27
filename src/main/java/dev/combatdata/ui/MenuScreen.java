@@ -221,7 +221,7 @@ public final class MenuScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
-        Theme.applyStyle(settingsTab.previewStyle(), settingsTab.previewSpec());
+        Theme.applyStyle(settingsTab.previewSettings(), settingsTab.previewSpec());
         super.render(g, mouseX, mouseY, delta);
         targets.clear();
         frameMouseX = mouseX;
@@ -287,7 +287,7 @@ public final class MenuScreen extends Screen {
         GuiGraphics g = ui.g;
         TabId[] all = TabId.values();
         int eh = Math.min(wideBar ? 38 : 22, (h - 12) / all.length - 3);
-        boolean wide = wideBar && eh >= 30;
+        boolean wide = wideBar && eh >= 30 && Theme.sidebarLabels();
         int ey = y + 6, px = wide ? 2 : 1;
         for (int i = 0; i < all.length; i++) {
             TabId t = all[i];

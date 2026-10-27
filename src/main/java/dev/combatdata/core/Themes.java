@@ -38,7 +38,9 @@ public final class Themes {
      * Menu styles decide shapes, widgets and transparency; colors always come from the chosen theme, so every style
      * can be recolored. Picking a style also picks its matching theme as a starting point.
      */
-    public static final int STYLE_CLASSIC = 0, STYLE_JAVA = 1, STYLE_NORISK = 2;
+    public static final int STYLE_CLASSIC = 0, STYLE_JAVA = 1, STYLE_NORISK = 2, STYLE_CUSTOM = 3, STYLE_COUNT = 4;
+    /** Widget looks a custom design can use. */
+    public static final int WIDGETS_CLASSIC = 0, WIDGETS_JAVA = 1, WIDGETS_FLAT = 2;
 
     public static String themeForStyle(int style) {
         return switch (style) {
@@ -52,6 +54,7 @@ public final class Themes {
         return switch (style) {
             case STYLE_JAVA -> "Java";
             case STYLE_NORISK -> t("Как NoRisk", "NoRisk-like", "Wie NoRisk");
+            case STYLE_CUSTOM -> t("Свой", "Custom", "Eigener");
             default -> t("Классический", "Classic", "Klassisch");
         };
     }

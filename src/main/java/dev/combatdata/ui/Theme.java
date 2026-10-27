@@ -20,18 +20,35 @@ public final class Theme {
     /** Current menu style (Themes.STYLE_*): shapes, widgets, transparency and text shadow. Colors come from the theme. */
     public static int style = Themes.STYLE_CLASSIC;
     public static boolean shadow, caps;
+    /** Widget look (Themes.WIDGETS_*), outlined cards, sidebar names and the custom corner radius. */
+    private static int widgets = Themes.WIDGETS_CLASSIC, customRadius = 3;
+    private static boolean outlined, labels = true;
 
-    /** Corner radius for this style: Java and NoRisk are square. */
+    /** Corner radius for this style: Java and NoRisk are square, Custom uses its own radius. */
     public static int radius(int r) {
-        return style == Themes.STYLE_CLASSIC ? r : 0;
+        return switch (style) {
+            case Themes.STYLE_CLASSIC -> r;
+            case Themes.STYLE_CUSTOM -> r == 0 ? 0 : Math.max(0, customRadius + (r - 3));
+            default -> 0;
+        };
     }
 
     public static boolean java() {
-        return style == Themes.STYLE_JAVA;
+        return widgets == Themes.WIDGETS_JAVA;
     }
 
+    /** Flat outlined widgets (the NoRisk look). */
     public static boolean norisk() {
-        return style == Themes.STYLE_NORISK;
+        return widgets == Themes.WIDGETS_FLAT;
+    }
+
+    /** Cards as outlined panels instead of soft blocks. */
+    public static boolean outlined() {
+        return outlined;
+    }
+
+    public static boolean sidebarLabels() {
+        return labels;
     }
 
     /** Headings and tab names: upper case in the NoRisk style. */
@@ -43,27 +60,38 @@ public final class Theme {
         return Themes.mix(a, b, f);
     }
 
-    private static int appliedStyle = -1;
+    private static String appliedKey = "";
 
-    public static void applyStyle(int s, ThemeSpec spec) {
-        if (spec == null || (s == appliedStyle && spec.equals(current))) return;
-        appliedStyle = s;
+    public static void applyStyle(dev.combatdata.core.Settings st, ThemeSpec spec) {
+        if (spec == null || st == null) return;
+        int s = st.uiStyle;
+        String key = s + "/" + st.designMap() + "/" + System.identityHashCode(spec);
+        if (key.equals(appliedKey) && spec.equals(current)) return;
+        appliedKey = key;
         style = s;
-        shadow = s != Themes.STYLE_CLASSIC;
-        caps = s == Themes.STYLE_NORISK;
+        int wa, pa;
+        switch (s) {
+            case Themes.STYLE_JAVA -> {
+                widgets = Themes.WIDGETS_JAVA; shadow = true; caps = false; outlined = true; labels = true; wa = 78; pa = 70;
+            }
+            case Themes.STYLE_NORISK -> {
+                widgets = Themes.WIDGETS_FLAT; shadow = true; caps = true; outlined = true; labels = true; wa = 70; pa = 55;
+            }
+            case Themes.STYLE_CUSTOM -> {
+                widgets = st.dsWidgets; shadow = st.dsShadow; caps = st.dsCaps; outlined = st.dsBorders; labels = st.dsLabels;
+                customRadius = st.dsRadius; wa = st.dsWindowAlpha; pa = st.dsPanelAlpha;
+            }
+            default -> {
+                widgets = Themes.WIDGETS_CLASSIC; shadow = false; caps = false; outlined = false; labels = true; wa = 100; pa = 100;
+            }
+        }
         current = null;
         apply(spec);
-        // Java and NoRisk let the (blurred) game show through, like their own menus.
-        if (s == Themes.STYLE_NORISK) {
-            WINDOW = alpha(WINDOW, 0xB4);
-            PANEL = alpha(PANEL, 0x8C);
-            INSET = alpha(INSET, 0xA0);
-            RAISED = alpha(RAISED, 0xB0);
-        } else if (s == Themes.STYLE_JAVA) {
-            WINDOW = alpha(WINDOW, 0xC8);
-            PANEL = alpha(PANEL, 0xB4);
-            INSET = alpha(INSET, 0xC0);
-        }
+        // See-through styles let the (blurred) game show through, like the Java and NoRisk menus.
+        WINDOW = alpha(WINDOW, (int) Math.round(wa * 2.55));
+        PANEL = alpha(PANEL, (int) Math.round(pa * 2.55));
+        INSET = alpha(INSET, (int) Math.round(Math.min(100, pa + 15) * 2.55));
+        if (s == Themes.STYLE_NORISK || (s == Themes.STYLE_CUSTOM && pa < 100)) RAISED = alpha(RAISED, (int) Math.round(Math.min(100, pa + 20) * 2.55));
         RAISED_HOVER = Themes.mix(RAISED, TEXT, 0.07);
         ROW_HOVER = Themes.mix(PANEL, TEXT, s == Themes.STYLE_CLASSIC ? 0.03 : 0.08);
         FILTERED = Themes.mix(DIM, PANEL, 0.3);

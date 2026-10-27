@@ -469,7 +469,7 @@ final class ReportTab implements Tab {
     }
 
     private static void box(Ui ui, int x, int y, int w, int h) {
-        if (Theme.style == dev.combatdata.core.Themes.STYLE_CLASSIC) Draw.round(ui.g, x, y, w, h, Theme.R_CTRL, Theme.WINDOW);
+        if (!Theme.outlined()) Draw.round(ui.g, x, y, w, h, Theme.R_CTRL, Theme.WINDOW);
         else Draw.roundBordered(ui.g, x, y, w, h, 0, Theme.BORDER, Theme.PANEL);
     }
 

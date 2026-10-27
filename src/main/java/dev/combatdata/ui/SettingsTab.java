@@ -585,8 +585,8 @@ final class SettingsTab implements Tab {
         return (draft != null ? draft : live()).themeSpec();
     }
 
-    int previewStyle() {
-        return (draft != null ? draft : live()).uiStyle;
+    Settings previewSettings() {
+        return draft != null ? draft : live();
     }
 
     private static String[] roleNames() {
@@ -597,22 +597,94 @@ final class SettingsTab implements Tab {
                 t("Fly out и пометки", "Fly out and notes", "Fly out und Hinweise")};
     }
 
+    /** The custom design: every shape setting with a live preview (the whole menu is the preview). */
+    private int designEditor(Ui ui, int x, int y, int w) {
+        Settings l = live();
+        y = heading(ui, x, y, w, t("Свой дизайн", "Custom design", "Eigenes Design"));
+        int sw = 72, right = x + w - 10;
+        y = stepRow(ui, x, y, w, t("Скругление углов", "Corner rounding", "Ecken abrunden"), t("0: квадратные", "0: square", "0: eckig"),
+                String.valueOf(draft.dsRadius), draft.dsRadius != l.dsRadius, () -> draft.dsRadius--, () -> draft.dsRadius++);
+        y = stepRow(ui, x, y, w, t("Непрозрачность окна", "Window opacity", "Deckkraft des Fensters"), t("Ниже: видно игру за меню", "Lower: the game shows through", "Weniger: das Spiel scheint durch"),
+                draft.dsWindowAlpha + "%", draft.dsWindowAlpha != l.dsWindowAlpha, () -> draft.dsWindowAlpha -= 10, () -> draft.dsWindowAlpha += 10);
+        y = stepRow(ui, x, y, w, t("Непрозрачность панелей", "Panel opacity", "Deckkraft der Flächen"), t("Карточки, графики, поля", "Cards, charts, fields", "Karten, Diagramme, Felder"),
+                draft.dsPanelAlpha + "%", draft.dsPanelAlpha != l.dsPanelAlpha, () -> draft.dsPanelAlpha -= 10, () -> draft.dsPanelAlpha += 10);
+        y = choice(ui, x, y, w, t("Кнопки", "Buttons", "Knöpfe"), new String[]{t("Классика", "Classic", "Klassisch"), "Java", t("Плоские", "Flat", "Flach")},
+                draft.dsWidgets, l.dsWidgets, DEF.dsWidgets, v -> draft.dsWidgets = v);
+        y = flag(ui, x, y, w, t("Тень у текста", "Text shadow", "Textschatten"), t("Как в Minecraft", "Like Minecraft", "Wie in Minecraft"),
+                draft.dsShadow, l.dsShadow, DEF.dsShadow, v -> draft.dsShadow = v);
+        y = flag(ui, x, y, w, t("Заголовки заглавными", "Upper-case headings", "Überschriften in Großbuchstaben"), null,
+                draft.dsCaps, l.dsCaps, DEF.dsCaps, v -> draft.dsCaps = v);
+        y = flag(ui, x, y, w, t("Рамки у карточек", "Outlined cards", "Rahmen um Karten"), t("Иначе мягкие блоки", "Otherwise soft blocks", "Sonst weiche Blöcke"),
+                draft.dsBorders, l.dsBorders, DEF.dsBorders, v -> draft.dsBorders = v);
+        y = flag(ui, x, y, w, t("Названия в боковой панели", "Names in the sidebar", "Namen in der Seitenleiste"), t("Иначе только значки", "Otherwise icons only", "Sonst nur Symbole"),
+                draft.dsLabels, l.dsLabels, DEF.dsLabels, v -> draft.dsLabels = v);
+        Flow fl = new Flow(x + 10, y + 6, w - 20);
+        flowButton(ui, fl, t("Как Java", "Like Java", "Wie Java"), Ui.Kind.SECONDARY, true, () -> draft.designFrom(dev.combatdata.core.Themes.STYLE_JAVA));
+        flowButton(ui, fl, t("Как NoRisk", "Like NoRisk", "Wie NoRisk"), Ui.Kind.SECONDARY, true, () -> draft.designFrom(dev.combatdata.core.Themes.STYLE_NORISK));
+        flowButton(ui, fl, t("Как классика", "Like Classic", "Wie Klassisch"), Ui.Kind.SECONDARY, true, () -> draft.designFrom(dev.combatdata.core.Themes.STYLE_CLASSIC));
+        flowButton(ui, fl, t("Копировать код дизайна", "Copy design code", "Design-Code kopieren"), Ui.Kind.GHOST, true, () -> {
+            Minecraft.getInstance().keyboardHandler.setClipboard(draft.designCode());
+            designStatus = t("Код дизайна скопирован: формы и цвета.", "Design code copied: shapes and colors.", "Design-Code kopiert: Formen und Farben.");
+        });
+        flowButton(ui, fl, t("Вставить код дизайна", "Paste design code", "Design-Code einfügen"), Ui.Kind.GHOST, true, () -> {
+            dev.combatdata.core.ThemeSpec ts = draft.applyDesignCode(Minecraft.getInstance().keyboardHandler.getClipboard());
+            if (ts == null) {
+                designStatus = t("В буфере нет кода дизайна (начинается с cddesign1;).", "No design code on the clipboard (it starts with cddesign1;).",
+                        "Kein Design-Code in der Zwischenablage (er beginnt mit cddesign1;).");
+                return;
+            }
+            if (draft.customThemes.size() < dev.combatdata.core.Themes.MAX_CUSTOM) {
+                dev.combatdata.core.ThemeSpec n = new dev.combatdata.core.ThemeSpec(dev.combatdata.core.Themes.newId(draft.customThemes),
+                        dev.combatdata.core.Themes.uniqueName(ts.name(), draft.customThemes, null), ts.colors());
+                draft.customThemes.add(n);
+                draft.theme = n.id();
+            }
+            designStatus = t("Дизайн вставлен. Нажмите «Применить».", "Design pasted. Press Apply.", "Design eingefügt. Drück „Übernehmen“.");
+        });
+        y = fl.bottom() + 2;
+        if (designStatus != null) {
+            ui.text(Draw.ellipsize(ui.font, designStatus, w - 20), x + 10, y, Theme.GREEN);
+            y += 12;
+        }
+        ui.text(Draw.ellipsize(ui.font, t("Всё меню — это предпросмотр. Сохраняется по «Применить».", "The whole menu is the preview. Saved on Apply.",
+                "Das ganze Menü ist die Vorschau. Gespeichert wird mit „Übernehmen“."), w - 20), x + 10, y + 2, Theme.DIM);
+        return y + 16;
+    }
+
+    private String designStatus;
+
+    private int stepRow(Ui ui, int x, int y, int w, String label, String hint, String value, boolean changed, Runnable minus, Runnable plus) {
+        int h = hint == null ? 26 : 30, sw = 72, right = x + w - 10;
+        row(ui, x, y, w, h, label, hint, changed);
+        ui.stepper(right - sw, y + (h - Ui.CTRL_H) / 2, sw, value, () -> {
+            minus.run();
+            draft.clamp();
+        }, () -> {
+            plus.run();
+            draft.clamp();
+        });
+        return y + h;
+    }
+
     private int appearance(Ui ui, int x, int y, int w) {
         sliders.clear();
         y = heading(ui, x, y, w, t("Стиль меню", "Menu style", "Menü-Stil"));
-        String[] styles = {dev.combatdata.core.Themes.styleName(0), dev.combatdata.core.Themes.styleName(1),
-                dev.combatdata.core.Themes.styleName(2)};
+        String[] styles = new String[dev.combatdata.core.Themes.STYLE_COUNT];
+        for (int i = 0; i < styles.length; i++) styles[i] = dev.combatdata.core.Themes.styleName(i);
         y = choice(ui, x, y, w, t("Стиль", "Style", "Stil"), styles, draft.uiStyle, live().uiStyle, DEF.uiStyle, v -> {
             if (v == draft.uiStyle) return;
+            int prev = draft.uiStyle;
             draft.uiStyle = v;
-            // Each style starts with its own colors; any theme can be picked afterwards.
-            draft.theme = dev.combatdata.core.Themes.themeForStyle(v);
+            // Custom starts from the look you had; the other styles start with their own colors.
+            if (v == dev.combatdata.core.Themes.STYLE_CUSTOM) draft.designFrom(prev);
+            else draft.theme = dev.combatdata.core.Themes.themeForStyle(v);
         });
         ui.text(Draw.ellipsize(ui.font, t("Стиль задаёт формы и кнопки, цвета задаёт тема ниже: её можно менять в любом стиле.",
                 "The style sets shapes and buttons, the theme below sets the colors: change it in any style.",
                 "Der Stil bestimmt Formen und Knöpfe, das Theme unten die Farben: du kannst es in jedem Stil ändern."), w - 20),
                 x + 10, y + 4, Theme.DIM);
         y += 16;
+        if (draft.uiStyle == dev.combatdata.core.Themes.STYLE_CUSTOM) y = designEditor(ui, x, y, w);
         String head = t("Тема", "Theme");
         y = heading(ui, x, y, w, head);
         ui.info(x + 10 + ui.font.width(head) + 6, y - 13, Help.themes());

@@ -54,6 +54,9 @@ public final class Settings {
     public boolean expertMode = false;
     /** Menu style: Themes.STYLE_CLASSIC, STYLE_JAVA or STYLE_NORISK. */
     public int uiStyle = Themes.STYLE_JAVA;
+    /** Custom design (style "Custom"): corner radius 0..8, window/panel opacity 10..100%, widget look, extras. */
+    public int dsRadius = 3, dsWindowAlpha = 100, dsPanelAlpha = 100, dsWidgets = Themes.WIDGETS_CLASSIC;
+    public boolean dsShadow = false, dsCaps = false, dsBorders = false, dsLabels = true;
     /** The first-start setup has been shown. */
     public boolean setupDone = false;
     /** Overall report: every N sessions; a session is a play day or one recording. lastReport: last milestone shown. */
@@ -81,6 +84,83 @@ public final class Settings {
         if (!recordKnockback) m |= Features.KNOCKBACK;
         if (!recordTaken) m |= Features.TAKEN;
         return m;
+    }
+
+    public Map<String, Object> designMap() {
+        Map<String, Object> d = new LinkedHashMap<>();
+        d.put("r", dsRadius);
+        d.put("wa", dsWindowAlpha);
+        d.put("pa", dsPanelAlpha);
+        d.put("wd", dsWidgets);
+        d.put("sh", dsShadow);
+        d.put("caps", dsCaps);
+        d.put("bd", dsBorders);
+        d.put("lb", dsLabels);
+        return d;
+    }
+
+    public void readDesign(Object o) {
+        if (!(o instanceof Map<?, ?> d)) return;
+        if (d.get("r") instanceof Number n) dsRadius = n.intValue();
+        if (d.get("wa") instanceof Number n) dsWindowAlpha = n.intValue();
+        if (d.get("pa") instanceof Number n) dsPanelAlpha = n.intValue();
+        if (d.get("wd") instanceof Number n) dsWidgets = n.intValue();
+        if (d.get("sh") instanceof Boolean b) dsShadow = b;
+        if (d.get("caps") instanceof Boolean b) dsCaps = b;
+        if (d.get("bd") instanceof Boolean b) dsBorders = b;
+        if (d.get("lb") instanceof Boolean b) dsLabels = b;
+    }
+
+    /** Starts the custom design from one of the built-in styles, so you tweak instead of starting from zero. */
+    public void designFrom(int style) {
+        switch (style) {
+            case Themes.STYLE_JAVA -> {
+                dsRadius = 0; dsWindowAlpha = 78; dsPanelAlpha = 70; dsWidgets = Themes.WIDGETS_JAVA;
+                dsShadow = true; dsCaps = false; dsBorders = true;
+            }
+            case Themes.STYLE_NORISK -> {
+                dsRadius = 0; dsWindowAlpha = 70; dsPanelAlpha = 55; dsWidgets = Themes.WIDGETS_FLAT;
+                dsShadow = true; dsCaps = true; dsBorders = true;
+            }
+            default -> {
+                dsRadius = 3; dsWindowAlpha = 100; dsPanelAlpha = 100; dsWidgets = Themes.WIDGETS_CLASSIC;
+                dsShadow = false; dsCaps = false; dsBorders = false;
+            }
+        }
+        dsLabels = true;
+    }
+
+    /** Design code to share: the colors (theme code) plus the shape settings. */
+    public String designCode() {
+        StringBuilder b = new StringBuilder("cddesign1;");
+        b.append(dsRadius).append(';').append(dsWindowAlpha).append(';').append(dsPanelAlpha).append(';').append(dsWidgets).append(';')
+                .append(dsShadow ? 1 : 0).append(dsCaps ? 1 : 0).append(dsBorders ? 1 : 0).append(dsLabels ? 1 : 0).append(';')
+                .append(Themes.toCode(themeSpec()));
+        return b.toString();
+    }
+
+    /** Reads a design code into the custom design; returns the theme it carried (to add to custom themes), or null. */
+    public ThemeSpec applyDesignCode(String code) {
+        if (code == null) return null;
+        code = code.trim();
+        if (!code.startsWith("cddesign1;")) return null;
+        String[] p = code.split(";", 6);
+        if (p.length < 6) return null;
+        try {
+            int r = Integer.parseInt(p[1]), wa = Integer.parseInt(p[2]), pa = Integer.parseInt(p[3]), wd = Integer.parseInt(p[4]);
+            int cut = p[5].indexOf(';');
+            if (cut < 0) return null;
+            ThemeSpec t = Themes.fromCode(p[5].substring(cut + 1));
+            String flags = p[5].substring(0, cut);
+            if (t == null || flags.length() != 4) return null;
+            dsRadius = r; dsWindowAlpha = wa; dsPanelAlpha = pa; dsWidgets = wd;
+            dsShadow = flags.charAt(0) == '1'; dsCaps = flags.charAt(1) == '1'; dsBorders = flags.charAt(2) == '1'; dsLabels = flags.charAt(3) == '1';
+            uiStyle = Themes.STYLE_CUSTOM;
+            clamp();
+            return t;
+        } catch (RuntimeException ex) {
+            return null;
+        }
     }
 
     public static final int PRESET_SIMPLE = 0, PRESET_TRAINING = 1, PRESET_RECORD_ONLY = 2;
@@ -166,7 +246,11 @@ public final class Settings {
         autoDeleteDays = Math.max(0, Math.min(3650, autoDeleteDays));
         soundVolume = Math.max(0, Math.min(100, soundVolume));
         language = language >= Lang.AUTO && language <= Lang.DE ? language : Lang.AUTO;
-        uiStyle = uiStyle >= Themes.STYLE_CLASSIC && uiStyle <= Themes.STYLE_NORISK ? uiStyle : Themes.STYLE_JAVA;
+        uiStyle = uiStyle >= Themes.STYLE_CLASSIC && uiStyle < Themes.STYLE_COUNT ? uiStyle : Themes.STYLE_JAVA;
+        dsRadius = Math.max(0, Math.min(8, dsRadius));
+        dsWindowAlpha = Math.max(10, Math.min(100, dsWindowAlpha));
+        dsPanelAlpha = Math.max(10, Math.min(100, dsPanelAlpha));
+        dsWidgets = dsWidgets >= Themes.WIDGETS_CLASSIC && dsWidgets <= Themes.WIDGETS_FLAT ? dsWidgets : Themes.WIDGETS_CLASSIC;
         reportStep = Math.max(2, Math.min(100, reportStep));
         lastReport = Math.max(0, lastReport);
         statPingLimitMs = Math.max(MIN_PING_LIMIT, Math.min(MAX_PING_LIMIT, statPingLimitMs));
@@ -253,6 +337,14 @@ public final class Settings {
         fightSummary = c.fightSummary;
         expertMode = c.expertMode;
         uiStyle = c.uiStyle;
+        dsRadius = c.dsRadius;
+        dsWindowAlpha = c.dsWindowAlpha;
+        dsPanelAlpha = c.dsPanelAlpha;
+        dsWidgets = c.dsWidgets;
+        dsShadow = c.dsShadow;
+        dsCaps = c.dsCaps;
+        dsBorders = c.dsBorders;
+        dsLabels = c.dsLabels;
         setupDone = c.setupDone;
         reportStep = c.reportStep;
         reportByDay = c.reportByDay;
@@ -343,6 +435,7 @@ public final class Settings {
         m.put("fightSummary", fightSummary);
         m.put("expertMode", expertMode);
         m.put("uiStyle", uiStyle);
+        m.put("design", designMap());
         m.put("styleRev", 2);
         m.put("setupDone", setupDone);
         m.put("reportStep", reportStep);
@@ -421,6 +514,7 @@ public final class Settings {
         if (m.get("fightSummary") instanceof Boolean b) s.fightSummary = b;
         if (m.get("expertMode") instanceof Boolean b) s.expertMode = b;
         if (m.get("uiStyle") instanceof Number n) s.uiStyle = n.intValue();
+        s.readDesign(m.get("design"));
         if (m.get("setupDone") instanceof Boolean b) s.setupDone = b;
         if (m.get("reportStep") instanceof Number n) s.reportStep = n.intValue();
         if (m.get("reportByDay") instanceof Boolean b) s.reportByDay = b;
