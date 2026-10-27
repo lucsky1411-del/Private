@@ -101,6 +101,54 @@ public final class Recordings {
         });
     }
 
+    /** Where shared copies go; the folder is opened so the file can be sent (Discord, USB stick, ...). */
+    public static Path sharedDir() {
+        return FabricLoader.getInstance().getGameDir().resolve("combatdata").resolve("shared");
+    }
+
+    /** True if the recording was made by another player (imported from a friend). */
+    public static boolean foreign(Cdrec.Header h) {
+        if (h == null || h.playerUuid() == null) return false;
+        var user = net.minecraft.client.Minecraft.getInstance().getUser();
+        java.util.UUID me = user == null ? null : user.getProfileId();
+        return me != null && !me.equals(h.playerUuid());
+    }
+
+    /** Copies a recording to the shared folder under a name that says whose it is. */
+    public static Path share(Entry e) throws java.io.IOException {
+        Path dir = sharedDir();
+        java.nio.file.Files.createDirectories(dir);
+        String who = e.header() != null && e.header().player() != null ? e.header().player().replaceAll("[^A-Za-z0-9_]", "") + "_" : "";
+        Path out = dir.resolve(who + e.file().getFileName());
+        java.nio.file.Files.copy(e.file(), out, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        return out;
+    }
+
+    /**
+     * Imports recordings someone sent you (drag and drop onto the menu). Only valid .cdrec files are copied; a file
+     * with the same name is not overwritten. Returns how many were imported.
+     */
+    public static int importFiles(List<Path> files) {
+        int n = 0;
+        Path dir = dir();
+        for (Path f : files) {
+            try {
+                if (!f.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".cdrec")) continue;
+                Cdrec.readHeader(f);
+                java.nio.file.Files.createDirectories(dir);
+                String name = f.getFileName().toString();
+                Path out = dir.resolve(name);
+                for (int k = 2; java.nio.file.Files.exists(out); k++) out = dir.resolve(name.replace(".cdrec", "_" + k + ".cdrec"));
+                java.nio.file.Files.copy(f, out);
+                n++;
+            } catch (Exception ex) {
+                CombatDataClient.LOG.warn("[CD] импорт: не подходит {}: {}", f, ex.toString());
+            }
+        }
+        if (n > 0) ProgressData.invalidate();
+        return n;
+    }
+
     public static List<Entry> list() {
         List<Entry> out = new ArrayList<>();
         Path dir = dir();

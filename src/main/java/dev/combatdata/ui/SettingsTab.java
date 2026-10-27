@@ -492,7 +492,7 @@ final class SettingsTab implements Tab {
         y += rh;
 
         boolean partsChanged = draft.fsTitle != l.fsTitle || draft.fsHits != l.fsHits || draft.fsJr != l.fsJr || draft.fsCombo != l.fsCombo
-                || draft.fsTrades != l.fsTrades || draft.fsReach != l.fsReach || draft.fsThreeBlock != l.fsThreeBlock || draft.fsTaken != l.fsTaken || draft.fsTip != l.fsTip;
+                || draft.fsTrades != l.fsTrades || draft.fsReach != l.fsReach || draft.fsThreeBlock != l.fsThreeBlock || draft.fsTaken != l.fsTaken;
         String pl = t("Что показывать", "What to show", "Was anzeigen");
         ui.text(pl, x + 10, y + 8, Theme.TEXT);
         if (partsChanged) Draw.circle(ui.g, x + 10 + ui.font.width(pl) + 5, y + 9, 5, Theme.AMBER);
@@ -505,7 +505,6 @@ final class SettingsTab implements Tab {
         fsChip(ui, fl, t("Дистанция", "Reach", "Reichweite"), draft.fsReach, v -> draft.fsReach = v);
         fsChip(ui, fl, "3 block hit", draft.fsThreeBlock, v -> draft.fsThreeBlock = v);
         fsChip(ui, fl, t("Получено ударов", "Hits taken", "Eingesteckte Treffer"), draft.fsTaken, v -> draft.fsTaken = v);
-        fsChip(ui, fl, t("Совет", "Tip", "Tipp"), draft.fsTip, v -> draft.fsTip = v);
         y = fl.bottom() + 2;
         ui.g.fill(x + 8, y - 1, x + w - 8, y, Theme.BORDER);
 

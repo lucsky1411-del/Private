@@ -395,48 +395,4 @@ public final class Report {
         return step <= 0 ? 0 : sessions / step * step;
     }
 
-    /**
-     * A one-line tip for right after a fight, from the weakest skill and what went wrong. A single fight has few
-     * numbers, so the bar is lower than for the report (any weak grade counts).
-     */
-    public static String shortTip(Progress.Metrics m, Detail d) {
-        Result r = of(m, d, null, null, 1, 0, 0);
-        if (r.focus().isEmpty()) return null;
-        Skill k = r.focus().get(0).skill();
-        String p = Lang.t("Совет: ", "Tip: ", "Tipp: ");
-        switch (k) {
-            case AIM -> {
-                int left = d.get(Detail.MISS_L), right = d.get(Detail.MISS_R), up = d.get(Detail.MISS_UP), down = d.get(Detail.MISS_DOWN);
-                if (left + right >= up + down && Math.max(left, right) >= 2 * Math.max(1, Math.min(left, right))) {
-                    boolean lf = left > right;
-                    return p + Lang.t("цельтесь чуть " + (lf ? "правее" : "левее"), "aim a bit more to the " + (lf ? "right" : "left"),
-                            "ziel etwas mehr nach " + (lf ? "rechts" : "links"));
-                }
-                if (up + down > left + right) return p + Lang.t("цельтесь в грудь", "aim at the chest", "ziel auf die Brust");
-                return p + Lang.t("ведите прицел вместе с противником", "move the crosshair with the opponent", "geh mit dem Fadenkreuz mit");
-            }
-            case HITTING -> {
-                if (d.get(Detail.MISS_OOR) * 8 >= m.attacks()) return p + Lang.t("бейте ближе, в пределах 3 блоков", "swing closer, within 3 blocks",
-                        "schlag erst, wenn du näher dran bist");
-                return p + Lang.t("сначала прицел, потом удар", "crosshair first, then swing", "erst zielen, dann schlagen");
-            }
-            case JUMP_RESET -> {
-                int early = d.get(Detail.JR_EARLY), late = d.get(Detail.JR_LATE), none = d.get(Detail.JR_NONE);
-                if (none >= early && none >= late) return p + Lang.t("прыгайте на каждый удар", "jump on every hit", "spring bei jedem Treffer");
-                return late >= early ? p + Lang.t("прыгайте раньше, сразу после удара", "jump earlier, right as you get hit", "spring früher, direkt beim Treffer")
-                        : p + Lang.t("прыгайте позже, после удара", "jump a bit later, after the hit", "spring etwas später, erst nach dem Treffer");
-            }
-            case TRADES -> {
-                if (d.get(Detail.LOSS_CAUGHT) * 3 >= Math.max(1, d.get(Detail.TR_LOST)))
-                    return p + Lang.t("не идите прямо на противника", "do not walk straight at them", "lauf nicht gerade auf ihn zu");
-                return p + Lang.t("входите со спринтом и бейте первым", "come in with sprint and hit first", "geh mit Sprint rein und triff zuerst");
-            }
-            case CHARGE -> {
-                return p + Lang.t("кликайте реже, ждите заряд", "click slower, wait for the charge", "klick langsamer, warte die Aufladung ab");
-            }
-            default -> {
-                return p + Lang.t("не подходите по прямой", "do not approach in a straight line", "komm nicht in gerader Linie auf ihn zu");
-            }
-        }
-    }
 }

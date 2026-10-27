@@ -50,6 +50,11 @@ final class Fmt {
 
     static String title(Recordings.Entry e) {
         if (e.header() == null) return e.stem() + t(" (не читается)", " (unreadable)", " (nicht lesbar)");
+        if (Recordings.foreign(e.header())) return "[" + e.header().player() + "] " + titleOwn(e);
+        return titleOwn(e);
+    }
+
+    private static String titleOwn(Recordings.Entry e) {
         if (e.defaultName()) {
             String server = e.header().servers().isEmpty() ? t("сервер неизвестен", "unknown server", "unbekannter Server") : String.join(", ", e.header().servers());
             return server;

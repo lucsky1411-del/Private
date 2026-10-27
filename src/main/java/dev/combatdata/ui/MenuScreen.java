@@ -632,6 +632,14 @@ public final class MenuScreen extends Screen {
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
+    /** Recordings from friends: drop .cdrec files onto the menu to import them. */
+    @Override
+    public void onFilesDrop(List<java.nio.file.Path> files) {
+        int n = dev.combatdata.client.Recordings.importFiles(files);
+        switchTab(TabId.RECORDINGS);
+        recordings.imported(n);
+    }
+
     @Override
     public void onClose() {
         if (modal != null) {

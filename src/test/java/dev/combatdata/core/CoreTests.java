@@ -1874,13 +1874,6 @@ public final class CoreTests {
 
     static void tipsAndTraining() {
         Lang.set(Lang.DE);
-        int[] c = new int[Detail.COUNT];
-        c[Detail.AIM_N] = 11; c[Detail.AIM_ON] = 10; c[Detail.JR_OK] = 1; c[Detail.JR_LATE] = 4;
-        String tip = Report.shortTip(new Progress.Metrics(11, 8, 5, 1, 0, 0, 0, 8 * 0.95, 4, 3), Detail.ofCounts(c));
-        check("tip: jump later/earlier from details", tip != null && tip.equals("Tipp: spring früher, direkt beim Treffer"));
-        check("tip: sample has a tip", FightSummary.sample().tip() != null && FightSummary.sample().tip().startsWith("Tipp:"));
-        check("tip: none when nothing is weak", Report.shortTip(new Progress.Metrics(20, 19, 0, 0, 0, 0, 0, 19 * 0.97, 0, 0),
-                Detail.ofCounts(20, 19)) == null);
         JrTraining tr = new JrTraining();
         tr.hit(); tr.verdict(LiveCombat.Jr.SUCCESS, 0, 1);
         tr.hit(); tr.verdict(LiveCombat.Jr.SUCCESS, 0, 2);

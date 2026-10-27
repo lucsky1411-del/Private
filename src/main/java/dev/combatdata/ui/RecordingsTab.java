@@ -201,6 +201,14 @@ final class RecordingsTab implements Tab {
         bw = ui.buttonWidth(renameL);
         bx -= bw + 4;
         ui.button(bx, fy, bw, 16, renameL, Ui.Kind.SECONDARY, sel != null, this::rename);
+        String shareL = t("Поделиться", "Share", "Teilen");
+        bw = ui.buttonWidth(shareL);
+        bx -= bw + 4;
+        ui.button(bx, fy, bw, 16, shareL, Ui.Kind.SECONDARY, liveSelected || (sel != null && sel.header() != null), () -> {
+            if (liveSelected) setStatus(t("Сначала сохраните буфер (F9), затем поделитесь записью.", "Save the buffer first (F9), then share the recording.",
+                    "Speichere zuerst den Puffer (F9) und teile dann die Aufnahme."), Theme.AMBER);
+            else share();
+        });
         bw = ui.buttonWidth(deleteL);
         bx -= bw + 4;
         if (liveSelected) ui.button(bx, fy, bw, 16, deleteL, Ui.Kind.DANGER, true, () -> menu.confirmReset(null));
@@ -341,6 +349,31 @@ final class RecordingsTab implements Tab {
                     menu.closeModal();
                     refresh();
                 }))));
+    }
+
+    /** Puts a copy into combatdata/shared, opens that folder and puts the file path on the clipboard. */
+    private void share() {
+        Recordings.Entry e = selectedEntry();
+        if (e == null) return;
+        try {
+            Path out = Recordings.share(e);
+            net.minecraft.client.Minecraft.getInstance().keyboardHandler.setClipboard(out.toAbsolutePath().toString());
+            try {
+                Util.getPlatform().openUri(out.getParent().toUri());
+            } catch (Exception ignored) {
+            }
+            setStatus(t("Файл в папке shared, путь скопирован. Отправьте его другу: он перетащит файл в меню.",
+                    "File is in the shared folder, path copied. Send it to a friend: they drag it into this menu.",
+                    "Die Datei liegt im Ordner shared, der Pfad ist kopiert. Schick sie einem Freund: er zieht sie einfach ins Menü."), Theme.GREEN);
+        } catch (Exception ex) {
+            setStatus(t("Не удалось поделиться: ", "Could not share: ", "Teilen fehlgeschlagen: ") + ex.getMessage(), Theme.RED);
+        }
+    }
+
+    void imported(int n) {
+        refresh();
+        setStatus(n > 0 ? t("Импортировано записей: ", "Recordings imported: ", "Importierte Aufnahmen: ") + n
+                : t("Нет подходящих файлов .cdrec", "No valid .cdrec files", "Keine gültigen .cdrec-Dateien"), n > 0 ? Theme.GREEN : Theme.RED);
     }
 
     private void openFolder() {

@@ -125,6 +125,8 @@ public final class ProgressData {
             for (Recordings.Entry e : list) {
                 i++;
                 if (e.header() == null) continue;
+                // A friend's recording is about them, not you: it stays out of your progress and reports.
+                if (Recordings.foreign(e.header())) continue;
                 String name = e.file().getFileName().toString();
                 names.add(name);
                 byFile.put(name, e);

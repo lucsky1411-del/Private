@@ -21,10 +21,6 @@ public final class FightSummary {
                     threeBlock, taken, null, null);
         }
 
-        /** The single most useful thing to change after this fight, short enough for the HUD; null if nothing stands out. */
-        public String tip() {
-            return metrics == null || detail == null ? null : Report.shortTip(metrics, detail);
-        }
 
         public Result(long startMs, long endMs, String opponent, int hits, int swings, int jrSuccess, int jrAttempts,
                       int maxCombo, int tradesWon, int tradesLost) {
