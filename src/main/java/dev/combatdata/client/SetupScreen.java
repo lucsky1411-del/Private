@@ -87,7 +87,7 @@ public final class SetupScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
         super.render(g, mouseX, mouseY, delta);
         int y = height / 2 - 34;
-        g.drawCenteredString(font, Component.literal("Combat Data"), width / 2, y - 44, 0xFFFFFFFF);
+        centered(g, "Combat Data", width / 2, y - 44, 0xFFFFFFFF);
         String a, b;
         if (step == 0) {
             a = t("Добро пожаловать! Шаг 1 из 2", "Welcome! Step 1 of 2", "Willkommen! Schritt 1 von 2");
@@ -98,17 +98,22 @@ public final class SetupScreen extends Screen {
                     "How do you want to use the mod? You can change everything in Settings later.",
                     "Wie willst du die Mod nutzen? Alles lässt sich später in den Einstellungen ändern.");
         }
-        g.drawCenteredString(font, Component.literal(a), width / 2, y - 30, 0xFFA0A0A0);
-        g.drawCenteredString(font, Component.literal(b), width / 2, y - 16, 0xFFE0E0E0);
+        centered(g, a, width / 2, y - 30, 0xFFA0A0A0);
+        centered(g, b, width / 2, y - 16, 0xFFE0E0E0);
         if (step == 1) {
             String hint = t("Наведите на вариант, чтобы увидеть описание", "Hover an option to see what it does",
                     "Fahr mit der Maus über eine Option, um zu sehen, was sie macht");
-            g.drawCenteredString(font, Component.literal(hint), width / 2, y + 3 * 24 + 36, 0xFF808080);
+            centered(g, hint, width / 2, y + 3 * 24 + 36, 0xFF808080);
         }
     }
 
     @Override
     public void onClose() {
         finish(-1);
+    }
+
+    /** Centered text with shadow; plain drawString so it works the same on every game version. */
+    private void centered(GuiGraphics g, String text, int cx, int y, int color) {
+        g.drawString(font, text, cx - font.width(text) / 2, y, color, true);
     }
 }

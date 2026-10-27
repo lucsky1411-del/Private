@@ -141,16 +141,21 @@ public final class QuickSettingsScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
         super.render(g, mouseX, mouseY, delta);
-        g.drawCenteredString(font, Component.literal("Combat Data"), width / 2, 14, 0xFFFFFFFF);
+        centered(g, "Combat Data", width / 2, 14, 0xFFFFFFFF);
         String sub = t("Быстрые настройки · всё остальное в полном меню (Right Shift)",
                 "Quick settings · everything else is in the full menu (Right Shift)",
                 "Schnelleinstellungen · alles andere im ganzen Menü (Rechte Shift)");
-        g.drawCenteredString(font, Component.literal(sub), width / 2, 24, 0xFFA0A0A0);
+        centered(g, sub, width / 2, 24, 0xFFA0A0A0);
     }
 
     @Override
     public void onClose() {
         CombatDataClient.saveSettings();
         minecraft.setScreen(parent);
+    }
+
+    /** Centered text with shadow; plain drawString so it works the same on every game version. */
+    private void centered(GuiGraphics g, String text, int cx, int y, int color) {
+        g.drawString(font, text, cx - font.width(text) / 2, y, color, true);
     }
 }
