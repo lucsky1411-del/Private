@@ -44,6 +44,7 @@ public final class CoreTests {
         coachExtras();
         tipsAndTraining();
         designs();
+        shareCodes();
         // Check names are ASCII: the Windows console (CP866) garbles Cyrillic.
         System.out.println("CoreTests: " + checks + " checks, " + failures + " failed");
         if (failures > 0) System.exit(1);
@@ -1910,5 +1911,27 @@ public final class CoreTests {
         a.dsWindowAlpha = 0;
         a.clamp();
         check("design: clamped", a.dsRadius == 8 && a.dsWindowAlpha == 10);
+    }
+
+    static void shareCodes() throws Exception {
+        UUID opp = new UUID(0, 7);
+        List<Event> ev = new ArrayList<>();
+        ev.add(new PositionEvent(900, 18, 0, 64, 0, 0f, List.of(new PositionEvent.Other(opp, 0, 64, 2.5, 0f))));
+        for (int i = 0; i < 10; i++) ev.add(atk(1000 + i * 600, opp, Outcome.HIT_CONFIRMED, 2.6, 1f));
+        Recording r = new Recording(1, "Steve", new UUID(1, 2), "1.21.11", 1_700_000_000_000L, 20_000, ev);
+        String code = ShareCode.encode(r, false, "test");
+        check("share code: prefix and url-safe", code.startsWith(ShareCode.PREFIX) && code.substring(7).matches("[A-Za-z0-9_-]+"));
+        Recording back = ShareCode.decode("Hey, here is my fight: " + code + " ok?");
+        check("share code: found in a message and decoded", back.player().equals("Steve") && back.events().size() == 10
+                && back.skipped(Features.POSITIONS) && back.events().get(0) instanceof AttackEvent);
+        Recording withPos = ShareCode.decode(ShareCode.encode(r, true, "test"));
+        check("share code: replay kept when asked", withPos.events().size() == 11 && !withPos.skipped(Features.POSITIONS));
+        boolean bad = false;
+        try {
+            ShareCode.decode("CDREC1:@@@");
+        } catch (java.io.IOException ex) {
+            bad = true;
+        }
+        check("share code: broken code refused", bad);
     }
 }

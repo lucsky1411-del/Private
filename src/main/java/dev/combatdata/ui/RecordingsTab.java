@@ -118,6 +118,10 @@ final class RecordingsTab implements Tab {
         bw = ui.buttonWidth(folderL);
         bx -= bw + 4;
         ui.button(bx, y, bw, 16, folderL, Ui.Kind.GHOST, true, this::openFolder);
+        String pasteL = narrow ? t("Код", "Code", "Code") : t("Вставить код", "Paste code", "Code einfügen");
+        bw = ui.buttonWidth(pasteL);
+        bx -= bw + 4;
+        ui.button(bx, y, bw, 16, pasteL, Ui.Kind.SECONDARY, true, this::pasteCode);
         String sortL = (narrow ? sortShort() : sortNames())[sort.ordinal()] + " ▾";
         bw = ui.buttonWidth(sortL);
         bx -= bw + 4;
@@ -204,11 +208,7 @@ final class RecordingsTab implements Tab {
         String shareL = t("Поделиться", "Share", "Teilen");
         bw = ui.buttonWidth(shareL);
         bx -= bw + 4;
-        ui.button(bx, fy, bw, 16, shareL, Ui.Kind.SECONDARY, liveSelected || (sel != null && sel.header() != null), () -> {
-            if (liveSelected) setStatus(t("Сначала сохраните буфер (F9), затем поделитесь записью.", "Save the buffer first (F9), then share the recording.",
-                    "Speichere zuerst den Puffer (F9) und teile dann die Aufnahme."), Theme.AMBER);
-            else share();
-        });
+        ui.button(bx, fy, bw, 16, shareL, Ui.Kind.SECONDARY, liveSelected || (sel != null && sel.header() != null), this::askShare);
         bw = ui.buttonWidth(deleteL);
         bx -= bw + 4;
         if (liveSelected) ui.button(bx, fy, bw, 16, deleteL, Ui.Kind.DANGER, true, () -> menu.confirmReset(null));
@@ -349,6 +349,75 @@ final class RecordingsTab implements Tab {
                     menu.closeModal();
                     refresh();
                 }))));
+    }
+
+    /** Share as a code (one line of text to paste anywhere) or as a file; works for the live buffer too. */
+    private void askShare() {
+        boolean live = liveSelected;
+        Recordings.Entry e = live ? null : selectedEntry();
+        if (!live && e == null) return;
+        List<String> lines = List.of(
+                t("Код: одна строка текста, вставьте её в Discord или чат. Друг нажмёт «Вставить код».",
+                        "Code: one line of text, paste it into Discord or any chat. Your friend presses \"Paste code\".",
+                        "Code: eine Zeile Text, füg sie in Discord oder einen Chat ein. Dein Freund drückt „Code einfügen“."),
+                t("Без повтора код короче. Длинный код Discord сам сделает файлом: его тоже можно перетащить в меню.",
+                        "Without the replay the code is shorter. Discord turns a long code into a file: that can be dropped into the menu too.",
+                        "Ohne Wiederholung ist der Code kürzer. Einen langen Code macht Discord zur Datei: die kann man auch ins Menü ziehen."));
+        menu.openModal(new Modal(t("Поделиться записью", "Share recording", "Aufnahme teilen"), lines, null, List.of(
+                new Modal.Btn(t("Отмена", "Cancel", "Abbrechen"), Ui.Kind.SECONDARY, s -> menu.closeModal()),
+                new Modal.Btn(t("Файл", "File", "Datei"), Ui.Kind.SECONDARY, s -> {
+                    menu.closeModal();
+                    if (live) setStatus(t("Для файла сначала сохраните буфер (F9).", "For a file, save the buffer first (F9).",
+                            "Für eine Datei zuerst den Puffer speichern (F9)."), Theme.AMBER);
+                    else share();
+                }),
+                new Modal.Btn(t("Код с повтором", "Code with replay", "Code mit Wiederholung"), Ui.Kind.SECONDARY, s -> {
+                    menu.closeModal();
+                    shareCode(live, e, true);
+                }),
+                new Modal.Btn(t("Код", "Code", "Code"), Ui.Kind.PRIMARY, s -> {
+                    menu.closeModal();
+                    shareCode(live, e, false);
+                }))));
+    }
+
+    private void shareCode(boolean live, Recordings.Entry e, boolean positions) {
+        java.util.function.Consumer<Recording> done = rec -> {
+            try {
+                String code = dev.combatdata.core.ShareCode.encode(rec, positions, Recorder.modVersion());
+                net.minecraft.client.Minecraft.getInstance().keyboardHandler.setClipboard(code);
+                setStatus(t("Код скопирован (", "Code copied (", "Code kopiert (") + Fmt.size(code.length())
+                        + t("). Вставьте его другу в Discord.", "). Paste it to a friend in Discord.", "). Füg ihn bei deinem Freund in Discord ein."), Theme.GREEN);
+            } catch (Exception ex) {
+                setStatus(t("Не удалось создать код: ", "Could not create the code: ", "Code konnte nicht erstellt werden: ") + ex.getMessage(), Theme.RED);
+            }
+        };
+        if (live) {
+            Recording rec = Recorder.liveCopy();
+            if (rec == null || rec.firstCombatMs() < 0) {
+                setStatus(t("В буфере пока нет боя.", "No fight in the buffer yet.", "Noch kein Kampf im Puffer."), Theme.AMBER);
+                return;
+            }
+            done.accept(rec);
+        } else {
+            setStatus(t("Готовлю код…", "Preparing the code…", "Bereite den Code vor…"), Theme.MUTED);
+            Recordings.readAsync(e.file(), done, ex -> setStatus(t("Не удалось открыть: ", "Could not open: ", "Konnte nicht öffnen: ")
+                    + ex.getMessage(), Theme.RED));
+        }
+    }
+
+    /** Imports a recording from a share code on the clipboard. */
+    private void pasteCode() {
+        String clip = net.minecraft.client.Minecraft.getInstance().keyboardHandler.getClipboard();
+        try {
+            Recording rec = dev.combatdata.core.ShareCode.decode(clip);
+            Path out = Recordings.importRecording(rec);
+            refresh();
+            setStatus(t("Запись импортирована: ", "Recording imported: ", "Aufnahme importiert: ") + out.getFileName(), Theme.GREEN);
+        } catch (Exception ex) {
+            setStatus(t("В буфере обмена нет кода записи (начинается с CDREC1:).", "No recording code on the clipboard (it starts with CDREC1:).",
+                    "Kein Aufnahme-Code in der Zwischenablage (er beginnt mit CDREC1:)."), Theme.RED);
+        }
     }
 
     /** Puts a copy into combatdata/shared, opens that folder and puts the file path on the clipboard. */

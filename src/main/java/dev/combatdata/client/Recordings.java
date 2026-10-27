@@ -124,6 +124,21 @@ public final class Recordings {
         return out;
     }
 
+    /** Saves a recording someone sent you as a code; the file name says whose it is and when. */
+    public static Path importRecording(Recording r) throws java.io.IOException {
+        Path dir = dir();
+        java.nio.file.Files.createDirectories(dir);
+        String who = r.player() == null ? "import" : r.player().replaceAll("[^A-Za-z0-9_]", "");
+        String when = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm").format(
+                java.time.Instant.ofEpochMilli(r.wallStartMs()).atZone(java.time.ZoneId.systemDefault()));
+        String base = who + "_" + when;
+        Path out = dir.resolve(base + Cdrec.EXT);
+        for (int k = 2; java.nio.file.Files.exists(out); k++) out = dir.resolve(base + "_" + k + Cdrec.EXT);
+        Cdrec.write(out, r, Recorder.modVersion());
+        ProgressData.invalidate();
+        return out;
+    }
+
     /**
      * Imports recordings someone sent you (drag and drop onto the menu). Only valid .cdrec files are copied; a file
      * with the same name is not overwritten. Returns how many were imported.
@@ -133,7 +148,14 @@ public final class Recordings {
         Path dir = dir();
         for (Path f : files) {
             try {
-                if (!f.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".cdrec")) continue;
+                String fname = f.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
+                // A share code saved as text (Discord turns long messages into message.txt).
+                if (fname.endsWith(".txt")) {
+                    importRecording(dev.combatdata.core.ShareCode.decode(java.nio.file.Files.readString(f)));
+                    n++;
+                    continue;
+                }
+                if (!fname.endsWith(".cdrec")) continue;
                 Cdrec.readHeader(f);
                 java.nio.file.Files.createDirectories(dir);
                 String name = f.getFileName().toString();

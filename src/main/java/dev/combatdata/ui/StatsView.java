@@ -147,6 +147,7 @@ final class StatsView {
 
     void set(Recording r, boolean keepFilter) {
         rec = r;
+        aimSel = -1;
         key = null;
         if (!keepFilter) {
             opp = null;
@@ -192,6 +193,7 @@ final class StatsView {
                 + showFiltered + "/" + s.tradeParams() + "/" + showProjectiles;
         if (k.equals(key)) return;
         key = k;
+        aimSel = -1;
         long started = System.nanoTime();
         sf = cur;
         all = Stats.compute(rec, s.jumpParams(), Stats.Filter.ALL, AttackEvent.DEFAULT_RANGE, s.interpMs, sf, s.tradeParams());
@@ -925,6 +927,41 @@ final class StatsView {
         return s == null ? "—" : s;
     }
 
+    private int aimSel = -1;
+
+    /** Details of one swing picked on the silhouette: the hit data plus where the crosshair was and how things moved. */
+    private int aimDetails(Ui ui, int x, int y, int w, AimAnalysis.Sample sm) {
+        AttackEvent a = sm.a();
+        List<String[]> rows = new ArrayList<>(hitDetails(a, CombatDataClient.settings()));
+        String where = sm.onTarget() ? t("на противнике", "on the opponent", "auf dem Gegner") : switch (sm.miss()) {
+            case LEFT -> t("левее противника", "left of the opponent", "links neben dem Gegner");
+            case RIGHT -> t("правее противника", "right of the opponent", "rechts neben dem Gegner");
+            case ABOVE -> t("над головой", "over the head", "über dem Kopf");
+            case BELOW -> t("под ногами", "under the feet", "unter den Füßen");
+        };
+        rows.add(new String[]{t("Прицел был", "Crosshair was", "Fadenkreuz war"), where});
+        if (Double.isFinite(sm.y())) rows.add(new String[]{t("Высота на теле", "Height on the body", "Höhe am Körper"), Fmt.pct(sm.y() * 100)});
+        if (Double.isFinite(sm.side())) rows.add(new String[]{t("Противник вбок", "Opponent sideways", "Gegner seitlich"),
+                Fmt.signed(sm.side(), 1) + t(" бл/с", " bl/s", " Bl./s") + (sm.strafing() ? t(" (стрейф)", " (strafe)", " (Strafe)") : "")});
+        if (Double.isFinite(sm.up())) rows.add(new String[]{t("Противник вверх/вниз", "Opponent up/down", "Gegner hoch/runter"), Fmt.signed(sm.up(), 1) + t(" бл/с", " bl/s", " Bl./s")});
+        if (Double.isFinite(sm.yawRate())) rows.add(new String[]{t("Скорость мыши", "Mouse speed", "Mausgeschwindigkeit"),
+                Fmt.num(Math.abs(sm.yawRate()), 0) + "°/s" + (sm.flick() ? t(" (резко)", " (flick)", " (schnell)") : "")});
+        int bh = 16 + rows.size() * LINE + 4;
+        box(ui, x, y, w, bh, false);
+        ui.text(Theme.head(t("Выбранный удар", "Selected swing", "Ausgewählter Schlag")), x + 6, y + 4, Theme.ACCENT);
+        String close = "×";
+        boolean ch = ui.hover(x + w - 16, y + 2, 12, 12);
+        ui.text(close, x + w - 12, y + 4, ch ? Theme.TEXT_STRONG : Theme.MUTED);
+        ui.click(x + w - 16, y + 2, 12, 12, () -> aimSel = -1);
+        int ry = y + 16;
+        for (String[] r : rows) {
+            ui.text(Draw.ellipsize(ui.font, r[0], w / 2 - 8), x + 6, ry, Theme.MUTED);
+            ui.textRight(Draw.ellipsize(ui.font, r[1], w / 2 - 8), x + w - 6, ry, Theme.TEXT);
+            ry += LINE;
+        }
+        return y + bh + 8;
+    }
+
     private boolean visible(int y, int h) {
         return y + h >= py && y <= py + ph;
     }
@@ -1525,10 +1562,21 @@ final class StatsView {
         g.renderOutline(ax - (int) hw, top, (int) (hw * 2), sh, Theme.CTRL_HOVER);
         int minX = x + 2, maxX = x + cardW - 3, minY = y + 15, maxY = y + cardH - 3;
         int head = 0, legs = 0;
-        for (AimAnalysis.Sample sm : ar.samples()) {
+        int selX = Integer.MIN_VALUE, selY = 0, hoverIdx = -1;
+        if (aimSel >= ar.samples().size()) aimSel = -1;
+        for (int si = 0; si < ar.samples().size(); si++) {
+            AimAnalysis.Sample sm = ar.samples().get(si);
             int cx = ax + (int) Math.round(sm.x() * hw), cy = top + (int) Math.round((1 - sm.y()) * sh);
             cx = Math.max(minX, Math.min(maxX, cx));
             cy = Math.max(minY, Math.min(maxY, cy));
+            // Every swing can be clicked for its details, like the dots on the hits chart.
+            if (ui.hover(cx - 2, cy - 2, 5, 5)) hoverIdx = si;
+            int idx = si;
+            ui.click(cx - 2, cy - 2, 5, 5, () -> aimSel = aimSel == idx ? -1 : idx);
+            if (si == aimSel) {
+                selX = cx;
+                selY = cy;
+            }
             int color;
             if (!sm.onTarget()) color = Theme.alpha(Theme.RED, 0xC0);
             else if (sm.a().outcome() == Outcome.MISS) color = Theme.alpha(Theme.MUTED, 0xA0);
@@ -1539,6 +1587,17 @@ final class StatsView {
                 if (sm.y() >= HEAD_V) head++;
                 else if (sm.y() < LEGS_V) legs++;
             }
+        }
+        if (hoverIdx >= 0 && hoverIdx != aimSel) {
+            AimAnalysis.Sample hs = ar.samples().get(hoverIdx);
+            ui.tooltip(outcomeName(hs.a(), interp) + " · " + Fmt.clockMs(hs.a().t()) + " · " + Fmt.num(hs.a().reach(), 2) + t(" бл.", " bl.", " Bl.")
+                    + t(" · клик: подробно", " · click: details", " · Klick: Details"));
+        }
+        if (selX != Integer.MIN_VALUE) {
+            g.fill(selX - 4, selY - 4, selX + 5, selY - 3, Theme.TEXT_STRONG);
+            g.fill(selX - 4, selY + 4, selX + 5, selY + 5, Theme.TEXT_STRONG);
+            g.fill(selX - 4, selY - 4, selX - 3, selY + 5, Theme.TEXT_STRONG);
+            g.fill(selX + 4, selY - 4, selX + 5, selY + 5, Theme.TEXT_STRONG);
         }
         // Where to aim (green cross) and where you aim on average (accent cross), joined by a line.
         int tx = ax, ty = top + (int) Math.round((1 - AimAnalysis.BEST_Y) * sh);
@@ -1605,6 +1664,12 @@ final class StatsView {
             ry += th + 3;
         }
         y = Math.max(y + cardH, ry) + 8;
+        if (aimSel >= 0) y = aimDetails(ui, x, y, w, ar.samples().get(aimSel));
+        else {
+            line(ui, w, t("Клик по точке на силуэте: подробности удара.", "Click a dot on the silhouette for the details of that swing.",
+                    "Klick auf einen Punkt in der Silhouette: Details zu diesem Schlag."), x, y, Theme.DIM);
+            y += LINE + 6;
+        }
 
         ui.text(t("Попадание прицелом по ситуациям", "Aim by situation", "Zielen nach Situation"), x, y, Theme.TEXT_STRONG);
         y += LINE + 2;

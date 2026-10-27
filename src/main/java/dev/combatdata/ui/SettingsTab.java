@@ -633,12 +633,7 @@ final class SettingsTab implements Tab {
                         "Kein Design-Code in der Zwischenablage (er beginnt mit cddesign1;).");
                 return;
             }
-            if (draft.customThemes.size() < dev.combatdata.core.Themes.MAX_CUSTOM) {
-                dev.combatdata.core.ThemeSpec n = new dev.combatdata.core.ThemeSpec(dev.combatdata.core.Themes.newId(draft.customThemes),
-                        dev.combatdata.core.Themes.uniqueName(ts.name(), draft.customThemes, null), ts.colors());
-                draft.customThemes.add(n);
-                draft.theme = n.id();
-            }
+            setPalette(ts.colors());
             designStatus = t("Дизайн вставлен. Нажмите «Применить».", "Design pasted. Press Apply.", "Design eingefügt. Drück „Übernehmen“.");
         });
         y = fl.bottom() + 2;
@@ -652,6 +647,53 @@ final class SettingsTab implements Tab {
     }
 
     private String designStatus;
+
+    static final String DESIGN_THEME = "custom-design";
+
+    /** The custom design owns one palette; created from the colors you had when you first open it. */
+    private int designPalette() {
+        for (int i = 0; i < draft.customThemes.size(); i++) {
+            if (draft.customThemes.get(i).id().equals(DESIGN_THEME)) {
+                draft.theme = DESIGN_THEME;
+                return i;
+            }
+        }
+        dev.combatdata.core.ThemeSpec base = draft.themeSpec();
+        draft.customThemes.add(new dev.combatdata.core.ThemeSpec(DESIGN_THEME, t("Мой дизайн", "My design", "Mein Design"), base.colors()));
+        draft.theme = DESIGN_THEME;
+        return draft.customThemes.size() - 1;
+    }
+
+    private void setPalette(int[] colors) {
+        int i = designPalette();
+        dev.combatdata.core.ThemeSpec cur = draft.customThemes.get(i);
+        draft.customThemes.set(i, new dev.combatdata.core.ThemeSpec(DESIGN_THEME, cur.name(), colors));
+    }
+
+    /** Color palette of the custom design: every color of the menu, each with sliders and a hex field. */
+    private int palette(Ui ui, int x, int y, int w) {
+        int index = designPalette();
+        dev.combatdata.core.ThemeSpec sel = draft.customThemes.get(index);
+        y = heading(ui, x, y, w, t("Палитра цветов", "Color palette", "Farbpalette"));
+        ui.text(Draw.ellipsize(ui.font, t("Начать с цветов:", "Start from the colors of:", "Farben übernehmen von:"), w - 20), x + 10, y + 6, Theme.MUTED);
+        Flow fl = new Flow(x + 10, y + 18, w - 20);
+        for (dev.combatdata.core.ThemeSpec b : dev.combatdata.core.Themes.BUILTIN) {
+            String name = dev.combatdata.core.Themes.displayName(b);
+            int cw = ui.font.width(name) + 22;
+            int[] p = fl.place(cw, false);
+            ui.chip(p[0], p[1], cw, "  " + name, false, () -> {
+                setPalette(b.colors());
+                editRole = -1;
+            });
+            ui.g.fill(p[0] + 4, p[1] + 3, p[0] + 10, p[1] + 9, b.color(dev.combatdata.core.ThemeSpec.ACCENT));
+        }
+        y = fl.bottom() + 2;
+        y = colorRows(ui, x, y + 4, w, sel, index);
+        ui.text(Draw.ellipsize(ui.font, t("Клик по цвету: ползунки, по коду: ввести hex. Сохраняется по «Применить».",
+                "Click a color for sliders, its code to type hex. Saved on Apply.",
+                "Klick auf eine Farbe für Regler, auf den Code zum Hex-Eingeben. Gespeichert mit „Übernehmen“."), w - 20), x + 10, y + 6, Theme.DIM);
+        return y + 22;
+    }
 
     private int stepRow(Ui ui, int x, int y, int w, String label, String hint, String value, boolean changed, Runnable minus, Runnable plus) {
         int h = hint == null ? 26 : 30, sw = 72, right = x + w - 10;
@@ -684,7 +726,10 @@ final class SettingsTab implements Tab {
                 "Der Stil bestimmt Formen und Knöpfe, das Theme unten die Farben: du kannst es in jedem Stil ändern."), w - 20),
                 x + 10, y + 4, Theme.DIM);
         y += 16;
-        if (draft.uiStyle == dev.combatdata.core.Themes.STYLE_CUSTOM) y = designEditor(ui, x, y, w);
+        if (draft.uiStyle == dev.combatdata.core.Themes.STYLE_CUSTOM) {
+            y = designEditor(ui, x, y, w);
+            return palette(ui, x, y, w);
+        }
         String head = t("Тема", "Theme");
         y = heading(ui, x, y, w, head);
         ui.info(x + 10 + ui.font.width(head) + 6, y - 13, Help.themes());

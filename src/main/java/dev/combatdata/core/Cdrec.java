@@ -29,8 +29,13 @@ public final class Cdrec {
 
     public static void write(Path file, Recording r, String modVersion) throws IOException {
         Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
-        try (Writer out = new BufferedWriter(new OutputStreamWriter(
-                new GZIPOutputStream(Files.newOutputStream(tmp)), StandardCharsets.UTF_8))) {
+        writeTo(Files.newOutputStream(tmp), r, modVersion);
+        Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    /** The file format to any stream (closes it): gzip of one JSON header line and one line per event. */
+    public static void writeTo(java.io.OutputStream raw, Recording r, String modVersion) throws IOException {
+        try (Writer out = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(raw), StandardCharsets.UTF_8))) {
             out.write(Json.write(header(r, modVersion)));
             out.write('\n');
             for (Event e : r.events()) {
@@ -38,11 +43,14 @@ public final class Cdrec {
                 out.write('\n');
             }
         }
-        Files.move(tmp, file, StandardCopyOption.REPLACE_EXISTING);
     }
 
     public static Recording read(Path file) throws IOException {
-        try (BufferedReader in = reader(file)) {
+        return readFrom(Files.newInputStream(file));
+    }
+
+    public static Recording readFrom(java.io.InputStream raw) throws IOException {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(raw), StandardCharsets.UTF_8))) {
             String first = in.readLine();
             if (first == null) throw new IOException("Пустой файл записи");
             Map<String, Object> h = obj(Json.parse(first));
