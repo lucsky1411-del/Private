@@ -71,20 +71,46 @@ public final class ProgressData {
         return Report.sessions(snap.summaries(), s.reportByDay, java.time.ZoneId.systemDefault());
     }
 
-    /** Tells the player in chat when a new overall report is ready (every N sessions). The first run only remembers. */
+    /**
+     * Tells the player in chat when a new overall report is ready (every N sessions), a badge is earned or a training
+     * goal is reached. The first run only remembers what is already there, so old achievements are not announced.
+     */
     private static void announceMilestone(Snapshot snap) {
         net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
         // Settings belong to the main thread.
         mc.execute(() -> {
             Settings s = CombatDataClient.settings();
-            int n = sessions(snap, s).size(), m = Report.milestone(n, s.reportStep);
-            if (m <= s.lastReport) return;
-            boolean first = s.lastReport == 0 && n > s.reportStep;
-            s.lastReport = m;
+            List<Report.Session> ss = sessions(snap, s);
+            int n = ss.size(), m = Report.milestone(n, s.reportStep);
+            boolean init = !s.announced.startsWith("init;");
+            Set<String> done = new LinkedHashSet<>(Arrays.asList(s.announced.replaceFirst("^init;", "").split(",")));
+            done.remove("");
+            List<String> news = new ArrayList<>();
+            if (m > s.lastReport) {
+                boolean first = s.lastReport == 0 && n > s.reportStep;
+                s.lastReport = m;
+                if (!first) news.add(Lang.t("Новый общий отчёт: " + m + " сессий. Меню → Отчёт",
+                        "New overall report: " + m + " sessions. Menu → Report",
+                        "Neuer Gesamtbericht: " + m + " Sessions. Menü → Bericht"));
+            }
+            for (String id : Coach.earned(ss)) {
+                if (done.add("b:" + id) && !init) {
+                    Coach.Badge b = Coach.badge(id);
+                    news.add(Lang.t("Новое достижение: ", "New badge: ", "Neues Abzeichen: ") + b.name() + " (" + b.hint() + ")");
+                }
+            }
+            Report.Result r = Report.last(ss, s.reportStep);
+            for (Coach.Goal g : Coach.parseGoals(s.goals)) {
+                Report.Line l = r.line(g.skill());
+                String key = "g:" + g.skill() + ":" + g.target();
+                if (l != null && g.reached(l.value()) && done.add(key) && !init) {
+                    news.add(Lang.t("Цель достигнута: ", "Goal reached: ", "Ziel erreicht: ") + l.name() + " " + Report.pctText(l.value())
+                            + " (" + Lang.t("цель ", "goal ", "Ziel ") + g.target() + "%)");
+                }
+            }
+            s.announced = "init;" + String.join(",", done);
             CombatDataClient.saveSettings();
-            if (!first) Recorder.chat(mc, Lang.t("Новый общий отчёт: " + m + " сессий. Меню → Отчёт",
-                    "New overall report: " + m + " sessions. Menu → Report",
-                    "Neuer Gesamtbericht: " + m + " Sessions. Menü → Bericht"));
+            for (String msg : news) Recorder.chat(mc, msg);
         });
     }
 

@@ -58,6 +58,9 @@ public final class Settings {
     public int reportStep = 5;
     public boolean reportByDay = true;
     public int lastReport = 0;
+    /** Training goals as "SKILL:target,..." and what was already announced (goals reached, badges). */
+    public String goals = "";
+    public String announced = "";
     public boolean fsTitle = true, fsHits = true, fsJr = true, fsCombo = true, fsTrades = true, fsReach = false,
             fsThreeBlock = false, fsTaken = false, fsColors = true;
     public int fsLayout = FightSummary.LAYOUT_TWO_LINES, fsBgOpacity = 63, fsDelaySec = 10, fsShowSec = 5;
@@ -251,6 +254,7 @@ public final class Settings {
         setupDone = c.setupDone;
         reportStep = c.reportStep;
         reportByDay = c.reportByDay;
+        goals = c.goals;
         fsTitle = c.fsTitle;
         fsHits = c.fsHits;
         fsJr = c.fsJr;
@@ -281,6 +285,7 @@ public final class Settings {
         a.remove("fsY");
         a.remove("indicators");
         a.remove("lastReport");
+        a.remove("announced");
         int n = 0;
         for (Map.Entry<String, Object> e : a.entrySet()) if (!e.getValue().equals(b.get(e.getKey()))) n++;
         return n;
@@ -340,6 +345,8 @@ public final class Settings {
         m.put("reportStep", reportStep);
         m.put("reportByDay", reportByDay);
         m.put("lastReport", lastReport);
+        m.put("goals", goals);
+        m.put("announced", announced);
         m.put("fsTitle", fsTitle);
         m.put("fsHits", fsHits);
         m.put("fsJr", fsJr);
@@ -414,6 +421,8 @@ public final class Settings {
         if (m.get("reportStep") instanceof Number n) s.reportStep = n.intValue();
         if (m.get("reportByDay") instanceof Boolean b) s.reportByDay = b;
         if (m.get("lastReport") instanceof Number n) s.lastReport = n.intValue();
+        if (m.get("goals") instanceof String g) s.goals = g;
+        if (m.get("announced") instanceof String g) s.announced = g;
         if (m.get("fsTitle") instanceof Boolean b) s.fsTitle = b;
         if (m.get("fsHits") instanceof Boolean b) s.fsHits = b;
         if (m.get("fsJr") instanceof Boolean b) s.fsJr = b;

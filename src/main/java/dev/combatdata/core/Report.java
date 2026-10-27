@@ -127,7 +127,7 @@ public final class Report {
     }
 
     /** {good, fair} marks; for CAUGHT the values are upper limits. */
-    static double[] marks(Skill s) {
+    public static double[] marks(Skill s) {
         return switch (s) {
             case AIM -> new double[]{85, 70};
             case HITTING -> new double[]{75, 60};
@@ -158,15 +158,15 @@ public final class Report {
         };
     }
 
-    static String pctText(double v) {
+    public static String pctText(double v) {
         return Double.isFinite(v) ? Math.round(v) + "%" : "—";
     }
 
-    static String signed(double v) {
+    public static String signed(double v) {
         return (v >= 0 ? "+" : "−") + Math.round(Math.abs(v)) + "%";
     }
 
-    static double value(Skill s, Progress.Metrics m, Detail d) {
+    public static double value(Skill s, Progress.Metrics m, Detail d) {
         return switch (s) {
             case AIM -> Detail.pct(d.get(Detail.AIM_ON), d.get(Detail.AIM_N), SkillScores.MIN_AIM);
             case HITTING -> Detail.pct(m.confirmed(), m.attacks(), SkillScores.MIN_ATTACKS);

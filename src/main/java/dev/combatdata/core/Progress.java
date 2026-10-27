@@ -75,7 +75,10 @@ public final class Progress {
 
     public enum Group { RECORDING, DAY }
 
-    public record Opp(String name, Metrics m) {
+    public record Opp(String name, Metrics m, Detail d) {
+        public Opp(String name, Metrics m) {
+            this(name, m, Detail.ZERO);
+        }
     }
 
     public record Summary(String file, long wallStartMs, long durationMs, List<String> servers, Metrics all,
@@ -107,7 +110,7 @@ public final class Progress {
 
     /** Bump the version when the summary format changes; cached summaries with an older key are recomputed. */
     public static String cacheKey(StatFilter sf, JumpResetEvaluator.Params p, int interpMs, long tradeGapMs) {
-        return "v3/" + sf + "/" + p + "/" + interpMs + "/" + tradeGapMs;
+        return "v4/" + sf + "/" + p + "/" + interpMs + "/" + tradeGapMs;
     }
 
     public static Summary summarize(String file, Recording r, JumpResetEvaluator.Params p, int interpMs, StatFilter sf) {
@@ -131,11 +134,12 @@ public final class Progress {
             if (o.uuid() == null) continue;
             Stats.Result one = Stats.compute(sub, p, new Stats.Filter(0, Long.MAX_VALUE, o.uuid()),
                     AttackEvent.DEFAULT_RANGE, interpMs, sf, tradeGapMs);
-            opps.put(o.uuid(), new Opp(o.name(), Metrics.of(one)));
+            List<Event> oe = Stats.events(sub, new Stats.Filter(0, Long.MAX_VALUE, o.uuid()));
+            opps.put(o.uuid(), new Opp(o.name(), Metrics.of(one), Detail.of(one, AimAnalysis.analyze(oe, AttackEvent.DEFAULT_RANGE))));
         }
         Set<String> servers = new LinkedHashSet<>();
         for (Event e : r.events()) if (e instanceof SegmentEvent s && s.server() != null) servers.add(s.server());
-        Detail detail = Detail.of(all, AimAnalysis.analyze(kept, AttackEvent.DEFAULT_RANGE));
+        Detail detail = Detail.of(all, AimAnalysis.analyze(kept, AttackEvent.DEFAULT_RANGE), JumpResetEvaluator.evaluate(kept, p));
         return new Summary(file, r.wallStartMs(), r.durationMs(), List.copyOf(servers), Metrics.of(all), opps, detail);
     }
 
@@ -267,6 +271,7 @@ public final class Progress {
         for (Map.Entry<UUID, Opp> e : s.opponents().entrySet()) {
             Map<String, Object> x = metricsJson(e.getValue().m());
             x.put("name", e.getValue().name());
+            x.put("det", e.getValue().d().toJson());
             opp.put(e.getKey().toString(), x);
         }
         o.put("opp", opp);
@@ -284,7 +289,8 @@ public final class Progress {
                 try {
                     UUID id = UUID.fromString(String.valueOf(e.getKey()));
                     Object name = e.getValue() instanceof Map<?, ?> x ? x.get("name") : null;
-                    opps.put(id, new Opp(name == null ? null : name.toString(), metrics(e.getValue())));
+                    opps.put(id, new Opp(name == null ? null : name.toString(), metrics(e.getValue()),
+                            Detail.fromJson(e.getValue() instanceof Map<?, ?> x ? x.get("det") : null)));
                 } catch (IllegalArgumentException ignored) {
                 }
             }

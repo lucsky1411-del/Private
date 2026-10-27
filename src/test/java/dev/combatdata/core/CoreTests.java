@@ -41,6 +41,7 @@ public final class CoreTests {
         aimCoach();
         coachAndLanguage();
         reports();
+        coachExtras();
         // Check names are ASCII: the Windows console (CP866) garbles Cyrillic.
         System.out.println("CoreTests: " + checks + " checks, " + failures + " failed");
         if (failures > 0) System.exit(1);
@@ -1826,6 +1827,47 @@ public final class CoreTests {
         check("report: settings saved", sb.reportStep == 7 && !sb.reportByDay && sb.lastReport == 14 && new Settings().diffCount(sb) >= 2);
         Lang.set(Lang.DE);
         check("report: german text", String.join(" ", r.headline(true)).contains("Größte Baustelle"));
+        Lang.setEnglish(false);
+    }
+
+    static void coachExtras() {
+        Lang.set(Lang.EN);
+        int[] c = new int[Detail.COUNT];
+        c[Detail.AIM_N] = 40; c[Detail.AIM_ON] = 37; c[Detail.JR_OK] = 8; c[Detail.JR_LATE] = 2; c[Detail.MAX_COMBO] = 6; c[Detail.JR_STREAK] = 5;
+        c[Detail.TR_WON] = 5; c[Detail.TR_LOST] = 1;
+        Detail good = Detail.ofCounts(c);
+        c[Detail.MAX_COMBO] = 3; c[Detail.JR_STREAK] = 2;
+        Detail other = Detail.ofCounts(c);
+        check("detail: records keep the best, not the sum", good.plus(other).get(Detail.MAX_COMBO) == 6 && good.plus(other).get(Detail.JR_STREAK) == 5
+                && good.plus(other).get(Detail.AIM_N) == 80);
+        check("detail: grid cells", Detail.gridCell(0, 0.5) == 5 * Detail.GRID_W + 3 && Detail.gridCell(-9, 9) == 0
+                && Detail.gridCell(9, -9) == Detail.GRID_CELLS - 1);
+        Progress.Metrics m = new Progress.Metrics(40, 35, 10, 8, 0, 0, 0, 35 * 0.95, 6, 4);
+        List<Report.Session> ss = new ArrayList<>();
+        for (int i = 0; i < 6; i++) ss.add(new Report.Session(i * 1000L, i * 1000L + 500, 1, m, i == 2 ? good : other));
+        var earned = Coach.earned(ss);
+        check("badges: earned", earned.contains("sessions-5") && earned.contains("aim-90") && earned.contains("jr-streak-5")
+                && earned.contains("combo-5") && !earned.contains("combo-8") && !earned.contains("sessions-25"));
+        var rec = Coach.records(ss);
+        check("records: best combo with date", rec.stream().anyMatch(b -> b.id().equals("combo") && b.value() == 6 && b.atMs() == 2000));
+        List<Coach.Goal> goals = Coach.parseGoals("JUMP_RESET:60, AIM:90,CAUGHT:10,BOGUS:5,AIM:50");
+        check("goals: parsed", goals.size() == 3 && goals.get(1).target() == 90 && Coach.goalsText(goals).equals("JUMP_RESET:60,AIM:90,CAUGHT:10"));
+        check("goals: reached and progress", goals.get(0).reached(65) && !goals.get(0).reached(55) && goals.get(2).reached(8)
+                && Math.abs(goals.get(0).progress(30) - 0.5) < 1e-9);
+        Map<UUID, Progress.Opp> opp = Map.of(new UUID(0, 9), new Progress.Opp("Bob", m, good));
+        List<Progress.Summary> sums = List.of(new Progress.Summary("a", 1000, 100, List.of(), m, opp, good),
+                new Progress.Summary("b", 2000, 100, List.of(), m, opp, good));
+        var rivals = Coach.rivals(sums, 0, 5000, 5);
+        check("rivals: merged per opponent", rivals.size() == 1 && rivals.get(0).name().equals("Bob") && rivals.get(0).sessions() == 2
+                && rivals.get(0).m().attacks() == 80);
+        Report.Result r = Report.last(ss, 3);
+        String share = Coach.shareText(r, "Last 3");
+        check("share: text has verdict and skills", share.startsWith("Combat Data · Last 3") && share.contains("Aim: ") && share.contains("Jump reset"));
+        Settings st = new Settings();
+        st.goals = "AIM:90";
+        st.announced = "init;b:combo-5";
+        Settings sb = Settings.fromMap(st.toMap());
+        check("settings: goals and announced saved", sb.goals.equals("AIM:90") && sb.announced.equals("init;b:combo-5"));
         Lang.setEnglish(false);
     }
 }
