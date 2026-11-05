@@ -9,7 +9,7 @@ import java.util.*;
 
 final class StatsView {
     static final int OVERVIEW = 0, ATTACK = 1, DEFENSE = 2, FIGHTS = 3;
-    static final int A_HITS = 0, A_AIM = 1, A_STRIKES = 2, A_COMBO = 3, A_WTAP = 4, A_THREE = 5;
+    static final int A_HITS = 0, A_AIM = 1, A_STRIKES = 2, A_THREE = 3;
     static final int D_JUMP = 0, D_KNOCKBACK = 1, D_TAKEN = 2;
     static final int F_OPPONENTS = 0, F_FIGHTS = 1, F_TRADES = 2, F_DISTANCE = 3, F_TIMELINE = 4;
 
@@ -22,16 +22,16 @@ final class StatsView {
     private static String[] modes(int sub, boolean narrow) {
         boolean en = Lang.english();
         if (Lang.german()) return switch (sub) {
-            case ATTACK -> narrow ? new String[]{"Treffer", "Zielen", "Arten", "Combo", "W-Tap", "3 Block"}
-                    : new String[]{"Treffer", "Zielen", "Schlagarten", "Combos", "W-Tap", "3 Block Hits"};
+            case ATTACK -> narrow ? new String[]{"Treffer", "Zielen", "Arten", "3 Block"}
+                    : new String[]{"Treffer", "Zielen", "Schlagarten", "3 Block Hits"};
             case DEFENSE -> new String[]{"Jump Reset", "Rückstoß", narrow ? "Auf mich" : "Treffer auf mich"};
             default -> new String[]{"Gegner", "Kämpfe", "Trades", narrow ? "Dist." : "Distanz", narrow ? "Zeit" : "Zeitleiste"};
         };
         return switch (sub) {
-            case ATTACK -> en ? (narrow ? new String[]{"Hits", "Aim", "Types", "Combo", "W-tap", "3 block"}
-                    : new String[]{"Hits", "Aim", "Strikes", "Combos", "W-tap", "3 block hits"})
-                    : narrow ? new String[]{"Попад.", "Прицел", "Удары", "Комбо", "W-tap", "3 block"}
-                    : new String[]{"Попадания", "Прицел", "Удары", "Комбо", "W-tap", "3 block hit"};
+            case ATTACK -> en ? (narrow ? new String[]{"Hits", "Aim", "Types", "3 block"}
+                    : new String[]{"Hits", "Aim", "Strikes", "3 block hits"})
+                    : narrow ? new String[]{"Попад.", "Прицел", "Удары", "3 block"}
+                    : new String[]{"Попадания", "Прицел", "Удары", "3 block hit"};
             case DEFENSE -> en ? new String[]{"Jump reset", "Knockback", narrow ? "On me" : "Hits on me"}
                     : new String[]{"Jump reset", "Отлёт", narrow ? "По мне" : "Удары по мне"};
             default -> en ? new String[]{narrow ? "Opp." : "Opponents", "Fights", "Trades", narrow ? "Dist." : "Distance", narrow ? "Time" : "Timeline"}
@@ -49,7 +49,7 @@ final class StatsView {
         for (int i = 0; i < n; i++) all[i] = i;
         if (CombatDataClient.settings().expertMode) return all;
         int[] simple = switch (sub) {
-            case ATTACK -> new int[]{A_HITS, A_AIM, A_STRIKES, A_COMBO, A_THREE};
+            case ATTACK -> new int[]{A_HITS, A_AIM, A_STRIKES, A_THREE};
             case DEFENSE -> new int[]{D_JUMP, D_TAKEN};
             default -> new int[]{F_OPPONENTS, F_FIGHTS, F_TRADES, F_DISTANCE};
         };
@@ -104,7 +104,6 @@ final class StatsView {
     private List<JumpResetEvaluator.Attempt> attempts = List.of();
     private List<Line> timeline = List.of();
     private List<Trades.Trade> trades = List.of();
-    private WTap.Result wtap = WTap.analyze(List.of());
     private List<Insights.Insight> insights = List.of();
     private AimAnalysis.Result aimRes = AimAnalysis.empty();
     private String key;
@@ -215,7 +214,6 @@ final class StatsView {
         List<Cooldown.Interval> kept = new ArrayList<>();
         for (Cooldown.Interval i : Cooldown.intervals(rawEvents)) if (sf.attack(i.attack()) == null) kept.add(i);
         cdSum = Cooldown.summary(kept);
-        wtap = WTap.analyze(events);
         calib = Calibration.analyze(attempts, s.jumpParams());
         aimRes = AimAnalysis.analyze(events, AttackEvent.DEFAULT_RANGE);
         insights = Insights.evaluate(new Insights.Input(res, s.jumpParams(), aimRes));
@@ -310,9 +308,7 @@ final class StatsView {
                 case A_HITS -> hitsTab(ui, cx, ctop, cw);
                 case A_AIM -> aimTab(ui, cx, ctop, cw);
                 case A_STRIKES -> strikesTab(ui, cx, ctop, cw);
-                case A_WTAP -> wtapTab(ui, cx, ctop, cw);
-                case A_THREE -> threeBlockTab(ui, cx, ctop, cw);
-                default -> comboTab(ui, cx, ctop, cw);
+                default -> threeBlockTab(ui, cx, ctop, cw);
             };
             case DEFENSE -> defenseMode == D_KNOCKBACK ? kbTab(ui, cx, ctop, cw)
                     : defenseMode == D_TAKEN ? takenTab(ui, cx, ctop, cw) : jumpTab(ui, cx, ctop, cw);
@@ -329,7 +325,7 @@ final class StatsView {
         scroll = Math.max(0, Math.min(scroll, maxScroll));
         ui.unclip();
         ui.g.disableScissor();
-        ui.scrollbar(px + pw - 5, iy + 2, ih - 4, scroll, ih, content);
+        ui.scrollbar(px + pw - 5, iy + 2, ih - 4, scroll, ih, content, v -> scroll = v);
     }
 
     boolean scrolled(double mx, double my, double dy) {
@@ -472,9 +468,7 @@ final class StatsView {
                 case A_HITS -> hitList ? Help.hits() : Help.hitsChart();
                 case A_AIM -> Help.aimTab();
                 case A_STRIKES -> Help.types() + "\n" + Help.charge();
-                case A_WTAP -> Help.wtap();
-                case A_THREE -> Help.threeBlockTab();
-                default -> Help.combo();
+                default -> Help.threeBlockTab();
             };
             case DEFENSE -> switch (defenseMode) {
                 case D_KNOCKBACK -> Help.knockback();
@@ -995,7 +989,6 @@ final class StatsView {
                 attack.add(reachCard(hs).with(Help.reach()));
                 attack.add(chargeCard(hs).with(Help.charge()));
                 attack.add(typesCard(hs).with(Help.types()));
-                if (wtap.hasInput()) attack.add(wtapCard(wtap).with(Help.wtap()));
             }
         }
         defense.add(jumpCard(res.jump()).with(Help.jump()));
@@ -1003,7 +996,6 @@ final class StatsView {
         if (attacksTotal > 0) {
             fights.add(tradesCard(res.trades()).with(Help.trades()));
             if (expert) {
-                fights.add(comboCard(res.combo()).with(Help.combo()));
                 fights.add(threeBlockCard(hs).with(Help.threeBlock()));
             }
         }
@@ -1406,17 +1398,7 @@ final class StatsView {
         return new Card("Jump reset", rows, 3);
     }
 
-    private static Card comboCard(Stats.ComboStats c) {
-        return new Card(t("Комбо и размен", "Combos and trades", "Combos und Trades"), List.of(
-                new Kv(t("Нанесено / получено", "Dealt / taken", "Ausgeteilt / eingesteckt"), c.dealt() + " / " + c.taken(), Theme.TEXT_STRONG),
-                new Kv(t("Размен", "Trade"), Double.isNaN(c.trade()) ? (c.dealt() > 0 ? "∞" : "—") : Fmt.num(c.trade(), 2)),
-                new Kv(t("Макс. комбо", "Max combo", "Max. Combo"), String.valueOf(c.maxCombo())),
-                new Kv(t("Нанесено ударов", "Hits dealt", "Ausgeteilte Treffer"), String.valueOf(c.dealt()), Theme.GREEN),
-                new Kv(t("Получено ударов", "Hits taken", "Eingesteckte Treffer"), String.valueOf(c.taken()), Theme.RED),
-                new Kv(t("Среднее комбо (от 2)", "Mean combo (from 2)", "Ø Combo (ab 2)"), c.avgCombo() > 0 ? Fmt.num(c.avgCombo(), 1) : "—")), 3);
-    }
-
-    private Card chargeCard(Stats.HitStats hs) {
+        private Card chargeCard(Stats.HitStats hs) {
         return new Card(t("Заряд атаки", "Attack charge", "Schlagaufladung"), List.of(
                 new Kv(t("Средний заряд", "Mean charge", "Ø Aufladung"), hs.confirmed() == 0 ? "—" : Fmt.pct(hs.strengthMean() * 100),
                         graded(hs.confirmed() == 0 ? SkillScores.Grade.NONE : SkillScores.charge(hs.strengthMean()))),
@@ -1757,91 +1739,11 @@ final class StatsView {
         return y;
     }
 
-    private static String methodName(WTap.Method m) {
-        return switch (m) {
-            case W_TAP -> "W-tap";
-            case S_TAP -> "S-tap";
-            case SPRINT_KEY -> t("клавиша спринта", "sprint key", "Sprinttaste");
-            case AUTO -> t("сам (спринт зажат)", "auto (sprint held)", "automatisch (Sprint gehalten)");
-            case NONE -> t("без сброса", "no reset", "kein Reset");
-        };
-    }
-
-    private static String ms(double v) {
+        private static String ms(double v) {
         return Double.isFinite(v) ? Fmt.num(v, 0) + t(" мс", " ms") : "—";
     }
 
-    private int wtapTab(Ui ui, int x, int y, int w) {
-        WTap.Result r = wtap;
-        if (!r.hasInput() && rec.skipped(Features.INPUT)) return skipped(ui, w, t("Нажатия W, S и спринта", "W, S and sprint presses", "W-, S- und Sprint-Tasten"), x, y);
-        if (!r.hasInput()) {
-            line(ui, w, t("Нет данных: нажатия W и спринта пишутся в записях новой версии мода.",
-                    "No data: W and sprint presses are recorded from a newer mod version.", "Keine Daten: W- und Sprint-Tasten werden erst ab einer neueren Mod-Version aufgenommen."), x, y, Theme.DIM);
-            return y + LINE;
-        }
-        line(ui, w, t("SPRINT-ударов в сериях ", "Sprint hits in series ", "Sprint-Treffer in Serie ") + r.sprintHits() + t(" · со сбросом спринта перед ударом ", " · with a sprint reset before ", " · mit Sprint-Reset vor ")
-                + Fmt.pct(r.afterResetPct()) + t(" · ударов без спринта ", " · hits without sprint ", " · Treffer ohne Sprint ") + r.noSprintHits(), x, y, Theme.TEXT);
-        y += LINE;
-        List<String> parts = new ArrayList<>();
-        for (WTap.Method m : WTap.Method.values()) {
-            int n = r.methods().getOrDefault(m, 0);
-            if (n > 0) parts.add(methodName(m) + " " + n);
-        }
-        line(ui, w, t("Как возвращали спринт: ", "How sprint came back: ", "Wie der Sprint zurückkam: ") + (parts.isEmpty() ? "—" : String.join(", ", parts)), x, y, Theme.MUTED);
-        y += LINE;
-        line(ui, w, t("W отпущена в среднем через ", "W released on average ", "W im Schnitt losgelassen ") + ms(r.releaseMeanMs()) + t(" после удара, сброс длится ", " after the hit, reset lasts ", " nach dem Treffer, Reset dauert ")
-                + ms(r.resetMeanMs()), x, y, Theme.MUTED);
-        y += LINE;
-        line(ui, w, t("Серий, прерванных после удара без спринта: ", "Combos broken after a hit without sprint: ", "Combos abgebrochen nach einem Treffer ohne Sprint: ") + r.brokenNoSprint() + t(" из ", " of ", " von ") + r.combos(),
-                x, y, r.combos() > 0 && r.brokenNoSprint() * 2 >= r.combos() ? Theme.RED : Theme.MUTED);
-        y += LINE + 6;
-        if (r.resetDurations().length > 0) {
-            y = hist(ui, x, y, w, 40, Stats.histogram(r.resetDurations(), 0, 300, 15), 0, 20, t(" мс", " ms"),
-                    t("Длительность сброса (W отпущена или S нажата), 20 мс на столбец", "Reset duration (W up or S down), 20 ms per bar", "Reset-Dauer (W los oder S gedrückt), 20 ms pro Balken"), Theme.ACCENT);
-            y += 4;
-        }
-        line(ui, w, t("После удара с нокбэком спринт сбрасывается. С зажатыми W и спринтом он вернётся через тик сам,",
-                "A knockback hit resets sprint. With W and sprint held it comes back a tick later by itself,", "Ein Treffer mit Rückstoß setzt den Sprint zurück. Mit gehaltenem W und Sprint kommt er einen Tick später von selbst zurück,"), x, y, Theme.DIM);
-        y += LINE;
-        line(ui, w, t("без клавиши спринта нужен W-tap или S-tap. Сброс в любом случае замедляет вас (скорость × 0,6).",
-                "without the sprint key you need a W-tap or S-tap. Either way the hit slows you down (speed × 0.6).", "ohne Sprinttaste brauchst du einen W-Tap oder S-Tap. So oder so bremst dich der Treffer (Tempo × 0,6)."), x, y, Theme.DIM);
-        return y + LINE;
-    }
-
-    private static Card wtapCard(WTap.Result r) {
-        List<Kv> rows = new ArrayList<>(List.of(
-                new Kv(t("SPRINT-ударов со сбросом", "Sprint hits after reset", "Sprint-Treffer nach Reset"), Fmt.pct(r.afterResetPct()) + " (" + r.afterReset() + "/" + r.sprintHits() + ")", Theme.TEXT_STRONG),
-                new Kv(t("Сброс длится", "Reset lasts", "Reset dauert"), ms(r.resetMeanMs())),
-                new Kv(t("W отпущена через", "W released after", "W losgelassen nach"), ms(r.releaseMeanMs())),
-                new Kv(t("Ударов без спринта", "Hits without sprint", "Treffer ohne Sprint"), String.valueOf(r.noSprintHits())),
-                new Kv(t("Комбо прервано без спринта", "Combos broken without sprint", "Combos ohne Sprint abgebrochen"), r.brokenNoSprint() + " / " + r.combos())));
-        for (WTap.Method m : WTap.Method.values()) {
-            int n = r.methods().getOrDefault(m, 0);
-            if (n > 0) rows.add(new Kv("  " + methodName(m), String.valueOf(n)));
-        }
-        return new Card("W-tap", rows, 2);
-    }
-
-    private int comboTab(Ui ui, int x, int y, int w) {
-        Stats.ComboStats c = res.combo();
-        line(ui, w, t("Нанесено ", "Dealt ", "Ausgeteilt ") + c.dealt() + t(" · получено ", " · taken ", " · eingesteckt ") + c.taken() + t(" · размен ", " · trade ", " · Trade ")
-                + (Double.isNaN(c.trade()) ? (c.dealt() > 0 ? "∞" : "—") : Fmt.num(c.trade(), 2)), x, y, Theme.TEXT);
-        y += LINE;
-        line(ui, w, t("Макс. комбо ", "Max combo ", "Max. Combo ") + c.maxCombo() + t(" · среднее (от 2) ", " · mean (from 2) ", " · Ø (ab 2) ")
-                + (c.avgCombo() > 0 ? Fmt.num(c.avgCombo(), 1) : "—"), x, y, Theme.MUTED);
-        y += LINE + 6;
-        if (c.dealt() == 0) {
-            ui.text(t("Подтверждённых ударов нет", "No confirmed hits", "Keine bestätigten Treffer"), x, y, Theme.DIM);
-            return y + LINE;
-        }
-        double[] combos = Stats.comboLengths(events).stream().mapToDouble(Integer::doubleValue).toArray();
-        int[] cc = Stats.histogram(combos, 0.5, 10.5, 10);
-        return hist(ui, x, y, w, 40, cc, 1, 1, "",
-                t("Длина серий ударов (до ответного удара): макс. ", "Combo length (until hit back): max ", "Combo-Länge (bis zum Gegentreffer): max. ") + c.maxCombo() + t(", последний столбец 10+", ", last column 10+", ", letzte Spalte 10+"),
-                Theme.GREEN);
-    }
-
-    private int hist(Ui ui, int x, int y, int w, int h, int[] counts, double min, double step, String unit,
+                private int hist(Ui ui, int x, int y, int w, int h, int[] counts, double min, double step, String unit,
                      String title, int color) {
         int n = counts.length, max = 1, total = 0;
         for (int c : counts) {
@@ -2025,29 +1927,59 @@ final class StatsView {
             ods[i] = r.od();
         }
         int n = rows.size();
-        for (String l : ui.wrap(t("Как ваши удары выглядели у противника: из-за пинга он видит вас там, где вы были чуть раньше. Дальше его дальности — он не мог ответить.",
-                "How your hits looked on the opponent's screen: with ping they see you where you were a moment ago. Beyond their reach they could not hit back.",
-                "So sahen deine Treffer auf dem Bildschirm des Gegners aus: wegen des Pings sieht er dich dort, wo du kurz vorher warst. Außerhalb seiner Reichweite konnte er nicht zurückschlagen."), w)) {
-            ui.text(l, x, y, Theme.MUTED);
+        double pct = 100.0 * tb / n;
+        // 1. The verdict in one line, with a bar: amber = hits they could not answer.
+        String headline = t(tb + " из " + n + " ударов противник не мог отбить", tb + " of " + n + " hits they could not hit back",
+                tb + " von " + n + " Treffern konnte er nicht zurückschlagen");
+        ui.text(Draw.ellipsize(ui.font, headline, w - 60), x, y, Theme.TEXT_STRONG);
+        ui.textRight(Fmt.pct(pct), x + w, y, tb > 0 ? Theme.AMBER : Theme.TEXT_STRONG);
+        y += 12;
+        int barH = 8, filled = (int) Math.round(w * tb / (double) n);
+        Draw.round(ui.g, x, y, w, barH, 2, Theme.INSET);
+        if (filled > 0) Draw.round(ui.g, x, y, Math.max(3, filled), barH, 2, Theme.AMBER);
+        y += barH + 4;
+        ui.text(Draw.ellipsize(ui.font, t("Жёлтое: у него на экране вы были дальше его дальности.", "Yellow: on their screen you were beyond their reach.",
+                "Gelb: auf seinem Bildschirm warst du außerhalb seiner Reichweite."), w), x, y, Theme.DIM);
+        y += LINE + 8;
+        // 2. Three tiles: your distance, what they saw, the delay between.
+        String bl = t(" бл.", " bl.", " Bl.");
+        String[][] tiles = {
+                {t("Ваша дистанция", "Your distance", "Deine Distanz"), Fmt.num(sumReach / n, 2) + bl},
+                {t("У него на экране", "On their screen", "Auf seinem Bildschirm"), Fmt.num(sumOd / n, 2) + bl},
+                {t("Задержка", "Delay", "Verzögerung"), Fmt.num(sumPing / n, 0) + t(" мс", " ms")}};
+        int gap = 6, tw = (w - gap * 2) / 3, th = 30;
+        for (int i = 0; i < 3; i++) {
+            int tx = x + i * (tw + gap);
+            Draw.roundBordered(ui.g, tx, y, tw, th, Theme.R_CTRL, Theme.BORDER, Theme.WINDOW);
+            ui.text(Draw.ellipsize(ui.font, tiles[i][0] + t(", ср.", ", mean", ", Ø"), tw - 10), tx + 6, y + 5, Theme.MUTED);
+            ui.text(tiles[i][1], tx + 6, y + 17, i == 1 ? Theme.AMBER : Theme.TEXT_STRONG);
+        }
+        y += th + 10;
+        // 3. Where the extra distance comes from, as two bars on one scale.
+        ui.text(Theme.head(t("Откуда лишняя дистанция", "Where the extra distance comes from", "Woher der zusätzliche Abstand kommt")), x, y, Theme.ACCENT);
+        y += LINE + 3;
+        double self = Math.max(0, sumSelf / n), away = Math.max(0, sumAway / n), max = Math.max(0.3, Math.max(self, away));
+        String[] names = {t("Вы шли на него", "You moving in", "Du liefst rein"), t("Он отходил", "They backing off", "Er wich zurück")};
+        double[] vals = {sumSelf / n, sumAway / n};
+        int lw = 0;
+        for (String nm : names) lw = Math.max(lw, ui.font.width(nm));
+        int bx = x + lw + 8, bw = Math.max(20, w - lw - 8 - 48);
+        for (int i = 0; i < 2; i++) {
+            ui.text(names[i], x, y, Theme.TEXT);
+            Draw.round(ui.g, bx, y + 1, bw, 6, 2, Theme.INSET);
+            int f = (int) Math.round(bw * Math.max(0, vals[i]) / max);
+            if (f > 0) Draw.round(ui.g, bx, y + 1, Math.max(3, f), 6, 2, i == 0 ? Theme.GREEN : Theme.BLUE);
+            ui.textRight(Fmt.signed(vals[i], 2) + bl, x + w, y, Theme.MUTED);
+            y += LINE + 2;
+        }
+        if (n < confirmed) {
+            ui.text(Draw.ellipsize(ui.font, (confirmed - n) + t(" ударов без данных (сервер не показал пинг цели)", " hits without data (the server did not show the target's ping)",
+                    " Treffer ohne Daten (der Server hat den Ping des Ziels nicht gezeigt)"), w), x, y, Theme.DIM);
             y += LINE;
         }
-        y += 6;
-        List<Kv> kv = new ArrayList<>();
-        kv.add(new Kv(t("Недостижимо для противника", "Out of their reach", "Für ihn nicht erreichbar"), tb + " / " + n + " (" + Fmt.pct(100.0 * tb / n) + ")",
-                tb > 0 ? Theme.AMBER : Theme.TEXT_STRONG));
-        kv.add(new Kv(t("Ваша дистанция, ср.", "Your distance, mean", "Deine Distanz, Ø"), Fmt.num(sumReach / n, 2) + t(" бл.", " bl.", " Bl.")));
-        kv.add(new Kv(t("У него на экране, ср.", "On their screen, mean", "Auf seinem Bildschirm, Ø"), Fmt.num(sumOd / n, 2) + t(" бл.", " bl.", " Bl.")));
-        kv.add(new Kv(t("Задержка, ср.", "Delay, mean", "Verzögerung, Ø"), Fmt.num(sumPing / n, 0) + t(" мс", " ms")));
-        kv.add(new Kv(t("Из-за вашего движения к нему", "From you moving in", "Durch dein Hineinlaufen"), Fmt.signed(sumSelf / n, 2) + t(" бл.", " bl.", " Bl.")));
-        kv.add(new Kv(t("Из-за его отхода", "From them moving away", "Durch sein Zurückweichen"), Fmt.signed(sumAway / n, 2) + t(" бл.", " bl.", " Bl.")));
-        if (n < confirmed) kv.add(new Kv(t("Без данных (нет пинга цели)", "No data (no target ping)", "Ohne Daten (kein Ping des Ziels)"), String.valueOf(confirmed - n)));
-        Card c = new Card(t("Ваши удары глазами противника", "Your hits through their eyes", "Deine Treffer aus seiner Sicht"), kv, kv.size()).with(Help.threeBlock());
-        card(ui, x, y, w, c, true);
-        y += c.height(true) + 8;
-        y = hist(ui, x, y, w, 40, Stats.histogram(ods, 2.0, 5.0, 12), 2.0, 0.25, t(" бл.", " bl.", " Bl."),
-                t("Дистанция у него на экране (жёлтое: дальше 3 блоков)", "Distance on their screen (beyond 3 blocks: they could not hit back)",
-                        "Distanz auf seinem Bildschirm (über 3 Blöcke: er konnte nicht zurückschlagen)"), Theme.AMBER);
         y += 8;
+        ui.text(Theme.head(t("Все попадания, самые дальние сверху", "All hits, farthest first", "Alle Treffer, die weitesten zuerst")), x, y, Theme.ACCENT);
+        y += LINE + 3;
         rows.sort((p, q) -> Double.compare(q.od(), p.od()));
         boolean narrow = w < 360;
         double[] at = narrow ? new double[]{0, .25, .50, .75} : new double[]{0, .13, .36, .50, .64, .78};

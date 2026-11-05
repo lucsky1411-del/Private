@@ -104,7 +104,7 @@ final class SettingsTab implements Tab {
         scroll = Math.max(0, Math.min(scroll, maxScroll));
         ui.unclip();
         ui.g.disableScissor();
-        ui.scrollbar(panelX + panelW - 5, iy + 2, ih - 4, scroll, ih, content);
+        ui.scrollbar(panelX + panelW - 5, iy + 2, ih - 4, scroll, ih, content, v -> scroll = v);
 
         int pending = draft.diffCount(live());
         if (pending > 0) {
@@ -120,11 +120,23 @@ final class SettingsTab implements Tab {
         bw = ui.buttonWidth(t("Отмена", "Cancel", "Abbrechen"));
         bx -= bw + 4;
         ui.button(bx, footerY, bw, 16, t("Отмена", "Cancel", "Abbrechen"), Ui.Kind.SECONDARY, pending > 0, this::cancel);
+        boolean open = anyOpen();
+        String fl = open ? t("Свернуть всё", "Fold all", "Alle einklappen") : t("Развернуть всё", "Unfold all", "Alle aufklappen");
+        bw = ui.buttonWidth(fl);
+        bx -= bw + 4;
+        int textEnd = pending > 0 ? x + 10 + ui.font.width(" 00 Änderungen nicht übernommen") : x;
+        if (bx > textEnd) ui.button(bx, footerY, bw, 16, fl, Ui.Kind.GHOST, true, () -> foldAll(open));
     }
 
     private int content(Ui ui, int x, int top, int w, int s) {
+        hiddenFrom = Integer.MIN_VALUE;
+        foldSection = s;
+        return unfold(contentOf(ui, x, top, w, s));
+    }
+
+    private int contentOf(Ui ui, int x, int top, int w, int s) {
         return switch (s) {
-            case 0 -> keys(ui, x, heading(ui, x, whatToRecord(ui, x, recording(ui, x, presets(ui, x, top, w), w), w), w, t("Язык и клавиши", "Language and keys", "Sprache und Tasten")), w);
+            case 0 -> keys(ui, x, fold(ui, x, whatToRecord(ui, x, recording(ui, x, fold(ui, x, presets(ui, x, top, w), w, t("Запись и сохранение", "Recording and saving", "Aufnahme und Speichern")), w), w), w, t("Язык и клавиши", "Language and keys", "Sprache und Tasten")), w);
             case 1 -> hud(ui, x, top, w);
             case 2 -> filters(ui, x, top, w);
             case 3 -> appearance(ui, x, top, w);
@@ -143,6 +155,7 @@ final class SettingsTab implements Tab {
 
     /** Opens a section for a search result; the search then scrolls to the row. */
     void reveal(int s) {
+        FOLDED.removeIf(k -> k.startsWith(s + ":"));
         if (s != section) {
             section = s;
             storageList = null;
@@ -193,7 +206,7 @@ final class SettingsTab implements Tab {
 
     /** Three starting points; each sets only the switches that decide how much the mod shows. */
     private int presets(Ui ui, int x, int y, int w) {
-        y = heading(ui, x, y, w, t("Быстрый старт", "Quick start", "Schnellstart"));
+        y = fold(ui, x, y, w, t("Быстрый старт", "Quick start", "Schnellstart"));
         String[][] p = {
                 {t("Просто", "Simple", "Einfach"), t("Главное и советы, без индикаторов", "Key numbers and tips, no indicators", "Das Wichtigste und Tipps, ohne Anzeigen")},
                 {t("Тренировка", "Training", "Training"), t("Все цифры, индикаторы, автосохранение", "All numbers, indicators, autosave", "Alle Zahlen, Anzeigen, automatisch speichern")},
@@ -217,6 +230,10 @@ final class SettingsTab implements Tab {
         ui.text(Draw.ellipsize(ui.font, t("Затем «Применить». Всё можно поменять ниже.", "Then press Apply. You can change anything below.",
                 "Danach „Übernehmen“. Alles lässt sich unten noch ändern."), w - 20), x + 10, y, Theme.DIM);
         return y + 14;
+    }
+
+    static String[] navNames() {
+        return new String[]{t("Список", "List", "Liste"), t("Иконки", "Icons", "Symbole"), t("Сверху", "Top tabs", "Tabs oben"), t("Плитки", "Tiles", "Kacheln")};
     }
 
     static String bufferSaveName(int v) {
@@ -289,14 +306,12 @@ final class SettingsTab implements Tab {
 
     private int whatToRecord(Ui ui, int x, int y, int w) {
         Settings l = live();
-        y = heading(ui, x, y, w, t("Что записывать", "What to record", "Was aufnehmen"));
+        y = fold(ui, x, y, w, t("Что записывать", "What to record", "Was aufnehmen"));
         String label = t("Режим записи", "Recording mode", "Aufnahmemodus");
         y = choice(ui, x, y, w, label, recordModes(), draft.recordMode(), l.recordMode(), DEF.recordMode(), draft::setRecordMode);
         labelInfo(ui, x, y - 26, 26, label, false, Help.recordMode());
         y = flag(ui, x, y, w, t("Позиции во время боя", "Positions during fights", "Positionen im Kampf"), t("Бои → Дистанция и повтор; больше всего места", "Fights → Distance and replay; the largest part", "Kämpfe → Distanz und Wiederholung; der größte Teil"),
                 draft.recordPositions, l.recordPositions, DEF.recordPositions, v -> draft.recordPositions = v);
-        y = flag(ui, x, y, w, t("Нажатия W, S и спринта", "W, S and sprint presses", "W-, S- und Sprint-Tasten"), t("Атака → W-tap", "Attack → W-tap", "Angriff → W-Tap"),
-                draft.recordInput, l.recordInput, DEF.recordInput, v -> draft.recordInput = v);
         y = flag(ui, x, y, w, t("Отлёт после удара", "Knockback after a hit", "Rückstoß nach einem Treffer"), t("Защита → Отлёт и подбор окна jump reset", "Defense → Knockback and jump reset window fitting", "Verteidigung → Rückstoß und Anpassung des Jump-Reset-Fensters"),
                 draft.recordKnockback, l.recordKnockback, DEF.recordKnockback, v -> draft.recordKnockback = v);
         y = flag(ui, x, y, w, t("Дистанция ударов по вам", "Distance of hits on you", "Distanz der Treffer auf dich"), t("Защита → Удары по мне, 3 block hit против вас", "Defense → Hits on me, 3 block hits against you", "Verteidigung → Treffer auf mich, 3 Block Hits gegen dich"),
@@ -304,6 +319,70 @@ final class SettingsTab implements Tab {
         ui.text(Draw.ellipsize(ui.font, t("Выключенное не пишется в новые записи, в Просмотре там «не записывалось».", "What is off is not saved in new recordings; View shows \"not recorded\" there.", "Was aus ist, wird in neuen Aufnahmen nicht gespeichert; die Ansicht zeigt dort „nicht aufgenommen“."), w - 20),
                 x + 10, y + 8, Theme.DIM);
         return y + 20;
+    }
+
+    /** Folded groups ("section:title"); kept while the game runs. */
+    private static final java.util.Set<String> FOLDED = new java.util.HashSet<>();
+    /** Rows of a folded group are laid out this far up, out of the panel, so they take no room and get no clicks. */
+    private static final int FAR = 1_000_000;
+    private int hiddenFrom = Integer.MIN_VALUE, foldSection;
+
+    private static String foldKey(int section, String text) {
+        int c = text.indexOf(':');
+        return section + ":" + (c > 0 ? text.substring(0, c) : text);
+    }
+
+    /** Ends a folded group: the next part starts right under its heading. */
+    private int unfold(int y) {
+        if (hiddenFrom != Integer.MIN_VALUE) {
+            y = hiddenFrom;
+            hiddenFrom = Integer.MIN_VALUE;
+        }
+        return y;
+    }
+
+    /** A group heading that folds its rows away on click (arrow on the left, row count hint on the right). */
+    private int fold(Ui ui, int x, int y, int w, String text) {
+        y = unfold(y);
+        String key = foldKey(foldSection, text);
+        boolean closed = FOLDED.contains(key);
+        seenGroups.add(key);
+        if (ui.find != null) ui.find.group(text);
+        ui.mark(text, null, x + 4, y + 3, w - 8, 18);
+        int hx = x + 4, hy = y + 4, hw = w - 8, hh = 16;
+        boolean hov = ui.hover(hx, hy, hw, hh);
+        if (hov) Draw.round(ui.g, hx, hy, hw, hh, Theme.R_CTRL, Theme.ROW_HOVER);
+        int ac = hov ? Theme.TEXT_STRONG : Theme.ACCENT, ax = x + 10, ay = y + 9;
+        // Arrow from fills: right when folded, down when open.
+        for (int i = 0; i < 4; i++) {
+            if (closed) ui.g.fill(ax + i, ay - 1 + i, ax + i + 1, ay + 6 - i, ac);
+            else ui.g.fill(ax - 1 + i, ay + 1 + i, ax + 6 - i, ay + 2 + i, ac);
+        }
+        ui.text(Theme.head(text), x + 20, y + 8, Theme.ACCENT);
+        if (hov) ui.textRight(closed ? t("развернуть", "show", "aufklappen") : t("свернуть", "hide", "einklappen"), x + w - 12, y + 8, Theme.MUTED);
+        ui.click(hx, hy, hw, hh, () -> {
+            if (!FOLDED.remove(key)) FOLDED.add(key);
+        });
+        ui.g.fill(x + 8, y + 21, x + w - 8, y + 22, Theme.BORDER);
+        if (closed) {
+            hiddenFrom = y + 24;
+            return y + 22 - FAR;
+        }
+        return y + 22;
+    }
+
+    private final java.util.Set<String> seenGroups = new java.util.LinkedHashSet<>();
+
+    private boolean anyOpen() {
+        for (String k : seenGroups) if (k.startsWith(section + ":") && !FOLDED.contains(k)) return true;
+        return false;
+    }
+
+    /** Folds or opens every group of the current section. */
+    private void foldAll(boolean fold) {
+        FOLDED.removeIf(k -> k.startsWith(section + ":"));
+        if (fold) for (String k : seenGroups) if (k.startsWith(section + ":")) FOLDED.add(k);
+        scroll = 0;
     }
 
     static int heading(Ui ui, int x, int y, int w, String text) {
@@ -316,17 +395,17 @@ final class SettingsTab implements Tab {
 
     private int filters(Ui ui, int x, int y, int w) {
         Settings l = live();
-        y = heading(ui, x, y, w, t("Удары", "Hits", "Treffer"));
+        y = fold(ui, x, y, w, t("Удары", "Hits", "Treffer"));
         y = flag(ui, x, y, w, t("Только удары мечом", "Sword hits only", "Nur Schwerttreffer"), t("Рука и другое оружие не входят в атаку, комбо и 3 block hit", "Hand and other weapons are left out of attack, combos and 3 block hit", "Hand und andere Waffen zählen nicht für Angriff, Combos und 3 Block Hit"),
                 draft.statSwordOnly, l.statSwordOnly, DEF.statSwordOnly, v -> draft.statSwordOnly = v);
         y = flag(ui, x, y, w, t("Удар рукой не начинает размен", "Hand hit does not start a trade", "Ein Handschlag startet keinen Trade"), t("Тычок рукой перед боем не первый удар (для разменов)", "A poke before a fight is not the first hit (for trades)", "Ein Antippen vor dem Kampf zählt nicht als erster Treffer (für Trades)"),
                 draft.statHandNoTrade, l.statHandNoTrade, DEF.statHandNoTrade, v -> draft.statHandNoTrade = v);
-        y = heading(ui, x, y, w, t("Игроки", "Players", "Spieler"));
+        y = fold(ui, x, y, w, t("Игроки", "Players", "Spieler"));
         y = flag(ui, x, y, w, t("Не учитывать тиммейтов", "Ignore teammates", "Teammitglieder ignorieren"), t("Общая команда scoreboard без урона по своим", "Same scoreboard team with friendly fire off", "Gleiches Scoreboard-Team mit ausgeschaltetem Friendly Fire"),
                 draft.statNoTeammates, l.statNoTeammates, DEF.statNoTeammates, v -> draft.statNoTeammates = v);
         y = flag(ui, x, y, w, t("Не учитывать NPC и ботов", "Ignore NPCs and bots", "NPCs und Bots ignorieren"), t("Игроки с UUID версии 2", "Players with a version 2 UUID", "Spieler mit einer UUID der Version 2"),
                 draft.statNoNpc, l.statNoNpc, DEF.statNoNpc, v -> draft.statNoNpc = v);
-        y = heading(ui, x, y, w, t("Пинг и бои", "Ping and fights", "Ping und Kämpfe"));
+        y = fold(ui, x, y, w, t("Пинг и бои", "Ping and fights", "Ping und Kämpfe"));
         y = flag(ui, x, y, w, t("Не учитывать высокий пинг", "Ignore high ping", "Hohen Ping ignorieren"), t("Удары, когда ваш пинг выше порога", "Hits while your ping is above the limit", "Treffer, während dein Ping über dem Limit lag"),
                 draft.statHighPing, l.statHighPing, DEF.statHighPing, v -> draft.statHighPing = v);
         int right = x + w - 10, sw = 72;
@@ -360,11 +439,11 @@ final class SettingsTab implements Tab {
 
     private int advanced(Ui ui, int x, int y, int w) {
         Settings l = live();
-        y = heading(ui, x, y, w, "Jump reset");
+        y = fold(ui, x, y, w, "Jump reset");
         y = jumpReset(ui, x, y, w);
-        y = heading(ui, x, y, w, "3 block hit");
+        y = fold(ui, x, y, w, "3 block hit");
         y = statistics(ui, x, y, w);
-        y = heading(ui, x, y, w, t("Размены", "Trades"));
+        y = fold(ui, x, y, w, t("Размены", "Trades"));
         int right = x + w - 10, sw = 72;
         row(ui, x, y, w, 30, t("Пауза между разменами", "Pause between trades", "Pause zwischen Trades"), t("Без ударов дольше: начинается новый размен", "No hits for longer: a new trade starts", "Länger keine Treffer: ein neuer Trade beginnt"),
                 draft.tradeGapMs != l.tradeGapMs);
@@ -380,9 +459,9 @@ final class SettingsTab implements Tab {
         y += 30;
         y = choice(ui, x, y, w, t("Победитель размена", "Trade winner", "Trade-Sieger"), new String[]{t("По ударам", "By hits", "Nach Treffern"), t("По весу", "By weight", "Nach Gewicht")},
                 draft.tradeByWeight ? 1 : 0, l.tradeByWeight ? 1 : 0, DEF.tradeByWeight ? 1 : 0, v -> draft.tradeByWeight = v == 1);
-        y = heading(ui, x, y, w, t("Хранилище", "Storage", "Speicher"));
+        y = fold(ui, x, y, w, t("Хранилище", "Storage", "Speicher"));
         y = storage(ui, x, y, w);
-        y = heading(ui, x, y, w, t("Отладка", "Debugging", "Fehlersuche"));
+        y = fold(ui, x, y, w, t("Отладка", "Debugging", "Fehlersuche"));
         return flag(ui, x, y, w, t("Отладочный лог", "Debug log", "Debug-Log"), t("Строки [CD] в latest.log", "[CD] lines in latest.log", "[CD]-Zeilen in latest.log"),
                 draft.debugLog, l.debugLog, DEF.debugLog, v -> draft.debugLog = v);
     }
@@ -490,7 +569,7 @@ final class SettingsTab implements Tab {
     private int fightSummary(Ui ui, int x, int y, int w) {
         Settings l = live();
         int right = x + w - 10, sw = 72;
-        y = heading(ui, x, y, w, t("Итог боя", "Fight summary", "Kampfzusammenfassung"));
+        y = fold(ui, x, y, w, t("Итог боя", "Fight summary", "Kampfzusammenfassung"));
         String label = t("Показывать итог боя", "Show fight summary", "Kampfzusammenfassung anzeigen");
         y = flag(ui, x, y, w, label, t("После боя на несколько секунд", "For a few seconds after a fight", "Für ein paar Sekunden nach einem Kampf"),
                 draft.fightSummary, l.fightSummary, DEF.fightSummary, v -> draft.fightSummary = v);
@@ -620,7 +699,7 @@ final class SettingsTab implements Tab {
     /** The custom design: every shape setting with a live preview (the whole menu is the preview). */
     private int designEditor(Ui ui, int x, int y, int w) {
         Settings l = live();
-        y = heading(ui, x, y, w, t("Свой дизайн", "Custom design", "Eigenes Design"));
+        y = fold(ui, x, y, w, t("Свой дизайн", "Custom design", "Eigenes Design"));
         int sw = 72, right = x + w - 10;
         y = stepRow(ui, x, y, w, t("Скругление углов", "Corner rounding", "Ecken abrunden"), t("0: квадратные", "0: square", "0: eckig"),
                 String.valueOf(draft.dsRadius), draft.dsRadius != l.dsRadius, () -> draft.dsRadius--, () -> draft.dsRadius++);
@@ -694,7 +773,7 @@ final class SettingsTab implements Tab {
     private int palette(Ui ui, int x, int y, int w) {
         int index = designPalette();
         dev.combatdata.core.ThemeSpec sel = draft.customThemes.get(index);
-        y = heading(ui, x, y, w, t("Палитра цветов", "Color palette", "Farbpalette"));
+        y = fold(ui, x, y, w, t("Палитра цветов", "Color palette", "Farbpalette"));
         ui.text(Draw.ellipsize(ui.font, t("Начать с цветов:", "Start from the colors of:", "Farben übernehmen von:"), w - 20), x + 10, y + 6, Theme.MUTED);
         Flow fl = new Flow(x + 10, y + 18, w - 20);
         for (dev.combatdata.core.ThemeSpec b : dev.combatdata.core.Themes.BUILTIN) {
@@ -730,7 +809,7 @@ final class SettingsTab implements Tab {
 
     private int appearance(Ui ui, int x, int y, int w) {
         sliders.clear();
-        y = heading(ui, x, y, w, t("Стиль меню", "Menu style", "Menü-Stil"));
+        y = fold(ui, x, y, w, t("Стиль меню", "Menu style", "Menü-Stil"));
         String[] styles = new String[dev.combatdata.core.Themes.STYLE_COUNT];
         for (int i = 0; i < styles.length; i++) styles[i] = dev.combatdata.core.Themes.styleName(i);
         y = choice(ui, x, y, w, t("Стиль", "Style", "Stil"), styles, draft.uiStyle, live().uiStyle, DEF.uiStyle, v -> {
@@ -746,13 +825,18 @@ final class SettingsTab implements Tab {
                 "Der Stil bestimmt Formen und Knöpfe, das Theme unten die Farben: du kannst es in jedem Stil ändern."), w - 20),
                 x + 10, y + 4, Theme.DIM);
         y += 16;
+        String navLabel = t("Навигация", "Navigation", "Navigation");
+        y = choice(ui, x, y, w, navLabel, navNames(), draft.navStyle, live().navStyle, DEF.navStyle, v -> draft.navStyle = v);
+        labelInfo(ui, x, y - 26, 26, navLabel, false, t("Как показаны разделы: список слева с названиями, узкая полоса только с иконками, вкладки сверху или большие плитки.",
+                "How the main sections are shown: a list on the left with names, a slim bar with icons only, tabs on top, or big tiles.",
+                "Wie die Hauptbereiche angezeigt werden: Liste links mit Namen, schmale Leiste nur mit Symbolen, Tabs oben oder große Kacheln."));
         if (draft.uiStyle == dev.combatdata.core.Themes.STYLE_CUSTOM) {
             y = designEditor(ui, x, y, w);
             return palette(ui, x, y, w);
         }
         String head = t("Тема", "Theme");
-        y = heading(ui, x, y, w, head);
-        ui.info(x + 10 + ui.font.width(head) + 6, y - 13, Help.themes());
+        y = fold(ui, x, y, w, head);
+        ui.info(x + 20 + ui.font.width(Theme.head(head)) + 6, y - 14, Help.themes());
         List<dev.combatdata.core.ThemeSpec> all = new ArrayList<>(dev.combatdata.core.Themes.BUILTIN);
         all.addAll(draft.customThemes);
         int inner = w - 20, gap = 6, cols = Math.max(1, (inner + gap) / (CARD_W + gap));
@@ -797,7 +881,7 @@ final class SettingsTab implements Tab {
             ui.text(Draw.ellipsize(ui.font, t("в ней можно настроить каждый цвет.", "where every color can be adjusted.", "bei dem du jede Farbe anpassen kannst."), w - 20), x + 10, y + 16, Theme.DIM);
             return y + 32;
         }
-        y = heading(ui, x, y, w, Draw.ellipsize(ui.font, t("Цвета: ", "Colors: ", "Farben: ") + sel.name(), w - 20));
+        y = fold(ui, x, y, w, Draw.ellipsize(ui.font, t("Цвета: ", "Colors: ", "Farben: ") + sel.name(), w - 20));
         y = colorRows(ui, x, y + 4, w, sel, index);
         ui.text(Draw.ellipsize(ui.font, t("Клик по цвету: ползунки, по коду: ввести hex. Сохраняется по «Применить».", "Click a color for sliders, its code to type hex. Saved on Apply.", "Klick auf eine Farbe für Regler, auf den Code zum Hex-Eingeben. Gespeichert mit „Übernehmen“."), w - 20),
                 x + 10, y + 6, Theme.DIM);

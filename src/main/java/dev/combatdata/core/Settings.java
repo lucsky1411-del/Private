@@ -60,6 +60,9 @@ public final class Settings {
     public boolean expertMode = false;
     /** Menu style: Themes.STYLE_CLASSIC, STYLE_JAVA or STYLE_NORISK. */
     public int uiStyle = Themes.STYLE_JAVA;
+    /** Main navigation: NAV_LIST (icon + name in a list), NAV_ICONS (slim icon bar), NAV_TOP (tabs on top), NAV_TILES (big tiles). */
+    public static final int NAV_LIST = 0, NAV_ICONS = 1, NAV_TOP = 2, NAV_TILES = 3, NAV_COUNT = 4;
+    public int navStyle = NAV_LIST;
     /** Custom design (style "Custom"): corner radius 0..8, window/panel opacity 10..100%, widget look, extras. */
     public int dsRadius = 3, dsWindowAlpha = 100, dsPanelAlpha = 100, dsWidgets = Themes.WIDGETS_CLASSIC;
     public boolean dsShadow = false, dsCaps = false, dsBorders = false, dsLabels = true;
@@ -253,6 +256,7 @@ public final class Settings {
         soundVolume = Math.max(0, Math.min(100, soundVolume));
         language = language >= Lang.AUTO && language <= Lang.DE ? language : Lang.AUTO;
         uiStyle = uiStyle >= Themes.STYLE_CLASSIC && uiStyle < Themes.STYLE_COUNT ? uiStyle : Themes.STYLE_JAVA;
+        navStyle = navStyle >= 0 && navStyle < NAV_COUNT ? navStyle : NAV_LIST;
         dsRadius = Math.max(0, Math.min(8, dsRadius));
         dsWindowAlpha = Math.max(10, Math.min(100, dsWindowAlpha));
         dsPanelAlpha = Math.max(10, Math.min(100, dsPanelAlpha));
@@ -345,6 +349,7 @@ public final class Settings {
         fightSummary = c.fightSummary;
         expertMode = c.expertMode;
         uiStyle = c.uiStyle;
+        navStyle = c.navStyle;
         dsRadius = c.dsRadius;
         dsWindowAlpha = c.dsWindowAlpha;
         dsPanelAlpha = c.dsPanelAlpha;
@@ -444,6 +449,7 @@ public final class Settings {
         m.put("fightSummary", fightSummary);
         m.put("expertMode", expertMode);
         m.put("uiStyle", uiStyle);
+        m.put("navStyle", navStyle);
         m.put("design", designMap());
         m.put("styleRev", 2);
         m.put("setupDone", setupDone);
@@ -524,6 +530,7 @@ public final class Settings {
         if (m.get("fightSummary") instanceof Boolean b) s.fightSummary = b;
         if (m.get("expertMode") instanceof Boolean b) s.expertMode = b;
         if (m.get("uiStyle") instanceof Number n) s.uiStyle = n.intValue();
+        if (m.get("navStyle") instanceof Number n) s.navStyle = n.intValue();
         s.readDesign(m.get("design"));
         if (m.get("setupDone") instanceof Boolean b) s.setupDone = b;
         if (m.get("reportStep") instanceof Number n) s.reportStep = n.intValue();

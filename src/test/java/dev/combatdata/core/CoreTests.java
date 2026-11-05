@@ -1734,6 +1734,12 @@ public final class CoreTests {
         st.applyPreset(Settings.PRESET_SIMPLE);
         check("preset: simple", !st.expertMode && !st.indicators.enabled && st.hudVisible);
         check("settings: expert flag saved", Settings.fromMap(st.toMap()).expertMode == st.expertMode);
+        Settings nv = new Settings();
+        check("nav: list is the default", nv.navStyle == Settings.NAV_LIST);
+        nv.navStyle = Settings.NAV_TOP;
+        check("nav: saved", Settings.fromMap(nv.toMap()).navStyle == Settings.NAV_TOP);
+        nv.navStyle = 7;
+        check("nav: bad value falls back", nv.clamp().navStyle == Settings.NAV_LIST);
 
         Lang.set(Lang.EN);
         check("grade: thresholds", SkillScores.grade(90, 85, 70) == SkillScores.Grade.GOOD && SkillScores.grade(75, 85, 70) == SkillScores.Grade.FAIR

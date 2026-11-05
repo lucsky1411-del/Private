@@ -153,7 +153,7 @@ final class ReportTab implements Tab {
         scroll = Math.max(0, Math.min(scroll, maxScroll));
         ui.unclip();
         ui.g.disableScissor();
-        ui.scrollbar(px + pw - 5, iy + 2, ih - 4, scroll, ih, content);
+        ui.scrollbar(px + pw - 5, iy + 2, ih - 4, scroll, ih, content, v -> scroll = v);
     }
 
     private void flash(String msg) {

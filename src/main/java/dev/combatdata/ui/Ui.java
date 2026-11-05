@@ -278,16 +278,49 @@ public final class Ui {
         return total;
     }
 
+    /** A draggable scrollbar registered this frame: track area, thumb and how to set the scroll offset. */
+    public record Scroll(int x, int y, int w, int h, int thumbY, int thumbH, int range, int layer, java.util.function.DoubleConsumer set) {
+        boolean contains(double px, double py) {
+            return px >= x && px < x + w && py >= y && py < y + h;
+        }
+
+        boolean onThumb(double py) {
+            return py >= thumbY && py < thumbY + thumbH;
+        }
+
+        /** Sets the scroll so the thumb's grab point sits at the mouse. */
+        void dragTo(double py, double grab) {
+            int free = h - thumbH;
+            double f = free <= 0 ? 0 : (py - grab - y) / free;
+            set.accept(Math.max(0, Math.min(1, f)) * range);
+        }
+    }
+
+    /** Filled by the menu so scrollbars can be dragged; null elsewhere. dragX/dragY: the bar being dragged. */
+    List<Scroll> scrolls;
+    int dragX = Integer.MIN_VALUE, dragY = Integer.MIN_VALUE;
+
     public void scrollbar(int x, int y, int h, double scroll, int view, int content) {
+        scrollbar(x, y, h, scroll, view, content, null);
+    }
+
+    /** set: receives the new scroll offset when the bar is dragged or its track clicked, like on a web page. */
+    public void scrollbar(int x, int y, int h, double scroll, int view, int content, java.util.function.DoubleConsumer set) {
         if (content <= view) return;
         int barH = Math.max(12, h * view / content);
         int barY = y + (int) Math.round((h - barH) * (scroll / (content - view)));
+        boolean active = set != null && layer >= activeLayer;
+        boolean dragging = active && dragX == x - 4 && dragY == y;
+        boolean hov = active && (dragging || (mx >= x - 4 && mx < x + 6 && my >= y && my < y + h));
+        if (hov) g.fill(x - 1, y, x + 4, y + h, Theme.alpha(Theme.BORDER, 0x60));
         if (Theme.java()) {
             Draw.sprite(g, "widget/scroller", x - 2, barY, 6, barH);
+            if (hov) g.fill(x - 2, barY, x + 4, barY + barH, 0x30FFFFFF);
         } else if (Theme.norisk()) {
-            g.fill(x, barY, x + 3, barY + barH, Theme.ACCENT);
+            g.fill(hov ? x - 1 : x, barY, x + (hov ? 4 : 3), barY + barH, hov ? Theme.ACCENT_HOVER : Theme.ACCENT);
         } else {
-            Draw.round(g, x, barY, 3, barH, 1, Theme.RAISED_HOVER);
+            Draw.round(g, hov ? x - 1 : x, barY, hov ? 5 : 3, barH, 1, dragging ? Theme.ACCENT : hov ? Theme.TEXT : Theme.RAISED_HOVER);
         }
+        if (active && scrolls != null) scrolls.add(new Scroll(x - 4, y, 10, h, barY, barH, content - view, layer, set));
     }
 }

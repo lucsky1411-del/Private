@@ -48,6 +48,9 @@ public final class MenuScreen extends Screen {
     final SettingsTab settingsTab = new SettingsTab(this);
     private TabId tab = lastTab;
     private final List<Ui.Target> targets = new ArrayList<>();
+    private final List<Ui.Scroll> scrolls = new ArrayList<>();
+    private Ui.Scroll dragScroll;
+    private double dragGrab;
     private Modal modal;
     private EditBox editBox;
     private EditBox searchBox;
@@ -224,6 +227,7 @@ public final class MenuScreen extends Screen {
         Theme.applyStyle(settingsTab.previewSettings(), settingsTab.previewSpec());
         super.render(g, mouseX, mouseY, delta);
         targets.clear();
+        scrolls.clear();
         frameMouseX = mouseX;
         frameMouseY = mouseY;
         frameDelta = delta;
@@ -234,18 +238,23 @@ public final class MenuScreen extends Screen {
         fields.clear();
         Ui ui = new Ui(g, font, mouseX, mouseY, targets, modal != null || findOpen ? 1 : 0);
         ui.find = find;
+        ui.scrolls = scrolls;
+        if (dragScroll != null) {
+            ui.dragX = dragScroll.x();
+            ui.dragY = dragScroll.y();
+        }
         // The window must fit the screen: at GUI scale 4 on 720p the screen is only 320x180.
         int ww = Math.min(width - 4, Math.max(300, Math.min(width - 16, 600)));
         int wh = Math.min(height - 4, Math.max(200, Math.min(height - 16, 340)));
         int wx = (width - ww) / 2, wy = (height - wh) / 2;
         boolean compact = wh < 240;
-        // Sidebar with the main sections (icon + name; icons only when narrow), content panel next to it.
-        boolean wideBar = ww >= 420;
-        int sbW = wideBar ? 64 : 26, gapW = 4;
-        Draw.roundBordered(g, wx, wy, sbW, wh, Theme.R_WINDOW, Theme.BORDER, Theme.WINDOW);
+        // Navigation (Settings → Appearance → Navigation): a list, a slim icon bar, big tiles or tabs on top.
+        int nav = settingsTab.previewSettings().navStyle;
+        int sbW = navWidth(nav, ww), gapW = sbW > 0 ? 4 : 0;
+        if (sbW > 0) Draw.roundBordered(g, wx, wy, sbW, wh, Theme.R_WINDOW, Theme.BORDER, Theme.WINDOW);
         int mx = wx + sbW + gapW, mw = ww - sbW - gapW;
         Draw.roundBordered(g, mx, wy, mw, wh, Theme.R_WINDOW, Theme.BORDER, Theme.WINDOW);
-        sidebar(ui, wx, wy, sbW, wh, wideBar);
+        if (sbW > 0) sidebar(ui, wx, wy, sbW, wh, nav);
         ui.text(Theme.head("Combat Data"), mx + 10, wy + 9, Theme.TEXT_STRONG);
         int cb = 14, cbx = mx + mw - 8 - cb, cby = wy + 6;
         boolean ch = ui.hover(cbx, cby, cb, cb);
@@ -253,7 +262,12 @@ public final class MenuScreen extends Screen {
         ui.textCenter("×", cbx + cb / 2 + 1, Ui.textY(cby, cb), ch ? Theme.TEXT_STRONG : Theme.MUTED);
         ui.click(cbx, cby, cb, cb, this::onClose);
         findButton(ui, mx + 10 + font.width(Theme.head("Combat Data")), cbx, cby);
-        int line = wy + 24, top = line + 7;
+        int line = wy + 24;
+        if (sbW == 0) {
+            topTabs(ui, mx + 8, wy + 23, mw - 16);
+            line = wy + 43;
+        }
+        int top = line + 7;
         g.fill(mx + 8, line, mx + mw - 8, line + 1, Theme.BORDER);
         find.at(tab, 0);
         find.beginFrame();
@@ -282,36 +296,97 @@ public final class MenuScreen extends Screen {
         }
     }
 
-    /** The main sections down the left side, like a launcher: bigger targets and always visible. */
-    private void sidebar(Ui ui, int x, int y, int w, int h, boolean wideBar) {
+    private int maxLabelWidth() {
+        int m = 0;
+        for (TabId t : TabId.values()) m = Math.max(m, font.width(Theme.head(t.label())));
+        return m;
+    }
+
+    /** Sidebar width for the navigation style; 0 means tabs on top. Narrow windows fall back to icons. */
+    private int navWidth(int nav, int ww) {
+        boolean room = ww >= 420;
+        if (!Theme.sidebarLabels() && nav != dev.combatdata.core.Settings.NAV_TOP) return 28;
+        return switch (nav) {
+            case dev.combatdata.core.Settings.NAV_TOP -> 0;
+            case dev.combatdata.core.Settings.NAV_ICONS -> 28;
+            case dev.combatdata.core.Settings.NAV_TILES -> room ? Math.max(64, Math.min(100, maxLabelWidth() + 14)) : 28;
+            default -> room ? Math.max(76, Math.min(124, maxLabelWidth() + 34)) : 28;
+        };
+    }
+
+    private static int navColor(boolean sel, boolean hov) {
+        return Theme.java() ? (sel ? 0xFFFFFF55 : hov ? 0xFFFFFFFF : 0xFFC8C8C8)
+                : Theme.norisk() ? (sel || hov ? 0xFFFFFFFF : Theme.TEXT)
+                : sel ? Theme.ACCENT : hov ? Theme.TEXT : Theme.MUTED;
+    }
+
+    /** Background of a navigation entry; bar: a thin accent mark on the left of the selected entry (list style). */
+    private static void navBg(GuiGraphics g, int x, int y, int w, int h, boolean sel, boolean hov, boolean bar) {
+        if (Theme.java()) {
+            if (sel || hov) Draw.javaButton(g, x, y, w, h, true, true);
+        } else if (Theme.norisk()) {
+            if (sel) Draw.flat(g, x, y, w, h, Theme.alpha(Theme.ACCENT, 0xB0), Theme.ACCENT_HOVER);
+            else if (hov) Draw.flat(g, x, y, w, h, Theme.RAISED, Theme.BORDER);
+        } else {
+            if (sel) Draw.round(g, x, y, w, h, Theme.R_CTRL, Theme.RAISED);
+            else if (hov) Draw.round(g, x, y, w, h, Theme.R_CTRL, Theme.ROW_HOVER);
+        }
+        if (bar && sel && !Theme.norisk()) g.fill(x, y + 3, x + 2, y + h - 3, Theme.java() ? 0xFFFFFF55 : Theme.ACCENT);
+    }
+
+    /** The main sections down the left side: a list with icon and full name, big tiles, or icons only. */
+    private void sidebar(Ui ui, int x, int y, int w, int h, int nav) {
         GuiGraphics g = ui.g;
         TabId[] all = TabId.values();
-        int eh = Math.min(wideBar ? 38 : 22, (h - 12) / all.length - 3);
-        boolean wide = wideBar && eh >= 30 && Theme.sidebarLabels();
-        int ey = y + 6, px = wide ? 2 : 1;
+        boolean iconsOnly = w <= 30, tiles = nav == dev.combatdata.core.Settings.NAV_TILES && !iconsOnly;
+        int eh = tiles ? Math.min(38, (h - 12) / all.length - 3) : iconsOnly ? Math.min(24, (h - 12) / all.length - 3)
+                : Math.min(20, (h - 12) / all.length - 3);
+        boolean tileLabels = tiles && eh >= 30;
+        int ey = y + 6;
         for (int i = 0; i < all.length; i++) {
             TabId t = all[i];
             boolean sel = t == tab, hov = ui.hover(x + 3, ey, w - 6, eh);
-            int ex = x + 3, ewid = w - 6;
-            if (Theme.java()) {
-                if (sel || hov) Draw.javaButton(g, ex, ey, ewid, eh, true, true);
-            } else if (Theme.norisk()) {
-                if (sel) Draw.flat(g, ex, ey, ewid, eh, Theme.alpha(Theme.ACCENT, 0xB0), Theme.ACCENT_HOVER);
-                else if (hov) Draw.flat(g, ex, ey, ewid, eh, Theme.RAISED, Theme.BORDER);
-            } else {
-                if (sel) Draw.round(g, ex, ey, ewid, eh, Theme.R_CTRL, Theme.RAISED);
-                else if (hov) Draw.round(g, ex, ey, ewid, eh, Theme.R_CTRL, Theme.ROW_HOVER);
-            }
-            int color = Theme.java() ? (sel ? 0xFFFFFF55 : hov ? 0xFFFFFFFF : 0xFFC8C8C8)
-                    : Theme.norisk() ? (sel || hov ? 0xFFFFFFFF : Theme.TEXT)
-                    : sel ? Theme.ACCENT : hov ? Theme.TEXT : Theme.MUTED;
-            int iconW = 9 * px;
-            icon(g, i, x + (w - iconW) / 2, ey + (wide ? 5 : (eh - iconW) / 2), px, color);
+            int ex = x + 3, ewid = w - 6, color = navColor(sel, hov);
+            navBg(g, ex, ey, ewid, eh, sel, hov, !tiles && !iconsOnly);
             String label = Theme.head(t.label());
-            if (wide) ui.textCenter(Draw.ellipsize(font, label, ewid - 4), x + w / 2, ey + eh - 12, color);
-            else if (hov) ui.tooltip(t.label());
+            if (tiles) {
+                int px = eh >= 26 ? 2 : 1, iconW = 9 * px;
+                icon(g, i, x + (w - iconW) / 2, ey + (tileLabels ? 5 : (eh - iconW) / 2), px, color);
+                if (tileLabels) ui.textCenter(label, x + w / 2, ey + eh - 12, color);
+                else if (hov) ui.tooltip(t.label());
+            } else if (iconsOnly) {
+                int px = eh >= 22 ? 2 : 1, iconW = 9 * px;
+                icon(g, i, x + (w - iconW) / 2, ey + (eh - iconW) / 2, px, color);
+                if (hov) ui.tooltip(t.label());
+            } else {
+                icon(g, i, ex + 6, ey + (eh - 9) / 2, 1, color);
+                ui.text(Draw.ellipsize(font, label, ewid - 24), ex + 20, Ui.textY(ey, eh), color);
+            }
             ui.click(ex, ey, ewid, eh, () -> switchTab(t));
-            ey += eh + 3;
+            ey += eh + (iconsOnly || tiles ? 3 : 2);
+        }
+    }
+
+    /** Navigation as tabs in a row under the title; names are dropped (icons + tooltip) when the row is too narrow. */
+    private void topTabs(Ui ui, int x, int y, int w) {
+        TabId[] all = TabId.values();
+        int h = 16, gap = 3, full = 0;
+        for (TabId t : all) full += font.width(Theme.head(t.label())) + 24 + gap;
+        boolean labels = full - gap <= w;
+        int cx = x;
+        for (int i = 0; i < all.length; i++) {
+            TabId t = all[i];
+            String label = Theme.head(t.label());
+            int tw = labels ? font.width(label) + 24 : 22;
+            boolean sel = t == tab, hov = ui.hover(cx, y, tw, h);
+            int color = navColor(sel, hov);
+            navBg(ui.g, cx, y, tw, h, sel, hov, false);
+            if (sel && !Theme.java() && !Theme.norisk()) ui.g.fill(cx + 2, y + h - 2, cx + tw - 2, y + h, Theme.ACCENT);
+            icon(ui.g, i, cx + 6, y + (h - 9) / 2, 1, color);
+            if (labels) ui.text(label, cx + 18, Ui.textY(y, h), color);
+            else if (hov) ui.tooltip(t.label());
+            ui.click(cx, y, tw, h, () -> switchTab(t));
+            cx += tw + gap;
         }
     }
 
@@ -382,7 +457,7 @@ public final class MenuScreen extends Screen {
         int y = py + head;
         if (blank) {
             ui.text(Draw.ellipsize(font, t("Настройки, индикаторы и страницы статистики", "Settings, indicators and stats pages", "Einstellungen, Indikatoren und Statistikseiten"), pw - 20), px + 10, y + 4, Theme.MUTED);
-            ui.text(Draw.ellipsize(font, t("Например: фон, звук, reach, w-tap", "For example: background, sound, reach, w-tap", "Zum Beispiel: Hintergrund, Sound, Reichweite, W-Tap"), pw - 20), px + 10, y + 16, Theme.DIM);
+            ui.text(Draw.ellipsize(font, t("Например: фон, звук, reach, jump reset", "For example: background, sound, reach, jump reset", "Zum Beispiel: Hintergrund, Sound, Reichweite, Jump Reset"), pw - 20), px + 10, y + 16, Theme.DIM);
         } else if (n == 0) {
             ui.text(t("Ничего не найдено", "Nothing found", "Nichts gefunden"), px + 10, y + 4, Theme.MUTED);
             ui.text(Draw.ellipsize(font, t("Попробуйте другое слово или английское название", "Try another word or the German name", "Versuch ein anderes Wort oder den englischen Namen"), pw - 20), px + 10, y + 16, Theme.DIM);
@@ -571,6 +646,15 @@ public final class MenuScreen extends Screen {
         if (event.button() != 0) return super.mouseClicked(event, doubleClick);
         lastDouble = doubleClick;
         int active = modal != null ? 1 : 0;
+        // Scrollbars: grab the thumb and drag, or click the track to jump there.
+        for (Ui.Scroll sc : scrolls) {
+            if (sc.layer() >= active && sc.contains(event.x(), event.y())) {
+                dragScroll = sc;
+                dragGrab = sc.onThumb(event.y()) ? event.y() - sc.thumbY() : sc.thumbH() / 2.0;
+                sc.dragTo(event.y(), dragGrab);
+                return true;
+            }
+        }
         for (int i = targets.size() - 1; i >= 0; i--) {
             Ui.Target t = targets.get(i);
             if (t.layer() >= active && t.contains(event.x(), event.y())) {
@@ -608,6 +692,10 @@ public final class MenuScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        if (dragScroll != null) {
+            dragScroll.dragTo(event.y(), dragGrab);
+            return true;
+        }
         if (mouseCaptured) {
             current().dragged(event.x(), event.y(), dx);
             return true;
@@ -617,6 +705,10 @@ public final class MenuScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
+        if (dragScroll != null && event.button() == 0) {
+            dragScroll = null;
+            return true;
+        }
         if (mouseCaptured && event.button() == 0) {
             mouseCaptured = false;
             current().released(event.x(), event.y());

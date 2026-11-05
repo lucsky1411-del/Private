@@ -223,7 +223,7 @@ final class ProgressTab implements Tab {
         if (list.isEmpty()) ui.text(t("Ничего не найдено", "Nothing found", "Nichts gefunden"), popX + 8, ry + 2, Theme.DIM);
         ui.unclip();
         g.disableScissor();
-        if (popMax > 0) ui.scrollbar(popX + popW - 5, ly, lh, popScroll, lh, content);
+        if (popMax > 0) ui.scrollbar(popX + popW - 5, ly, lh, popScroll, lh, content, v -> popScroll = v);
     }
 
     private void row(Ui ui, int y, String label, String meta, boolean cur, Runnable action) {

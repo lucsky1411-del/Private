@@ -192,7 +192,7 @@ final class RecordingsTab implements Tab {
         }
         ui.unclip();
         ui.g.disableScissor();
-        ui.scrollbar(x + w - 5, listY + 2, listH - 4, scroll, listH, content);
+        ui.scrollbar(x + w - 5, listY + 2, listH - 4, scroll, listH, content, v -> scroll = v);
 
         int fy = y + h - 16;
         Recordings.Entry sel = selectedEntry();

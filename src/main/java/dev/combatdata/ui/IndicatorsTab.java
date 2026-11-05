@@ -65,7 +65,7 @@ final class IndicatorsTab implements Tab {
         scroll = Math.max(0, Math.min(scroll, maxScroll));
         ui.unclip();
         ui.g.disableScissor();
-        ui.scrollbar(panelX + panelW - 5, iy + 2, ih - 4, scroll, ih, content);
+        ui.scrollbar(panelX + panelW - 5, iy + 2, ih - 4, scroll, ih, content, v -> scroll = v);
         ui.text(Draw.ellipsize(ui.font, t("Только ваши данные о том, что уже случилось. Меняется сразу.",
                 "Only your own data about what already happened. Applies at once.", "Nur deine eigenen Daten über bereits Geschehenes. Wirkt sofort."), w), x, footerY, Theme.DIM);
     }
