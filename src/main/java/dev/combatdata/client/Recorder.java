@@ -105,7 +105,7 @@ public final class Recorder {
             else CLOCK.resume(nowNs);
             String srv = serverName(mc), dim = dimensionName(mc.level);
             if (CombatDataClient.settings().clearOnServerChange && !server.isEmpty() && !srv.equals(server)) {
-                if (CombatDataClient.settings().autoSave && worthAutoSave()) saveNow(mc, true, false);
+                if ((CombatDataClient.settings().autoSave && worthAutoSave()) || bufferSaveOnLeave()) saveNow(mc, true, false);
                 AttackCapture.flushPending();
                 IncomingCapture.clearPending();
                 BUFFER.clear();
@@ -144,6 +144,7 @@ public final class Recorder {
             saveNow(mc, false, connected);
         }
         autoSaveTick(mc);
+        bufferSaveTick(mc);
         handleKeys(mc);
     }
 
@@ -152,7 +153,7 @@ public final class Recorder {
         if (saveQueued) {
             saveQueued = false;
             saveNow(mc, false, false);
-        } else if (CombatDataClient.settings().autoSave && worthAutoSave()) {
+        } else if ((CombatDataClient.settings().autoSave && worthAutoSave()) || bufferSaveOnLeave()) {
             saveNow(mc, true, false);
         }
         AttackCapture.flushPending();
@@ -178,6 +179,25 @@ public final class Recorder {
         if (last < 0 || last > n || n - last < s.fsDelaySec * 1000L || last == autoCheckedFor) return;
         autoCheckedFor = last;
         if (worthAutoSave()) saveNow(mc, true, true);
+    }
+
+    private static long lastBufferSaveWall = System.currentTimeMillis();
+
+    /** Leaving a server or the game with buffer autosave on: keep whatever combat there is. */
+    private static boolean bufferSaveOnLeave() {
+        return CombatDataClient.settings().bufferAutoSave >= 1 && BUFFER.hasCombatEvents();
+    }
+
+    /** Every N minutes the buffer is saved, but never in the middle of a fight (waits for 5 s without combat). */
+    private static void bufferSaveTick(Minecraft mc) {
+        int min = CombatDataClient.settings().bufferAutoSave;
+        if (min < 5 || !connected || saveQueued) return;
+        long wall = System.currentTimeMillis();
+        if (wall - lastBufferSaveWall < min * 60_000L) return;
+        long last = lastCombatMs, n = now();
+        if (last >= 0 && last <= n && n - last < 5_000) return;
+        lastBufferSaveWall = wall;
+        if (BUFFER.hasCombatEvents()) saveNow(mc, true, true);
     }
 
     /** Only fights that pass the minimum fight size are saved, so a single poke does not make a file. */
@@ -286,6 +306,7 @@ public final class Recorder {
         AttackCapture.flushPending();
         IncomingCapture.flushPending();
         long wall = System.currentTimeMillis();
+        lastBufferSaveWall = wall;
         if (!BUFFER.hasCombatEvents()) {
             if (!auto) {
                 chat(mc, t("В буфере нет боевых событий, сохранять нечего.", "No combat events in the buffer, nothing to save.", "Keine Kampfereignisse im Puffer, nichts zu speichern."));

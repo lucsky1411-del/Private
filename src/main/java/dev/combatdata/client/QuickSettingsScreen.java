@@ -113,6 +113,17 @@ public final class QuickSettingsScreen extends Screen {
         rows.add(new Row(() -> t("Автосохранение боёв", "Autosave fights", "Kämpfe automatisch speichern") + ": " + onOff(s().autoSave),
                 () -> t("Каждый бой сохраняется сам, без F9", "Every fight is saved by itself, no F9 needed", "Jeder Kampf wird von selbst gespeichert, ohne F9"),
                 () -> s().autoSave = !s().autoSave));
+        rows.add(new Row(() -> t("Автосохранение буфера", "Autosave buffer", "Puffer automatisch speichern") + ": "
+                + dev.combatdata.ui.SettingsTabNames.bufferSave(s().bufferAutoSave),
+                () -> t("Сохраняет весь буфер при выходе с сервера или каждые N минут (без боя не сохраняет).",
+                        "Saves the whole buffer when you leave a server or every N minutes (nothing without combat).",
+                        "Speichert den ganzen Puffer beim Verlassen eines Servers oder alle N Minuten (ohne Kampf nichts)."),
+                () -> {
+                    int[] st = Settings.BUFFER_SAVE_STEPS;
+                    int i = 0;
+                    while (i < st.length && st[i] != s().bufferAutoSave) i++;
+                    s().bufferAutoSave = st[(i + 1) % st.length];
+                }));
         rows.add(new Row(() -> t("Звук при сохранении", "Sound on save", "Sound beim Speichern") + ": " + onOff(s().soundOnSave),
                 () -> t("Короткий звук, когда запись сохранена", "A short sound when a recording is saved", "Ein kurzer Ton, wenn eine Aufnahme gespeichert wurde"),
                 () -> s().soundOnSave = !s().soundOnSave));

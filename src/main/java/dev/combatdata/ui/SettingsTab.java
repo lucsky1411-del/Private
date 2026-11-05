@@ -219,6 +219,21 @@ final class SettingsTab implements Tab {
         return y + 14;
     }
 
+    static String bufferSaveName(int v) {
+        return switch (v) {
+            case 0 -> t("выкл", "off", "aus");
+            case 1 -> t("при выходе", "on leaving", "beim Verlassen");
+            default -> t("каждые " + v + " мин", "every " + v + " min", "alle " + v + " Min.");
+        };
+    }
+
+    private void stepBufferSave(int dir) {
+        int[] st = Settings.BUFFER_SAVE_STEPS;
+        int i = 0;
+        while (i < st.length && st[i] != draft.bufferAutoSave) i++;
+        draft.bufferAutoSave = st[Math.max(0, Math.min(st.length - 1, i + dir))];
+    }
+
     private int recording(Ui ui, int x, int y, int w) {
         Settings l = live();
         int rh = 38, right = x + w - 10;
@@ -245,6 +260,11 @@ final class SettingsTab implements Tab {
                 t("Через " + draft.fsDelaySec + " с после боя, от " + draft.statMinFightHits + " ударов",
                         draft.fsDelaySec + " s after a fight, from " + draft.statMinFightHits + " hits", draft.fsDelaySec + " s nach einem Kampf, ab " + draft.statMinFightHits + " Treffer"),
                 draft.autoSave, l.autoSave, DEF.autoSave, v -> draft.autoSave = v);
+        row(ui, x, y, w, 30, t("Автосохранение буфера", "Autosave buffer", "Puffer automatisch speichern"),
+                t("Весь буфер, даже без большого боя", "The whole buffer, even without a big fight", "Den ganzen Puffer, auch ohne großen Kampf"),
+                draft.bufferAutoSave != l.bufferAutoSave);
+        ui.stepper(right - 110, y + 8, 110, bufferSaveName(draft.bufferAutoSave), () -> stepBufferSave(-1), () -> stepBufferSave(1));
+        y += 30;
         y = flag(ui, x, y, w, t("Звук при сохранении", "Sound on save", "Sound beim Speichern"), t("Высокий звук: сохранено, низкий: не удалось", "High: saved, low: failed", "Hoher Ton: gespeichert, tiefer Ton: fehlgeschlagen"), draft.soundOnSave,
                 l.soundOnSave, DEF.soundOnSave, v -> draft.soundOnSave = v);
         row(ui, x, y, w, 26, t("Громкость звука", "Sound volume", "Lautstärke"), t("Громкость звука сохранения", "Volume of the save sound", "Lautstärke des Speichertons"), draft.soundVolume != l.soundVolume);

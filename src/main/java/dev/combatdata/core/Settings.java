@@ -28,6 +28,12 @@ public final class Settings {
     public boolean hudShowDot = true, hudBlink = true, hudShadow = false, hudHideWhenPaused = false;
     public boolean debugLog = false;
     public boolean autoSave = false;
+    /**
+     * Save the whole buffer by itself: 0 off, 1 when leaving a server or the game, 5/10/20/30 = also every that many
+     * minutes. Unlike the fight autosave it does not need a fight of minimum size, only some combat in the buffer.
+     */
+    public int bufferAutoSave = 0;
+    public static final int[] BUFFER_SAVE_STEPS = {0, 1, 5, 10, 20, 30};
     public boolean clearOnServerChange = false;
     public int jrLowerMs = 0, jrUpperMs = 80, jrPreMs = 200, jrPostMs = 200;
     public boolean jrExcludeHeld = false;
@@ -252,6 +258,7 @@ public final class Settings {
         dsPanelAlpha = Math.max(10, Math.min(100, dsPanelAlpha));
         dsWidgets = dsWidgets >= Themes.WIDGETS_CLASSIC && dsWidgets <= Themes.WIDGETS_FLAT ? dsWidgets : Themes.WIDGETS_CLASSIC;
         reportStep = Math.max(2, Math.min(100, reportStep));
+        if (java.util.Arrays.stream(BUFFER_SAVE_STEPS).noneMatch(v -> v == bufferAutoSave)) bufferAutoSave = 0;
         lastReport = Math.max(0, lastReport);
         statPingLimitMs = Math.max(MIN_PING_LIMIT, Math.min(MAX_PING_LIMIT, statPingLimitMs));
         statMinFightHits = Math.max(1, Math.min(MAX_FIGHT_HITS, statMinFightHits));
@@ -301,6 +308,7 @@ public final class Settings {
         hudScale = c.hudScale;
         debugLog = c.debugLog;
         autoSave = c.autoSave;
+        bufferAutoSave = c.bufferAutoSave;
         clearOnServerChange = c.clearOnServerChange;
         jrLowerMs = c.jrLowerMs;
         jrUpperMs = c.jrUpperMs;
@@ -399,6 +407,7 @@ public final class Settings {
         m.put("hudScale", hudScale);
         m.put("debugLog", debugLog);
         m.put("autoSave", autoSave);
+        m.put("bufferAutoSave", bufferAutoSave);
         m.put("clearOnServerChange", clearOnServerChange);
         m.put("jrLowerMs", jrLowerMs);
         m.put("jrUpperMs", jrUpperMs);
@@ -478,6 +487,7 @@ public final class Settings {
         if (m.get("hudScale") instanceof Number n) s.hudScale = n.doubleValue();
         if (m.get("debugLog") instanceof Boolean b) s.debugLog = b;
         if (m.get("autoSave") instanceof Boolean b) s.autoSave = b;
+        if (m.get("bufferAutoSave") instanceof Number n) s.bufferAutoSave = n.intValue();
         if (m.get("clearOnServerChange") instanceof Boolean b) s.clearOnServerChange = b;
         if (m.get("jrLowerMs") instanceof Number n) s.jrLowerMs = n.intValue();
         if (m.get("jrUpperMs") instanceof Number n) s.jrUpperMs = n.intValue();

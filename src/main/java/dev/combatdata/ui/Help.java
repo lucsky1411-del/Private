@@ -199,4 +199,10 @@ final class Help {
                 "The overall report combines your last sessions: a short verdict, the three main things to train and your skills with the change against the block of the same size before.\nA session is a play day or one recording. Every N sessions a new overall report is ready and you get a chat message.",
                 "Der Gesamtbericht fasst deine letzten Sessions zusammen: ein kurzes Urteil, die drei wichtigsten Trainingspunkte und deine Fähigkeiten mit der Veränderung zum gleich großen Block davor.\nEine Session ist ein Spieltag oder eine Aufnahme. Alle N Sessions gibt es einen neuen Gesamtbericht und eine Nachricht im Chat.");
     }
+
+    static String threeBlockTab() {
+        return t("Каждое ваше попадание так, как его видел противник. Он видит вас с задержкой (пинг обоих / 2 + интерполяция), поэтому если вы шли на него или он отходил, у него на экране вы были дальше. Дальше его дальности — 3 block hit: ответить он не мог.\n«Почему»: что добавило больше всего — ваше движение, его отход или только пинг. Оценка, не точное измерение.",
+                "Every hit of yours as the opponent saw it. They see you with a delay (both pings / 2 + interpolation), so if you moved in or they backed off, you were further away on their screen. Beyond their reach it is a 3 block hit: they could not hit back.\n\"Why\": what added the most, your movement, their backing off or just ping. An estimate, not an exact measurement.",
+                "Jeder deiner Treffer so, wie der Gegner ihn gesehen hat. Er sieht dich verzögert (Ping von euch beiden / 2 + Interpolation). Bist du auf ihn zugelaufen oder ist er zurückgewichen, warst du auf seinem Bildschirm weiter weg. Außerhalb seiner Reichweite ist es ein 3 Block Hit: er konnte nicht zurückschlagen.\n„Warum“: was am meisten beigetragen hat, deine Bewegung, sein Zurückweichen oder nur der Ping. Eine Schätzung, keine genaue Messung.");
+    }
 }

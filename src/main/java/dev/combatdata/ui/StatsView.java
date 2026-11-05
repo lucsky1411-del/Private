@@ -9,7 +9,7 @@ import java.util.*;
 
 final class StatsView {
     static final int OVERVIEW = 0, ATTACK = 1, DEFENSE = 2, FIGHTS = 3;
-    static final int A_HITS = 0, A_AIM = 1, A_STRIKES = 2, A_COMBO = 3, A_WTAP = 4;
+    static final int A_HITS = 0, A_AIM = 1, A_STRIKES = 2, A_COMBO = 3, A_WTAP = 4, A_THREE = 5;
     static final int D_JUMP = 0, D_KNOCKBACK = 1, D_TAKEN = 2;
     static final int F_OPPONENTS = 0, F_FIGHTS = 1, F_TRADES = 2, F_DISTANCE = 3, F_TIMELINE = 4;
 
@@ -22,16 +22,16 @@ final class StatsView {
     private static String[] modes(int sub, boolean narrow) {
         boolean en = Lang.english();
         if (Lang.german()) return switch (sub) {
-            case ATTACK -> narrow ? new String[]{"Treffer", "Zielen", "Arten", "Combo", "W-Tap"}
-                    : new String[]{"Treffer", "Zielen", "Schlagarten", "Combos", "W-Tap"};
+            case ATTACK -> narrow ? new String[]{"Treffer", "Zielen", "Arten", "Combo", "W-Tap", "3 Block"}
+                    : new String[]{"Treffer", "Zielen", "Schlagarten", "Combos", "W-Tap", "3 Block Hits"};
             case DEFENSE -> new String[]{"Jump Reset", "Rückstoß", narrow ? "Auf mich" : "Treffer auf mich"};
             default -> new String[]{"Gegner", "Kämpfe", "Trades", narrow ? "Dist." : "Distanz", narrow ? "Zeit" : "Zeitleiste"};
         };
         return switch (sub) {
-            case ATTACK -> en ? (narrow ? new String[]{"Hits", "Aim", "Types", "Combo", "W-tap"}
-                    : new String[]{"Hits", "Aim", "Strikes", "Combos", "W-tap"})
-                    : narrow ? new String[]{"Попад.", "Прицел", "Удары", "Комбо", "W-tap"}
-                    : new String[]{"Попадания", "Прицел", "Удары", "Комбо", "W-tap"};
+            case ATTACK -> en ? (narrow ? new String[]{"Hits", "Aim", "Types", "Combo", "W-tap", "3 block"}
+                    : new String[]{"Hits", "Aim", "Strikes", "Combos", "W-tap", "3 block hits"})
+                    : narrow ? new String[]{"Попад.", "Прицел", "Удары", "Комбо", "W-tap", "3 block"}
+                    : new String[]{"Попадания", "Прицел", "Удары", "Комбо", "W-tap", "3 block hit"};
             case DEFENSE -> en ? new String[]{"Jump reset", "Knockback", narrow ? "On me" : "Hits on me"}
                     : new String[]{"Jump reset", "Отлёт", narrow ? "По мне" : "Удары по мне"};
             default -> en ? new String[]{narrow ? "Opp." : "Opponents", "Fights", "Trades", narrow ? "Dist." : "Distance", narrow ? "Time" : "Timeline"}
@@ -49,7 +49,7 @@ final class StatsView {
         for (int i = 0; i < n; i++) all[i] = i;
         if (CombatDataClient.settings().expertMode) return all;
         int[] simple = switch (sub) {
-            case ATTACK -> new int[]{A_HITS, A_AIM, A_STRIKES, A_COMBO};
+            case ATTACK -> new int[]{A_HITS, A_AIM, A_STRIKES, A_COMBO, A_THREE};
             case DEFENSE -> new int[]{D_JUMP, D_TAKEN};
             default -> new int[]{F_OPPONENTS, F_FIGHTS, F_TRADES, F_DISTANCE};
         };
@@ -311,6 +311,7 @@ final class StatsView {
                 case A_AIM -> aimTab(ui, cx, ctop, cw);
                 case A_STRIKES -> strikesTab(ui, cx, ctop, cw);
                 case A_WTAP -> wtapTab(ui, cx, ctop, cw);
+                case A_THREE -> threeBlockTab(ui, cx, ctop, cw);
                 default -> comboTab(ui, cx, ctop, cw);
             };
             case DEFENSE -> defenseMode == D_KNOCKBACK ? kbTab(ui, cx, ctop, cw)
@@ -472,6 +473,7 @@ final class StatsView {
                 case A_AIM -> Help.aimTab();
                 case A_STRIKES -> Help.types() + "\n" + Help.charge();
                 case A_WTAP -> Help.wtap();
+                case A_THREE -> Help.threeBlockTab();
                 default -> Help.combo();
             };
             case DEFENSE -> switch (defenseMode) {
@@ -1977,6 +1979,94 @@ final class StatsView {
                                 Double.isNaN(od) ? "—" : "≈ " + Fmt.num(od, 1)},
                         new int[]{Theme.MUTED, Theme.TEXT, oc, Theme.TEXT, Theme.MUTED, Theme.MUTED, Theme.MUTED,
                                 tb ? Theme.AMBER : Theme.MUTED});
+            }
+            y += ROW;
+        }
+        return y;
+    }
+
+    /**
+     * Your hits as the opponent saw them: with ping and interpolation they see you where you were a moment ago,
+     * so a hit at 2.9 blocks can look like 3.6 on their screen. Those are hits they could not answer.
+     */
+    private int threeBlockTab(Ui ui, int x, int y, int w) {
+        int interp = CombatDataClient.settings().interpMs;
+        record Row(AttackEvent a, double od, double lat, double self, double away) {
+        }
+        List<Row> rows = new ArrayList<>();
+        int confirmed = 0;
+        for (Event e : events) {
+            if (!(e instanceof AttackEvent a) || a.outcome() != Outcome.HIT_CONFIRMED) continue;
+            confirmed++;
+            if (!ThreeBlockHit.classifiable(a, interp)) continue;
+            double lat = ThreeBlockHit.latencyMs(a, interp);
+            rows.add(new Row(a, ThreeBlockHit.opponentDistance(a, interp), lat, lat / 1000.0 * a.selfTowardBps(), lat / 1000.0 * a.targetAwayBps()));
+        }
+        if (rows.isEmpty()) {
+            for (String l : ui.wrap(confirmed == 0 ? t("Нет попаданий.", "No hits.", "Keine Treffer.")
+                    : t("Нет данных: для расчёта нужен пинг противника из списка игроков.", "No data: the estimate needs the opponent's ping from the player list.",
+                    "Keine Daten: für die Schätzung braucht es den Ping des Gegners aus der Spielerliste."), w)) {
+                ui.text(l, x, y, Theme.DIM);
+                y += LINE;
+            }
+            return y;
+        }
+        int tb = 0;
+        double sumOd = 0, sumReach = 0, sumSelf = 0, sumAway = 0, sumPing = 0;
+        double[] ods = new double[rows.size()];
+        for (int i = 0; i < rows.size(); i++) {
+            Row r = rows.get(i);
+            if (r.od() > r.a().rangeOr(AttackEvent.DEFAULT_RANGE)) tb++;
+            sumOd += r.od();
+            sumReach += r.a().reach();
+            sumSelf += r.self();
+            sumAway += r.away();
+            sumPing += r.lat();
+            ods[i] = r.od();
+        }
+        int n = rows.size();
+        for (String l : ui.wrap(t("Как ваши удары выглядели у противника: из-за пинга он видит вас там, где вы были чуть раньше. Дальше его дальности — он не мог ответить.",
+                "How your hits looked on the opponent's screen: with ping they see you where you were a moment ago. Beyond their reach they could not hit back.",
+                "So sahen deine Treffer auf dem Bildschirm des Gegners aus: wegen des Pings sieht er dich dort, wo du kurz vorher warst. Außerhalb seiner Reichweite konnte er nicht zurückschlagen."), w)) {
+            ui.text(l, x, y, Theme.MUTED);
+            y += LINE;
+        }
+        y += 6;
+        List<Kv> kv = new ArrayList<>();
+        kv.add(new Kv(t("Недостижимо для противника", "Out of their reach", "Für ihn nicht erreichbar"), tb + " / " + n + " (" + Fmt.pct(100.0 * tb / n) + ")",
+                tb > 0 ? Theme.AMBER : Theme.TEXT_STRONG));
+        kv.add(new Kv(t("Ваша дистанция, ср.", "Your distance, mean", "Deine Distanz, Ø"), Fmt.num(sumReach / n, 2) + t(" бл.", " bl.", " Bl.")));
+        kv.add(new Kv(t("У него на экране, ср.", "On their screen, mean", "Auf seinem Bildschirm, Ø"), Fmt.num(sumOd / n, 2) + t(" бл.", " bl.", " Bl.")));
+        kv.add(new Kv(t("Задержка, ср.", "Delay, mean", "Verzögerung, Ø"), Fmt.num(sumPing / n, 0) + t(" мс", " ms")));
+        kv.add(new Kv(t("Из-за вашего движения к нему", "From you moving in", "Durch dein Hineinlaufen"), Fmt.signed(sumSelf / n, 2) + t(" бл.", " bl.", " Bl.")));
+        kv.add(new Kv(t("Из-за его отхода", "From them moving away", "Durch sein Zurückweichen"), Fmt.signed(sumAway / n, 2) + t(" бл.", " bl.", " Bl.")));
+        if (n < confirmed) kv.add(new Kv(t("Без данных (нет пинга цели)", "No data (no target ping)", "Ohne Daten (kein Ping des Ziels)"), String.valueOf(confirmed - n)));
+        Card c = new Card(t("Ваши удары глазами противника", "Your hits through their eyes", "Deine Treffer aus seiner Sicht"), kv, kv.size()).with(Help.threeBlock());
+        card(ui, x, y, w, c, true);
+        y += c.height(true) + 8;
+        y = hist(ui, x, y, w, 40, Stats.histogram(ods, 2.0, 5.0, 12), 2.0, 0.25, t(" бл.", " bl.", " Bl."),
+                t("Дистанция у него на экране (жёлтое: дальше 3 блоков)", "Distance on their screen (beyond 3 blocks: they could not hit back)",
+                        "Distanz auf seinem Bildschirm (über 3 Blöcke: er konnte nicht zurückschlagen)"), Theme.AMBER);
+        y += 8;
+        rows.sort((p, q) -> Double.compare(q.od(), p.od()));
+        boolean narrow = w < 360;
+        double[] at = narrow ? new double[]{0, .25, .50, .75} : new double[]{0, .13, .36, .50, .64, .78};
+        if (narrow) y = header(ui, x, y, w, at, t("Время", "Time", "Zeit"), t("Вы", "You", "Du"), t("У него", "Them", "Er"), t("Почему", "Why", "Warum"));
+        else y = header(ui, x, y, w, at, t("Время", "Time", "Zeit"), t("Цель", "Target", "Ziel"), t("Ваша дист.", "Your dist.", "Deine Dist."),
+                t("У него", "On their screen", "Bei ihm"), t("Задержка", "Delay", "Verzögerung"), t("Почему", "Why", "Warum"));
+        for (Row r : rows) {
+            if (visible(y, ROW)) {
+                boolean out = r.od() > r.a().rangeOr(AttackEvent.DEFAULT_RANGE);
+                String why = r.self() >= r.away() && r.self() > 0.15 ? t("вы шли на него", "you moved in", "du liefst rein")
+                        : r.away() > 0.15 ? t("он отходил", "they backed off", "er wich zurück")
+                        : t("пинг", "ping", "Ping");
+                int oc = out ? Theme.AMBER : Theme.MUTED;
+                String odT = "≈ " + Fmt.num(r.od(), 2) + (out ? " ✔" : "");
+                if (narrow) cols(ui, x, y, w, at, new String[]{Fmt.clockMs(r.a().t()), Fmt.num(r.a().reach(), 2), odT, why},
+                        new int[]{Theme.MUTED, Theme.TEXT, oc, Theme.MUTED});
+                else cols(ui, x, y, w, at, new String[]{Fmt.clockMs(r.a().t()), nz(r.a().targetName()), Fmt.num(r.a().reach(), 2), odT,
+                                Fmt.num(r.lat(), 0) + t(" мс", " ms"), why},
+                        new int[]{Theme.MUTED, Theme.TEXT, Theme.TEXT, oc, Theme.MUTED, Theme.MUTED});
             }
             y += ROW;
         }

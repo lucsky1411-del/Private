@@ -45,6 +45,7 @@ public final class CoreTests {
         tipsAndTraining();
         designs();
         shareCodes();
+        bufferSave();
         // Check names are ASCII: the Windows console (CP866) garbles Cyrillic.
         System.out.println("CoreTests: " + checks + " checks, " + failures + " failed");
         if (failures > 0) System.exit(1);
@@ -1933,5 +1934,19 @@ public final class CoreTests {
             bad = true;
         }
         check("share code: broken code refused", bad);
+    }
+
+    static void bufferSave() {
+        Settings a = new Settings();
+        check("buffer autosave: off by default", a.bufferAutoSave == 0);
+        a.bufferAutoSave = 10;
+        check("buffer autosave: saved", Settings.fromMap(a.toMap()).bufferAutoSave == 10);
+        a.bufferAutoSave = 7;
+        check("buffer autosave: unknown value falls back to off", a.clamp().bufferAutoSave == 0);
+        int interp = 100;
+        AttackEvent run = new AttackEvent(0, 0, new UUID(0, 1), "x", Outcome.HIT_CONFIRMED, HitType.SPRINT, null, 1f, 2.9, 0, 0, 0,
+                0, 0.5, 100, -1, 2.9, 3.0, 5.0, 0.0, 100, 10f, null, Weapon.SWORD, Relation.TEAM_UNKNOWN);
+        check("3 block: moving in makes it look further for them", Math.abs(ThreeBlockHit.opponentDistance(run, interp) - 3.9) < 1e-9
+                && ThreeBlockHit.is(run, interp));
     }
 }
