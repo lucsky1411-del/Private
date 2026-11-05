@@ -72,9 +72,6 @@ public final class QuickSettingsScreen extends Screen {
                     if (s().uiStyle == dev.combatdata.core.Themes.STYLE_CUSTOM) s().designFrom(prev);
                     else s().theme = dev.combatdata.core.Themes.themeForStyle(s().uiStyle);
                 }));
-        rows.add(new Row(() -> t("Навигация", "Navigation", "Navigation") + ": " + dev.combatdata.ui.SettingsTabNames.nav(s().navStyle),
-                () -> t("Список, иконки, вкладки сверху или плитки", "List, icons, top tabs or tiles", "Liste, Symbole, Tabs oben oder Kacheln"),
-                () -> s().navStyle = (s().navStyle + 1) % Settings.NAV_COUNT));
         rows.add(new Row(() -> t("Вид статистики", "Stats view", "Statistik-Ansicht") + ": "
                 + (s().expertMode ? t("эксперт", "expert", "Experte") : t("простой", "simple", "einfach")),
                 () -> t("Простой: только главное и советы. Эксперт: все цифры и графики.",

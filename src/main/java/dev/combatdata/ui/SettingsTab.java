@@ -715,7 +715,7 @@ final class SettingsTab implements Tab {
                 draft.dsCaps, l.dsCaps, DEF.dsCaps, v -> draft.dsCaps = v);
         y = flag(ui, x, y, w, t("Рамки у карточек", "Outlined cards", "Rahmen um Karten"), t("Иначе мягкие блоки", "Otherwise soft blocks", "Sonst weiche Blöcke"),
                 draft.dsBorders, l.dsBorders, DEF.dsBorders, v -> draft.dsBorders = v);
-        y = flag(ui, x, y, w, t("Названия в боковой панели", "Names in the sidebar", "Namen in der Seitenleiste"), t("Иначе только значки", "Otherwise icons only", "Sonst nur Symbole"),
+        y = flag(ui, x, y, w, t("Названия во вкладках сверху", "Names in the top tabs", "Namen in den Tabs oben"), t("Иначе только значки", "Otherwise icons only", "Sonst nur Symbole"),
                 draft.dsLabels, l.dsLabels, DEF.dsLabels, v -> draft.dsLabels = v);
         Flow fl = new Flow(x + 10, y + 6, w - 20);
         flowButton(ui, fl, t("Как Java", "Like Java", "Wie Java"), Ui.Kind.SECONDARY, true, () -> draft.designFrom(dev.combatdata.core.Themes.STYLE_JAVA));
@@ -825,11 +825,6 @@ final class SettingsTab implements Tab {
                 "Der Stil bestimmt Formen und Knöpfe, das Theme unten die Farben: du kannst es in jedem Stil ändern."), w - 20),
                 x + 10, y + 4, Theme.DIM);
         y += 16;
-        String navLabel = t("Навигация", "Navigation", "Navigation");
-        y = choice(ui, x, y, w, navLabel, navNames(), draft.navStyle, live().navStyle, DEF.navStyle, v -> draft.navStyle = v);
-        labelInfo(ui, x, y - 26, 26, navLabel, false, t("Как показаны разделы: список слева с названиями, узкая полоса только с иконками, вкладки сверху или большие плитки.",
-                "How the main sections are shown: a list on the left with names, a slim bar with icons only, tabs on top, or big tiles.",
-                "Wie die Hauptbereiche angezeigt werden: Liste links mit Namen, schmale Leiste nur mit Symbolen, Tabs oben oder große Kacheln."));
         if (draft.uiStyle == dev.combatdata.core.Themes.STYLE_CUSTOM) {
             y = designEditor(ui, x, y, w);
             return palette(ui, x, y, w);

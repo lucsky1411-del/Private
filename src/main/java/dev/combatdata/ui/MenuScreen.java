@@ -248,13 +248,9 @@ public final class MenuScreen extends Screen {
         int wh = Math.min(height - 4, Math.max(200, Math.min(height - 16, 340)));
         int wx = (width - ww) / 2, wy = (height - wh) / 2;
         boolean compact = wh < 240;
-        // Navigation (Settings → Appearance → Navigation): a list, a slim icon bar, big tiles or tabs on top.
-        int nav = settingsTab.previewSettings().navStyle;
-        int sbW = navWidth(nav, ww), gapW = sbW > 0 ? 4 : 0;
-        if (sbW > 0) Draw.roundBordered(g, wx, wy, sbW, wh, Theme.R_WINDOW, Theme.BORDER, Theme.WINDOW);
-        int mx = wx + sbW + gapW, mw = ww - sbW - gapW;
+        // Main sections as tabs under the title; the content panel takes the full width.
+        int mx = wx, mw = ww;
         Draw.roundBordered(g, mx, wy, mw, wh, Theme.R_WINDOW, Theme.BORDER, Theme.WINDOW);
-        if (sbW > 0) sidebar(ui, wx, wy, sbW, wh, nav);
         ui.text(Theme.head("Combat Data"), mx + 10, wy + 9, Theme.TEXT_STRONG);
         int cb = 14, cbx = mx + mw - 8 - cb, cby = wy + 6;
         boolean ch = ui.hover(cbx, cby, cb, cb);
@@ -262,11 +258,8 @@ public final class MenuScreen extends Screen {
         ui.textCenter("×", cbx + cb / 2 + 1, Ui.textY(cby, cb), ch ? Theme.TEXT_STRONG : Theme.MUTED);
         ui.click(cbx, cby, cb, cb, this::onClose);
         findButton(ui, mx + 10 + font.width(Theme.head("Combat Data")), cbx, cby);
-        int line = wy + 24;
-        if (sbW == 0) {
-            topTabs(ui, mx + 8, wy + 23, mw - 16);
-            line = wy + 43;
-        }
+        topTabs(ui, mx + 8, wy + 23, mw - 16);
+        int line = wy + 43;
         int top = line + 7;
         g.fill(mx + 8, line, mx + mw - 8, line + 1, Theme.BORDER);
         find.at(tab, 0);
@@ -296,24 +289,6 @@ public final class MenuScreen extends Screen {
         }
     }
 
-    private int maxLabelWidth() {
-        int m = 0;
-        for (TabId t : TabId.values()) m = Math.max(m, font.width(Theme.head(t.label())));
-        return m;
-    }
-
-    /** Sidebar width for the navigation style; 0 means tabs on top. Narrow windows fall back to icons. */
-    private int navWidth(int nav, int ww) {
-        boolean room = ww >= 420;
-        if (!Theme.sidebarLabels() && nav != dev.combatdata.core.Settings.NAV_TOP) return 28;
-        return switch (nav) {
-            case dev.combatdata.core.Settings.NAV_TOP -> 0;
-            case dev.combatdata.core.Settings.NAV_ICONS -> 28;
-            case dev.combatdata.core.Settings.NAV_TILES -> room ? Math.max(64, Math.min(100, maxLabelWidth() + 14)) : 28;
-            default -> room ? Math.max(76, Math.min(124, maxLabelWidth() + 34)) : 28;
-        };
-    }
-
     private static int navColor(boolean sel, boolean hov) {
         return Theme.java() ? (sel ? 0xFFFFFF55 : hov ? 0xFFFFFFFF : 0xFFC8C8C8)
                 : Theme.norisk() ? (sel || hov ? 0xFFFFFFFF : Theme.TEXT)
@@ -334,45 +309,12 @@ public final class MenuScreen extends Screen {
         if (bar && sel && !Theme.norisk()) g.fill(x, y + 3, x + 2, y + h - 3, Theme.java() ? 0xFFFFFF55 : Theme.ACCENT);
     }
 
-    /** The main sections down the left side: a list with icon and full name, big tiles, or icons only. */
-    private void sidebar(Ui ui, int x, int y, int w, int h, int nav) {
-        GuiGraphics g = ui.g;
-        TabId[] all = TabId.values();
-        boolean iconsOnly = w <= 30, tiles = nav == dev.combatdata.core.Settings.NAV_TILES && !iconsOnly;
-        int eh = tiles ? Math.min(38, (h - 12) / all.length - 3) : iconsOnly ? Math.min(24, (h - 12) / all.length - 3)
-                : Math.min(20, (h - 12) / all.length - 3);
-        boolean tileLabels = tiles && eh >= 30;
-        int ey = y + 6;
-        for (int i = 0; i < all.length; i++) {
-            TabId t = all[i];
-            boolean sel = t == tab, hov = ui.hover(x + 3, ey, w - 6, eh);
-            int ex = x + 3, ewid = w - 6, color = navColor(sel, hov);
-            navBg(g, ex, ey, ewid, eh, sel, hov, !tiles && !iconsOnly);
-            String label = Theme.head(t.label());
-            if (tiles) {
-                int px = eh >= 26 ? 2 : 1, iconW = 9 * px;
-                icon(g, i, x + (w - iconW) / 2, ey + (tileLabels ? 5 : (eh - iconW) / 2), px, color);
-                if (tileLabels) ui.textCenter(label, x + w / 2, ey + eh - 12, color);
-                else if (hov) ui.tooltip(t.label());
-            } else if (iconsOnly) {
-                int px = eh >= 22 ? 2 : 1, iconW = 9 * px;
-                icon(g, i, x + (w - iconW) / 2, ey + (eh - iconW) / 2, px, color);
-                if (hov) ui.tooltip(t.label());
-            } else {
-                icon(g, i, ex + 6, ey + (eh - 9) / 2, 1, color);
-                ui.text(Draw.ellipsize(font, label, ewid - 24), ex + 20, Ui.textY(ey, eh), color);
-            }
-            ui.click(ex, ey, ewid, eh, () -> switchTab(t));
-            ey += eh + (iconsOnly || tiles ? 3 : 2);
-        }
-    }
-
     /** Navigation as tabs in a row under the title; names are dropped (icons + tooltip) when the row is too narrow. */
     private void topTabs(Ui ui, int x, int y, int w) {
         TabId[] all = TabId.values();
         int h = 16, gap = 3, full = 0;
         for (TabId t : all) full += font.width(Theme.head(t.label())) + 24 + gap;
-        boolean labels = full - gap <= w;
+        boolean labels = full - gap <= w && Theme.sidebarLabels();
         int cx = x;
         for (int i = 0; i < all.length; i++) {
             TabId t = all[i];
